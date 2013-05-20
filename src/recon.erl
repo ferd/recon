@@ -1,5 +1,6 @@
 -module(recon).
 -export([info/1,info/3,reductions/2]).
+-export([remote_load/1, remote_load/2]).
 
 %%%%%%%%%%%%%%%%%%
 %%% PUBLIC API %%%
@@ -37,6 +38,18 @@ reductions(Time, Num) ->
     end,
     {First,Last} = recon_lib:sample(Time, Sample),
     lists:sublist(lists:usort(recon_lib:sliding_window(First, Last)), Num).
+
+%% Loads one or more modules remotely, in a diskless manner
+remote_load(Mod) -> remote_load(nodes(), Mod).
+
+remote_load(Nodes=[_|_], Mod) when is_atom(Mod) ->
+    {Mod, Bin, File} = code:get_object_code(Mod), 
+    rpc:multicall(Nodes, code, load_binary, [Mod, File, Bin]);
+remote_load(Nodes=[_|_], Modules) when is_list(Modules) ->
+    [remote_load(Nodes, Mod) || Mod <- Modules];
+remote_load(Node, Mod) ->
+    remote_load([Node], Mod).
+
 
 %%%%%%%%%%%%%%%
 %%% PRIVATE %%%
