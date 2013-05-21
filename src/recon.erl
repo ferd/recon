@@ -1,6 +1,7 @@
 -module(recon).
 -export([info/1,info/3,reductions/2]).
 -export([remote_load/1, remote_load/2]).
+-export([tcp/0, udp/0, sctp/0, files/0, port_types/0]).
 
 %%%%%%%%%%%%%%%%%%
 %%% PUBLIC API %%%
@@ -50,7 +51,21 @@ remote_load(Nodes=[_|_], Modules) when is_list(Modules) ->
 remote_load(Node, Mod) ->
     remote_load([Node], Mod).
 
+tcp() -> recon_lib:port_list(name, "tcp_inet").
 
+udp() -> recon_lib:port_list(name, "udp_inet").
+
+sctp() -> recon_lib:port_list(name, "sctp_inet").
+
+files() -> recon_lib:port_list(name, "efile").
+
+port_types() ->
+    lists:usort(
+        %% sorts by biggest count, smallest type
+        fun({KA,VA}, {KB,VB}) -> {VA,KB} > {VB,KA} end,
+        recon_lib:count([Name || {_, Name} <- recon_lib:port_list(name)])
+    ).
+    
 %%%%%%%%%%%%%%%
 %%% PRIVATE %%%
 %%%%%%%%%%%%%%%

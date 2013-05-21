@@ -1,5 +1,6 @@
 -module(recon_lib).
--export([sliding_window/2, sample/2, count/1]).
+-export([sliding_window/2, sample/2, count/1,
+         port_list/1, port_list/2]).
 
 -type diff() :: [{Key::term(), Diff::number(), Other::term()}].
 
@@ -36,4 +37,12 @@ count(Terms) ->
         Terms
     ),
     dict:to_list(Dict).
+
+port_list(Attr) ->
+    [{Port,Val} || Port <- erlang:ports(),
+                   {_, Val} <- [erlang:port_info(Port, Attr)]].
+
+port_list(Attr, Val) ->
+    [Port || Port <- erlang:ports(),
+             {Attr, Val} =:= erlang:port_info(Port, Attr)].
 
