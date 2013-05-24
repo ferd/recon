@@ -1,5 +1,6 @@
 -module(recon).
--export([info/1,info/3,reductions/2]).
+-export([info/1,info/3]).
+-export([reductions/1, reductions/2]).
 -export([remote_load/1, remote_load/2]).
 -export([tcp/0, udp/0, sctp/0, files/0, port_types/0]).
 
@@ -27,18 +28,23 @@ info(Pid) when is_pid(Pid) ->
                     garbage_collection])},
      {work, Info([reductions])}].
 
+%% fetches reduction counts of prpcesses
+-spec reductions(pos_integer()) -> [term()].
+reductions(Num) ->
+    lists:sublist(lists:usort(
+        fun({_,A,_},{_,B,_}) -> A > B end,
+        reductions()
+    ), Num).
+
 %% Fetches reduction counts of processes over a sliding window
 -spec reductions(non_neg_integer(), pos_integer()) -> [term()].
 reductions(Time, Num) ->
-    Sample = fun() ->
-        [{Pid, Reds, {Curr, Init}}
-         || Pid <- processes(),
-            {_, Reds} <- [process_info(Pid, reductions)],
-            {_, Curr} <- [process_info(Pid, current_function)],
-            {_, Init} <- [process_info(Pid, initial_call)]]
-    end,
+    Sample = fun reductions/0,
     {First,Last} = recon_lib:sample(Time, Sample),
-    lists:sublist(lists:usort(recon_lib:sliding_window(First, Last)), Num).
+    lists:sublist(lists:usort(
+        fun({_,A,_},{_,B,_}) -> A > B end,
+        recon_lib:sliding_window(First, Last)
+    ), Num).
 
 %% Loads one or more modules remotely, in a diskless manner
 remote_load(Mod) -> remote_load(nodes(), Mod).
@@ -73,3 +79,10 @@ pid(X, Y, Z) ->
     list_to_pid("<" ++ integer_to_list(X) ++ "." ++
 		integer_to_list(Y) ++ "." ++
 		integer_to_list(Z) ++ ">").
+
+reductions() ->
+    [{Pid, Reds, {Curr, Init}}
+     || Pid <- processes() -- [self()],
+        {_, Reds} <- [process_info(Pid, reductions)],
+        {_, Curr} <- [process_info(Pid, current_function)],
+        {_, Init} <- [process_info(Pid, initial_call)]].
