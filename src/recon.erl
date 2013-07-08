@@ -17,10 +17,7 @@ info(A,B,C) -> info(pid(A,B,C)).
 info(Name) when is_atom(Name) ->
     info(whereis(Name));
 info(Pid) when is_pid(Pid) ->
-    Info = fun(List) ->
-        [{Key, Val} || Key <- List,
-                       {_,Val} <- [erlang:process_info(Pid, Key)]]
-    end,
+    Info = fun(List) -> erlang:process_info(Pid, List) end,
     [{meta, Info([registered_name, dictionary, group_leader, status])},
      {signals, Info([links, monitors, monitored_by, trap_exit])},
      {location, Info([initial_call, current_stacktrace])},
