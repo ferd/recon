@@ -3,6 +3,8 @@ recon
 
 Recon wants to be a set of tools usable in production to diagnose Erlang problems or inspect production environment safely.
 
+The library is still a work in progress, so currently, the documentation here is not up to date.
+
 Functions
 ---------
 
