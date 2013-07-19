@@ -1,0 +1,53 @@
+@title Recon Application
+@author Fred Hebert <mononcqc@ferd.ca>
+  [http://ferd.ca/]
+@copyright 2012-2013 Fred Hebert (BSD 3-Clause License)
+
+@doc Recon is a library to be dropped into any other Erlang project,
+to be used to assist DevOps people diagnose problem in production
+nodes. Included modules are:
+
+<dl>
+    <dt>{@link recon}</dt>
+    <dd>
+        Main module, contains basic functionality to interact with
+        the `recon' application. It includes functions to gather
+        information about processes and the general state of the
+        virtual machine, ports, and OTP behaviours running in the
+        node. It also includes a few functions to facilitate RPC
+        calls with distributed Erlang nodes.
+    </dd>
+
+    <dt>{@link recon_lib}</dt>
+    <dd>
+        Regroups useful functionality used by {@link recon} when dealing
+        with data from the node. Would be an interesting place to look
+        if you were looking to extend Recon's functionality
+    </dd>
+</dl>
+
+This library contains few tests -- most of the functionality has been
+tried directly in production instead, and for many Erlang installs, Recon
+functionality should be safe to use directly in production, assuming there
+is still memory left to be used in the node.
+
+To help with regular DevOps tasks, a variety of scripts has also been included
+in the repository's `script/' directory:
+
+<dl>
+    <dt>`add_deps.erl'</dt>
+    <dd>
+        Escript that relies on graphviz, and produces a dependency graph of all
+        applications in the repository. The script can be run directly from an
+        Erlang shell (if compiled), or as `escript app_deps.erl'.
+    </dd>
+
+    <dt>`erl_crashdump_analyzer.sh'</dt>
+    <dd>
+        Bash script to run on an Erlang crash dump as
+        `./erl_crashdump_analyzer.sh <crashdump>' and will extract generic
+        information that can be useful in determining the most common causes
+        of node failure.
+    </dd>
+</dl>
+@end
