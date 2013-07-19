@@ -6,6 +6,8 @@
 -export([remote_load/1, remote_load/2,
          source/1]).
 -export([tcp/0, udp/0, sctp/0, files/0, port_types/0]).
+-export([rpc/1, rpc/2, rpc/3,
+         named_rpc/1, named_rpc/2, named_rpc/3]).
 
 %%%%%%%%%%%%%
 %%% TYPES %%%
@@ -211,7 +213,7 @@ udp() -> recon_lib:port_list(name, "udp_inet").
 -spec sctp() -> [port()].
 sctp() -> recon_lib:port_list(name, "sctp_inet").
 
-%% @doc returns a list of all file handlers open on the node.
+%% @doc returns a list of all file handles open on the node.
 -spec files() -> [port()].
 files() -> recon_lib:port_list(name, "efile").
 
@@ -224,3 +226,41 @@ port_types() ->
         fun({KA,VA}, {KB,VB}) -> {VA,KB} > {VB,KA} end,
         recon_lib:count([Name || {_, Name} <- recon_lib:port_list(name)])
     ).
+
+%%% RPC Utils %%%
+
+%% @doc Shorthand for `rpc([node()|nodes()], Fun)'.
+-spec rpc(fun(() -> term())) -> {[Success::_],[Fail::_]}.
+rpc(Fun) ->
+    rpc([node()|nodes()], Fun).
+
+%% @doc Shorthand for `rpc(Nodes, Fun, infinity)'.
+-spec rpc(node()|[node(),...], fun(() -> term())) -> {[Success::_],[Fail::_]}.
+rpc(Nodes, Fun) ->
+    rpc(Nodes, Fun, infinity).
+
+%% @doc Runs an arbitrary fun (of arity 0) over one or more nodes.
+-spec rpc(node()|[node(),...], fun(() -> term()), timeout()) -> {[Success::_],[Fail::_]}.
+rpc(Nodes=[_|_], Fun, Timeout) when is_function(Fun,0) ->
+    rpc:multicall(Nodes, erlang, apply, [Fun,[]], Timeout);
+rpc(Node, Fun, Timeout) when is_atom(Node) ->
+    rpc([Node], Fun, Timeout).
+
+%% @doc Shorthand for `named_rpc([node()|nodes()], Fun)'.
+-spec named_rpc(fun(() -> term())) -> {[Success::_],[Fail::_]}.
+named_rpc(Fun) ->
+    named_rpc([node()|nodes()], Fun).
+
+%% @doc Shorthand for `named_rpc(Nodes, Fun, infinity)'.
+-spec named_rpc(node()|[node(),...], fun(() -> term())) -> {[Success::_],[Fail::_]}.
+named_rpc(Nodes, Fun) ->
+    named_rpc(Nodes, Fun, infinity).
+
+%% @doc Runs an arbitrary fun (of arity 0) over one or more nodes, and returns the
+%% name of the node that computed a given result along with it, in a tuple.
+-spec named_rpc(node()|[node(),...], fun(() -> term()), timeout()) -> {[Success::_],[Fail::_]}.
+named_rpc(Nodes=[_|_], Fun, Timeout) when is_function(Fun,0) ->
+    rpc:multicall(Nodes, erlang, apply, [fun() -> {node(),Fun()} end,[]], Timeout);
+named_rpc(Node, Fun, Timeout) when is_atom(Node) ->
+    named_rpc([Node], Fun, Timeout).
+
