@@ -12,7 +12,7 @@
 
 %%% Process Info %%%
 
-%% @doc Equivalent to info(<A.B.C>) where A, B, and C are integers part
+%% @doc Equivalent to `info(<A.B.C>)' where `A', `B', and `C' are integers part
 %% of a pid
 -spec info(N,N,N) -> [{atom(), [{atom(),term()}]},...] when
       N :: non_neg_integer().
@@ -116,8 +116,8 @@ proc_window(AttrName, Time, Num) ->
 %% of the node, garbage collects them, and compares the resulting number of
 %% references in each of them. The function then returns the `N' processes
 %% that freed the biggest amount of binaries, potentially highlighting leaks.
-%%
-%% @reference See <a href="http://www.erlang.org/doc/efficiency_guide/binaryhandling.html#id65722">The efficiency guide</a>
+%% 
+%% See <a href="http://www.erlang.org/doc/efficiency_guide/binaryhandling.html#id65722">The efficiency guide</a>
 %% for more details on refc binaries
 -spec bin_leak(pos_integer()) -> term().
 bin_leak(N) ->
