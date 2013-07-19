@@ -1,6 +1,8 @@
 -module(recon).
 -export([info/1,info/3,
-         proc_count/2, proc_window/3]).
+         proc_count/2, proc_window/3,
+         bin_leak/1]).
+-export([get_state/1]).
 -export([remote_load/1, remote_load/2]).
 -export([tcp/0, udp/0, sctp/0, files/0, port_types/0]).
 
@@ -104,10 +106,66 @@ proc_window(AttrName, Time, Num) ->
         recon_lib:sliding_window(First, Last)
     ), Num).
 
+%% @doc Refc binaries can be leaking when barely-busy processes route them
+%% around and do little else, or when extremely busy processes reach a stable
+%% amount of memory allocated and do the vast majority of their work with refc
+%% binaries. When this happens, it may take a very long while before references
+%% get deallocated and refc binaries get to be garbage collected, leading to
+%% Out Of Memory crashes.
+%% This function fetches the number of refc binary references in each process
+%% of the node, garbage collects them, and compares the resulting number of
+%% references in each of them. The function then returns the `N' processes
+%% that freed the biggest amount of binaries, potentially highlighting leaks.
+%%
+%% @reference See <a href="http://www.erlang.org/doc/efficiency_guide/binaryhandling.html#id65722">The efficiency guide</a>
+%% for more details on refc binaries
+-spec bin_leak(pos_integer()) -> term().
+bin_leak(N) ->
+    lists:sublist(
+        lists:usort(
+            fun({K1,V1},{K2,V2}) -> {V1,K1} =< {V2,K2} end,
+            [try
+                {_,Pre} = erlang:process_info(Pid, binary),
+                erlang:garbage_collect(Pid),
+                {_,Post} = erlang:process_info(Pid, binary),
+                {Pid, length(Post)-length(Pre)}
+            catch
+                _:_ -> {Pid, 0}
+            end || Pid <- processes()]),
+        N).
 
-%% Loads one or more modules remotely, in a diskless manner
+%%% OTP & Manipulations %%%
+
+%% @doc Fetch the internal state of an OTP process.
+%% Calls `sys:get_state/1' directly in R16B01+, and fetches
+%% it dynamically on older versions of OTP.
+-spec get_state(Name) -> term() when
+      Name :: pid() | atom() | {global, term()} | {via, module(), term()}.
+get_state(Proc) ->
+    try 
+        sys:get_state(Proc)
+    catch
+        error:undef ->
+            case sys:get_status(Proc) of
+                {status,_Pid,{module,gen_server},Data} ->
+                    {data, Props} = lists:last(lists:nth(5, Data)),
+                    proplists:get_value("State", Props);
+                {status,_Pod,{module,gen_fsm},Data} ->
+                    {data, Props} = lists:last(lists:nth(5, Data)),
+                    proplists:get_value("StateData", Props)
+            end
+    end.
+
+%%% Code & Stuff %%%
+
+%% @doc Equivalent to `remote_load(nodes(), Mod)'.
+-spec remote_load(module()) -> term().
 remote_load(Mod) -> remote_load(nodes(), Mod).
 
+%% @doc Loads one or more modules remotely, in a diskless manner.  Allows to
+%% share code loaded locally with a remote node that doesn't have it
+-spec remote_load(Nodes, module()) -> term() when
+      Nodes :: [node(),...] | node().
 remote_load(Nodes=[_|_], Mod) when is_atom(Mod) ->
     {Mod, Bin, File} = code:get_object_code(Mod), 
     rpc:multicall(Nodes, code, load_binary, [Mod, File, Bin]);
@@ -116,14 +174,27 @@ remote_load(Nodes=[_|_], Modules) when is_list(Modules) ->
 remote_load(Node, Mod) ->
     remote_load([Node], Mod).
 
+%%% Ports Info %%%
+
+%% @doc returns a list of all TCP ports (the data type) open on the node.
+-spec tcp() -> [port()].
 tcp() -> recon_lib:port_list(name, "tcp_inet").
 
+%% @doc returns a list of all UDP ports (the data type) open on the node.
+-spec udp() -> [port()].
 udp() -> recon_lib:port_list(name, "udp_inet").
 
+%% @doc returns a list of all SCTP ports (the data type) open on the node.
+-spec sctp() -> [port()].
 sctp() -> recon_lib:port_list(name, "sctp_inet").
 
+%% @doc returns a list of all file handlers open on the node.
+-spec files() -> [port()].
 files() -> recon_lib:port_list(name, "efile").
 
+%% @doc Shows a list of all different ports on the node with their respective
+%% types.
+-spec port_types() -> [{Type::string(),pos_integer()}].
 port_types() ->
     lists:usort(
         %% sorts by biggest count, smallest type
@@ -139,6 +210,7 @@ pid(X, Y, Z) ->
 		integer_to_list(Y) ++ "." ++
 		integer_to_list(Z) ++ ">").
 
+%% @todo Define something user-friendlier as a format for the 3rd element
 proc_attrs(AttrName) ->
     [{Pid, Attr, {Curr, Init}}
      || Pid <- processes() -- [self()],
