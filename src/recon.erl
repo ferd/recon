@@ -10,14 +10,42 @@
 %%% PUBLIC API %%%
 %%%%%%%%%%%%%%%%%%
 
-%% Allows to be similar to process_info/1, but excludes
-%% the mailbox, which has a tendency to grow. links could still
-%% be problematic for size, but not nearly as much as messages.
+%%% Process Info %%%
+
+%% @doc Equivalent to info(<A.B.C>) where A, B, and C are integers part
+%% of a pid
+-spec info(N,N,N) -> [{atom(), [{atom(),term()}]},...] when
+      N :: non_neg_integer().
 info(A,B,C) -> info(pid(A,B,C)).
 
--spec info(pid()|atom()) -> [{atom(), [{atom(),term()}]},...].
+%% @doc Allows to be similar to `erlang:process_info/1', but excludes fields
+%% such as the mailbox, which have a tendency to grow and be unsafe when called
+%% in production systems. Also includes a few more fields than what is usually
+%% given (`monitors', `monitored_by', etc.), and separates the fields in a more
+%% readable format based on the type of information contained.
+%%
+%% Moreover, it will fetch and read information on local processes that were
+%% registered locally (an atom), globally (`{global, Name}'), or through
+%% another registry supported in the `{via, Module, Name}' syntax (must have a
+%% `Module:whereis_name/1' function). Pids can also be passed in as a string
+%% (`"<0.39.0>"') and will be converted to be used.
+-spec info(Name) -> [{Type, [{Key, Value}]},...] when
+      Name :: pid() | atom() | string()
+           | {global, term()} | {via, module(), term()},
+      Type :: meta | signals | location | memory | work,
+      Key :: registered_name | dictionary | group_leader | status
+           | links | monitors | monitored_by | trap_exit | initial_call
+           | current_stacktrace | memory | message_queue_len | heap_size
+           | total_heap_size | garbage_collection | reductions,
+      Value :: term().
 info(Name) when is_atom(Name) ->
     info(whereis(Name));
+info(List = "<0."++_) ->
+    info(list_to_pid(List));
+info({global, Name}) ->
+    info(global:whereis_name(Name));
+info({via, Module, Name}) ->
+    info(Module:whereis_name(Name));
 info(Pid) when is_pid(Pid) ->
     Info = fun(List) -> erlang:process_info(Pid, List) end,
     [{meta, Info([registered_name, dictionary, group_leader, status])},
