@@ -3,7 +3,8 @@
          proc_count/2, proc_window/3,
          bin_leak/1]).
 -export([get_state/1]).
--export([remote_load/1, remote_load/2]).
+-export([remote_load/1, remote_load/2,
+         source/1]).
 -export([tcp/0, udp/0, sctp/0, files/0, port_types/0]).
 
 %%%%%%%%%%%%%
@@ -183,6 +184,18 @@ remote_load(Nodes=[_|_], Modules) when is_list(Modules) ->
     [remote_load(Nodes, Mod) || Mod <- Modules];
 remote_load(Node, Mod) ->
     remote_load([Node], Mod).
+
+%% @doc Obtain the source code of a module compiled with `debug_info'.
+%% The returned list sadly does not allow to format the types and typed
+%% records the way they look in the original module, but instead goes to
+%% an intermediary form used in the AST. They will still be placed
+%% in the right module attributes, however.
+%% @todo Figure out a way to pretty-print typespecs and records.
+-spec source(module()) -> iolist().
+source(Module) ->
+    Path = code:which(Module),
+    {ok,{_,[{abstract_code,{_,AC}}]}} = beam_lib:chunks(Path, [abstract_code]),
+    erl_prettypr:format(erl_syntax:form_list(AC)).
 
 %%% Ports Info %%%
 
