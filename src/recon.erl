@@ -1,7 +1,5 @@
 -module(recon).
--export([info/1,info/3]).
--export([reductions/1, reductions/2,
-         memory/1, memory/2,
+-export([info/1,info/3,
          proc_count/2, proc_window/3]).
 -export([remote_load/1, remote_load/2]).
 -export([tcp/0, udp/0, sctp/0, files/0, port_types/0]).
@@ -55,38 +53,52 @@ info(Pid) when is_pid(Pid) ->
                     garbage_collection])},
      {work, Info([reductions])}].
 
-%% fetches reduction counts of processes
--spec reductions(pos_integer()) -> [term()].
-reductions(Num) -> proc_count(reductions, Num).
-
-%% Fetches reduction counts of processes over a sliding window
--spec reductions(non_neg_integer(), pos_integer()) -> [term()].
-reductions(Time, Num) -> proc_window(reductions, Time, Num).
-
-%% Fetches memory of processes
--spec memory(pos_integer()) -> [term()].
-memory(Num) -> proc_count(memory, Num).
-
-%% Fetches memory deltas of processes over a sliding window
--spec memory(non_neg_integer(), pos_integer()) -> [term()].
-memory(Time, Num) -> proc_window(memory, Time, Num).
-
-%% Fetches a given attribute from all processes and returns
-%% the biggest culprits over a sliding window
--spec proc_count(atom(), pos_integer()) -> [term()].
+%% @doc Fetches a given attribute from all processes and returns
+%% the biggest `Num' consumers.
+%% @todo Implement this function so it only stores `Num' entries in
+%% memory at any given time, instead of as many as there are
+%% processes.
+-spec proc_count(AttributeName, Num) -> [term()] when
+      AttributeName :: atom(),
+      Num :: non_neg_integer().
 proc_count(AttrName, Num) ->
     lists:sublist(lists:usort(
         fun({_,A,_},{_,B,_}) -> A > B end,
         proc_attrs(AttrName)
     ), Num).
 
-%% Fetches a given attribute from all processes and returns
-%% the biggest culprits
--spec proc_window(atom(), non_neg_integer(), pos_integer()) -> [term()].
+%% @doc Fetches a given attribute from all processes and returns
+%% the biggest entries, over a sliding time window.
+%% 
+%% This function is particularly useful when processes on the node
+%% are mostly short-lived, usually too short to inspect through other
+%% tools, in order to figure out what kind of processes are eating
+%% through a lot resources on a given node.
+%%
+%% It is important to see this function as a snapshot over a sliding
+%% window. A program's timeline during sampling might look like this:
+%%
+%%  `--w---- [Sample1] ---x-------------y----- [Sample2] ---z--->'
+%%
+%% Some processes will live between `w' and die at `x', some between `y' and
+%% `z', and some between `x' and `y'. These samples will not be too significant
+%% as they're incomplete. If the majority of your processes run between a time
+%% interval `x'...`y' (in absolute terms), you should make sure that your
+%% sampling time is smaller than this so that for many processes, their
+%% lifetime spans the equivalent of `w' and `z'. Not doing this can skew the
+%% results: long-lived processes, that have 10 times the time to accumulate
+%% data (say reductions) will look like bottlenecks when they're not one.
+%%
+%% Warning: this function depends on data gathered at two snapshots, and then
+%% building a dictionary with entries to differentiate them. This can take a
+%% heavy toll on memory when you have many dozens of thousands of processes.
+-spec proc_window(AttributeName, Num, Milliseconds) -> [term()] when
+      AttributeName :: atom(),
+      Num :: non_neg_integer(),
+      Milliseconds :: pos_integer().
 proc_window(AttrName, Time, Num) ->
     Sample = fun() -> proc_attrs(AttrName) end,
     {First,Last} = recon_lib:sample(Time, Sample),
-    %% We could make a short dict of biggest entries to save on a full sort
     lists:sublist(lists:usort(
         fun({_,A,_},{_,B,_}) -> A > B end,
         recon_lib:sliding_window(First, Last)
