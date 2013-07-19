@@ -1,7 +1,8 @@
 -module(recon).
 -export([info/1,info/3,
          proc_count/2, proc_window/3,
-         bin_leak/1]).
+         bin_leak/1,
+         node_stats_print/2, node_stats_list/2, node_stats/4]).
 -export([get_state/1]).
 -export([remote_load/1, remote_load/2,
          source/1]).
@@ -147,6 +148,81 @@ bin_leak(N) ->
             end || Pid <- processes()]),
         N).
 
+%% @doc Shorthand for `node_stats(N, Interval, fun(X,_) -> io:format("~p~n",[X]) end, nostate)'.
+-spec node_stats_print(Repeat, Interval) -> term() when
+      Repeat :: non_neg_integer(),
+      Interval :: pos_integer().
+node_stats_print(N, Interval) ->
+    node_stats(N, Interval, fun(X, _) -> io:format("~p~n",[X]) end, ok).
+
+%% @doc Shorthand for `node_stats(N, Interval, fun(X,Acc) -> [X|Acc] end, [])'
+%% with the results reversed to be in the right temporal order.
+-spec node_stats_list(Repeat, Interval) -> [Stats] when
+      Repeat :: non_neg_integer(),
+      Interval :: pos_integer(),
+      Stats :: {[Absolutes::{atom(),term()}],
+                [Increments::{atom(),term()}]}.
+node_stats_list(N, Interval) ->
+    lists:reverse(node_stats(N, Interval, fun(X,Acc) -> [X|Acc] end, [])).
+
+%% @doc Gathers statistics `N' time, waiting `Interval' milliseconds between
+%% each run, and accumulates results using a folding function `FoldFun'.
+%% The function will gather statistics in two forms: Absolutes and Increments.
+%%
+%% Absolutes are values that keep changing with time, and are useful to know
+%% about as a datapoint: process count, size of the run queue, error_logger
+%% queue length, and the memory of the node (total, processes, atoms, binaries,
+%% and ets tables).
+%%
+%% Increments are values that are mostly useful when compared to a previous
+%% one to have an idea what they're doing, because otherwise they'd never
+%% stop increasing: bytes in and out of the node, number of garbage colelctor
+%% runs, words of memory that were garbage collected, and the global reductions
+%% count for the node.
+-spec node_stats(N, Interval, FoldFun, Acc) -> Acc when
+      N :: non_neg_integer(),
+      Interval :: pos_integer(),
+      FoldFun :: fun((Stats, Acc) -> Acc),
+      Acc :: term(),
+      Stats :: {[Absolutes::{atom(),term()}],
+                [Increments::{atom(),term()}]}.
+node_stats(N, Interval, FoldFun, Init) ->
+    %% Stats is an ugly fun, but it does its thing.
+    Stats = fun({{OldIn,OldOut},{OldGCs,OldWords,_}}) ->
+        %% Absolutes
+        ProcC = erlang:system_info(process_count),
+        RunQ = erlang:statistics(run_queue),
+        {_,LogQ} = process_info(whereis(error_logger),  message_queue_len),
+        %% Mem (Absolutes)
+        Mem = erlang:memory(),
+        Tot = proplists:get_value(total, Mem),
+        ProcM = proplists:get_value(processes_used,Mem),
+        Atom = proplists:get_value(atom_used,Mem),
+        Bin = proplists:get_value(binary, Mem),
+        Ets = proplists:get_value(ets, Mem),
+        %% Incremental
+        {{input,In},{output,Out}} = erlang:statistics(io),
+        GC={GCs,Words,_} = erlang:statistics(garbage_collection),
+        BytesIn = In-OldIn,
+        BytesOut = Out-OldOut,
+        GCCount = GCs-OldGCs,
+        GCWords = Words-OldWords,
+        {_, Reds} = erlang:statistics(reductions),
+         %% Stats Results
+        {{[{process_count,ProcC}, {run_queue,RunQ},
+           {error_logger_queue_len,LogQ}, {memory_total,Tot},
+           {memory_procs,ProcM}, {memory_atoms,Atom},
+           {memory_bin,Bin}, {memory_ets,Ets}],
+          [{bytes_in,BytesIn}, {bytes_out,BytesOut},
+           {gc_count,GCCount}, {gc_words_reclaimed,GCWords},
+           {reductions,Reds}]},
+         %% New State
+         {{In,Out}, GC}}
+    end,
+    {{input,In},{output,Out}} = erlang:statistics(io),
+    Gc = erlang:statistics(garbage_collection),
+    recon_lib:time_fold(N, Interval, Stats, {{In,Out}, Gc}, FoldFun, Init).
+
 %%% OTP & Manipulations %%%
 
 %% @doc Fetch the internal state of an OTP process.
@@ -219,7 +295,7 @@ files() -> recon_lib:port_list(name, "efile").
 
 %% @doc Shows a list of all different ports on the node with their respective
 %% types.
--spec port_types() -> [{Type::string(),pos_integer()}].
+-spec port_types() -> [{pos_integer(),Type::string()}].
 port_types() ->
     lists:usort(
         %% sorts by biggest count, smallest type

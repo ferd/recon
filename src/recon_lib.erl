@@ -2,14 +2,15 @@
 -export([sliding_window/2, sample/2, count/1,
          port_list/1, port_list/2,
          proc_attrs/1, proc_attrs/2,
-         triple_to_pid/3]).
+         triple_to_pid/3,
+         time_map/5, time_fold/6]).
 
 -type diff() :: [{Key::term(), Diff::number(), Other::term()}].
 
 %% @doc Compare two samples and return a list based on some key. The type mentioned
 %% for the structure is `diff()' (`{Key,Val,Other}'), which is compatible with
 %% the {@link recon:proc_attrs()} type.
--spec sliding_window(First::diff(), Last::diff()) -> [diff()].
+-spec sliding_window(First::diff(), Last::diff()) -> diff().
 sliding_window(First, Last) ->
     Dict = lists:foldl(
         fun({Key, {Current, Other}}, Acc) ->
@@ -76,10 +77,43 @@ proc_attrs(AttrName, Pid) ->
                            current_function, initial_call]),
     {Pid, Attr, [Name || is_atom(Name)]++[Init, Cur]}.
 
-%% @doc Equivalent of pid(X,Y,Z) in the Erlang shell.
+%% @doc Equivalent of `pid(X,Y,Z)' in the Erlang shell.
 -spec triple_to_pid(N,N,N) -> pid() when
     N :: non_neg_integer().
 triple_to_pid(X, Y, Z) ->
     list_to_pid("<" ++ integer_to_list(X) ++ "." ++
                        integer_to_list(Y) ++ "." ++
                        integer_to_list(Z) ++ ">").
+
+%% @doc Calls a given function every N milliseconds and supports
+%% a map-like interface (each result is modified and returned)
+-spec time_map(N, Interval, Fun, State, MapFun) -> [term()] when
+    N :: non_neg_integer(),
+    Interval :: pos_integer(),
+    Fun :: fun((State) -> {term(), State}),
+    State :: term(),
+    MapFun :: fun((_) -> term()).
+time_map(0, _, _, _, _) ->
+    [];
+time_map(N, Interval, Fun, State, MapFun) ->
+    {Res, NewState} = Fun(State),
+    timer:sleep(Interval),
+    [MapFun(Res) | time_map(N-1,Interval,Fun,NewState,MapFun)].
+
+%% @doc Calls a given function every N milliseconds and supports
+%% a fold-like interface (each result is modified and accumulated)
+-spec time_fold(N, Interval, Fun, State, FoldFun, Init) -> [term()] when
+    N :: non_neg_integer(),
+    Interval :: pos_integer(),
+    Fun :: fun((State) -> {term(), State}),
+    State :: term(),
+    FoldFun :: fun((term(), Init) -> Init),
+    Init :: term().
+time_fold(0, _, _, _, _, Acc) ->
+    Acc;
+time_fold(N, Interval, Fun, State, FoldFun, Init) ->
+    {Res, NewState} = Fun(State),
+    timer:sleep(Interval),
+    Acc = FoldFun(Res,Init),
+    time_fold(N-1,Interval,Fun,NewState,FoldFun,Acc).
+
