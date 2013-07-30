@@ -74,7 +74,7 @@ info(Pid) when is_pid(Pid) ->
 %% @todo Implement this function so it only stores `Num' entries in
 %% memory at any given time, instead of as many as there are
 %% processes.
--spec proc_count(AttributeName, Num) -> [term()] when
+-spec proc_count(AttributeName, Num) -> [proc_attrs()] when
       AttributeName :: atom(),
       Num :: non_neg_integer().
 proc_count(AttrName, Num) ->
@@ -85,7 +85,7 @@ proc_count(AttrName, Num) ->
 
 %% @doc Fetches a given attribute from all processes and returns
 %% the biggest entries, over a sliding time window.
-%% 
+%%
 %% This function is particularly useful when processes on the node
 %% are mostly short-lived, usually too short to inspect through other
 %% tools, in order to figure out what kind of processes are eating
@@ -108,11 +108,11 @@ proc_count(AttrName, Num) ->
 %% Warning: this function depends on data gathered at two snapshots, and then
 %% building a dictionary with entries to differentiate them. This can take a
 %% heavy toll on memory when you have many dozens of thousands of processes.
--spec proc_window(AttributeName, Num, Milliseconds) -> [term()] when
+-spec proc_window(AttributeName, Num, Milliseconds) -> [proc_attrs()] when
       AttributeName :: atom(),
       Num :: non_neg_integer(),
       Milliseconds :: pos_integer().
-proc_window(AttrName, Time, Num) ->
+proc_window(AttrName, Num, Time) ->
     Sample = fun() -> recon_lib:proc_attrs(AttrName) end,
     {First,Last} = recon_lib:sample(Time, Sample),
     lists:sublist(lists:usort(
