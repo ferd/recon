@@ -6,7 +6,8 @@
 -export([get_state/1]).
 -export([remote_load/1, remote_load/2,
          source/1]).
--export([tcp/0, udp/0, sctp/0, files/0, port_types/0]).
+-export([tcp/0, udp/0, sctp/0, files/0, port_types/0,
+         inet_count/2, inet_window/3]).
 -export([rpc/1, rpc/2, rpc/3,
          named_rpc/1, named_rpc/2, named_rpc/3]).
 
@@ -18,8 +19,11 @@
                        [Name::atom()
                        |{current_function, mfa()}
                        |{initial_call, mfa()}, ...]}.
+-type inet_attrs() :: {port(),
+                       Attr::_,
+                       [{atom(), term()}]}.
 
--export_type([proc_attrs/0]).
+-export_type([proc_attrs/0, inet_attrs/0]).
 %%%%%%%%%%%%%%%%%%
 %%% PUBLIC API %%%
 %%%%%%%%%%%%%%%%%%
@@ -302,6 +306,54 @@ port_types() ->
         fun({KA,VA}, {KB,VB}) -> {VA,KB} > {VB,KA} end,
         recon_lib:count([Name || {_, Name} <- recon_lib:port_list(name)])
     ).
+
+%% @doc Fetches a given attribute from all inet ports (TCP, UDP, SCTP)
+%% and returns the biggest `Num' consumers.
+%%
+%% The values to be used can be the number of octets (bytes) sent, received,
+%% or both (`send_oct', `recv_oct', `oct', respectively), or the number
+%% of packets sent, received, or both (`send_cnt', `recv_cnt', `cnt',
+%% respectively). Individual absolute values for each metric will be returned
+%% in the 3rd position of the resulting tuple.
+%%
+%% @todo Implement this function so it only stores `Num' entries in
+%% memory at any given time, instead of as many as there are
+%% processes.
+-spec inet_count(AttributeName, Num) -> [inet_attrs()] when
+      AttributeName :: 'recv_cnt' | 'recv_oct' | 'send_cnt' | 'send_oct'
+                     | 'cnt' | 'oct',
+      Num :: non_neg_integer().
+inet_count(Attr, Num) ->
+    lists:sublist(lists:usort(
+        fun({_,A,_},{_,B,_}) -> A > B end,
+        recon_lib:inet_attrs(Attr)
+    ), Num).
+
+%% @doc Fetches a given attribute from all inet ports (TCP, UDP, SCTP)
+%% and returns the biggest entries, over a sliding time window.
+%%
+%% Warning: this function depends on data gathered at two snapshots, and then
+%% building a dictionary with entries to differentiate them. This can take a
+%% heavy toll on memory when you have many dozens of thousands of ports open.
+%%
+%% The values to be used can be the number of octets (bytes) sent, received,
+%% or both (`send_oct', `recv_oct', `oct', respectively), or the number
+%% of packets sent, received, or both (`send_cnt', `recv_cnt', `cnt',
+%% respectively). Individual absolute values for each metric will be returned
+%% in the 3rd position of the resulting tuple.
+-spec inet_window(AttributeName, Num, Milliseconds) -> [inet_attrs()] when
+      AttributeName :: 'recv_cnt' | 'recv_oct' | 'send_cnt' | 'send_oct'
+                     | 'cnt' | 'oct',
+      Num :: non_neg_integer(),
+      Milliseconds :: pos_integer().
+inet_window(Attr, Num, Time) when is_atom(Attr) ->
+    Sample = fun() -> recon_lib:inet_attrs(Attr) end,
+    {First,Last} = recon_lib:sample(Time, Sample),
+    lists:sublist(lists:usort(
+        fun({_,A,_},{_,B,_}) -> A > B end,
+        recon_lib:sliding_window(First, Last)
+    ), Num).
+
 
 %%% RPC Utils %%%
 

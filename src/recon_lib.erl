@@ -2,10 +2,11 @@
 -export([sliding_window/2, sample/2, count/1,
          port_list/1, port_list/2,
          proc_attrs/1, proc_attrs/2,
+         inet_attrs/1, inet_attrs/2,
          triple_to_pid/3,
          time_map/5, time_fold/6]).
 
--type diff() :: [{Key::term(), Diff::number(), Other::term()}].
+-type diff() :: [recon:proc_attrs() | recon:inet_attrs()].
 
 %% @doc Compare two samples and return a list based on some key. The type mentioned
 %% for the structure is `diff()' (`{Key,Val,Other}'), which is compatible with
@@ -77,6 +78,35 @@ proc_attrs(AttrName, Pid) ->
                            current_function, initial_call]),
     {Pid, Attr, [Name || is_atom(Name)]++[Init, Cur]}.
 
+%% @doc Returns the attributes ({@link recon:inet_attrs()}) of
+%% all inet ports (UDP, SCTP, TCP) of the node.
+-spec inet_attrs(term()) -> [recon:inet_attrs()].
+inet_attrs(AttrName) ->
+    Ports = [Port || Port <- erlang:ports(),
+                     {_, Name} <- [erlang:port_info(Port, name)],
+                     Name =:= "tcp_inet" orelse
+                     Name =:= "udp_inet" orelse
+                     Name =:= "sctp_inet"],
+    [Attrs || Port <- Ports,
+              Attrs <- [inet_attrs(AttrName, Port)]].
+
+%% @doc Returns the attributes required for a given inet port (UDP,
+%% SCTP, TCP). This form of attributes is standard for most comparison
+%% functions for processes in recon.
+-spec inet_attrs(AttributeName, port()) -> recon:inet_attrs() when
+      AttributeName :: 'recv_cnt' | 'recv_oct' | 'send_cnt' | 'send_oct'
+                     | 'cnt' | 'oct'.
+inet_attrs(Attr, Port) ->
+    Attrs = case Attr of
+        cnt -> [recv_cnt, send_cnt];
+        oct -> [recv_oct, send_oct];
+        _ -> [Attr]
+    end,
+    {ok, Props} = inet:getstat(Port, Attrs),
+    ValSum = lists:foldl(fun({_,X},Y) -> X+Y end, 0, Props),
+    {Port,ValSum,Props}.
+
+
 %% @doc Equivalent of `pid(X,Y,Z)' in the Erlang shell.
 -spec triple_to_pid(N,N,N) -> pid() when
     N :: non_neg_integer().
@@ -85,7 +115,7 @@ triple_to_pid(X, Y, Z) ->
                        integer_to_list(Y) ++ "." ++
                        integer_to_list(Z) ++ ">").
 
-%% @doc Calls a given function every N milliseconds and supports
+%% @doc Calls a given function every `Interval' milliseconds and supports
 %% a map-like interface (each result is modified and returned)
 -spec time_map(N, Interval, Fun, State, MapFun) -> [term()] when
     N :: non_neg_integer(),
@@ -100,7 +130,7 @@ time_map(N, Interval, Fun, State, MapFun) ->
     timer:sleep(Interval),
     [MapFun(Res) | time_map(N-1,Interval,Fun,NewState,MapFun)].
 
-%% @doc Calls a given function every N milliseconds and supports
+%% @doc Calls a given function every `Interval' milliseconds and supports
 %% a fold-like interface (each result is modified and accumulated)
 -spec time_fold(N, Interval, Fun, State, FoldFun, Init) -> [term()] when
     N :: non_neg_integer(),
