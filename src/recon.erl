@@ -51,7 +51,7 @@
 %%%         {@link sctp/0}, {@link files/0}, and {@link port_types/0} will
 %%%         list all the Erlang ports of a given type. The latter function
 %%%         prints counts of all individual types.</dd>
-%%%     <dd>The functions {@link inet_count/2} and {@link inet_window}
+%%%     <dd>Finally, the functions {@link inet_count/2} and {@link inet_window/3}
 %%%         provide the absolute or sliding window functionality of
 %%%         {@link proc_count/2} and {@link proc_count/3} to inet ports
 %%%         and connections currently on the node.</dd>
