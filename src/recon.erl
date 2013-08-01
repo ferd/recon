@@ -1,3 +1,74 @@
+%%% @author Fred Hebert <mononcqc@ferd.ca>
+%%%  [http://ferd.ca/]
+%%% @doc Recon, as a module, provides access to the high-level functionality
+%%% contained in the Recon application.
+%%%
+%%% It has functions in five main categories:
+%%%
+%%% <dl>
+%%%     <dt>1. State information</dt>
+%%%     <dd>Process information is everything that has to do with the
+%%%         general state of the node. Functions such as {@link info/1}
+%%%         and {@link info/3} are wrappers to provide more details than
+%%%         `erlang:process_info/2', while providing it in a production-safe
+%%%         manner.</dd>
+%%%     <dd>{@link proc_count/2} and {@link proc_window/3} are to be used
+%%%         when you require information about processes in a larger sense:
+%%%         biggest consumers of given process information (say memory or
+%%%         reductions), either absolutely or over a sliding time window,
+%%%         respectively.</dd>
+%%%     <dd>{@link bin_leak/1} is a function that can be used to try and
+%%%         see if your Erlang node is leaking refc binaries. See the function
+%%%         itself for more details.</dd>
+%%%     <dd>Functions to access node statistics, in a manner somewhat similar
+%%%         to what <a href="https://github.com/ferd/vmstats">vmstats</a>
+%%%         provides as a library. There are 3 of them:
+%%%         {@link node_stats_print/2}, which displays them,
+%%%         {@link node_stats_list/2}, which returns them in a list, and
+%%%         {@link node_stats/4}, which provides a fold-like interface
+%%%         for stats gathering.</dd>
+%%%
+%%%     <dt>2. OTP tools</dt>
+%%%     <dd>This category provides tools to interact with pieces of OTP
+%%%         more easily. At this point, the only function included is
+%%%         {@link get_state/1}, which works as a wrapper around
+%%%         `sys:get_state/1' in R16B01, and provides the required
+%%%         functionality for older versions of Erlang.</dd>
+%%%
+%%%     <dt>3. Code Handling</dt>
+%%%     <dd>Specific functions are in `recon' for the sole purpose
+%%%         of interacting with source and compiled code.
+%%%         {@link remote_load/1} and {@link remote_load/2} will allow
+%%%         to take a local module, and load it remotely (in a diskless
+%%%         manner) on another Erlang node you're connected to.</dd>
+%%%     <dd>{@link source/1} allows to print the source of a loaded module,
+%%%         in case it's not available in the currently running node.</dd>
+%%%
+%%%     <dt>4. Ports and Sockets</dt>
+%%%     <dd>To make it simpler to debug some network-related issues,
+%%%         recon contains functions to deal with Erlang ports (raw, file
+%%%         handles, or inet). Functions {@link tcp/0}, {@link udp/0},
+%%%         {@link sctp/0}, {@link files/0}, and {@link port_types/0} will
+%%%         list all the Erlang ports of a given type. The latter function
+%%%         prints counts of all individual types.</dd>
+%%%     <dd>The functions {@link inet_count/2} and {@link inet_window}
+%%%         provide the absolute or sliding window functionality of
+%%%         {@link proc_count/2} and {@link proc_count/3} to inet ports
+%%%         and connections currently on the node.</dd>
+%%%
+%%%     <dt>5. RPC</dt>
+%%%     <dd>These are wrappers to make RPC work simpler with clusters of
+%%%         Erlang nodes. Default RPC mechanisms (from the `rpc' module)
+%%%         make it somewhat painful to call shell-defined funs over node
+%%%         boundaries. The functions {@link rpc/1}, {@link rpc/2}, and
+%%%         {@link rpc/3} will do it with a simpler interface.</dd>
+%%%     <dd>Additionally, when you're running diagnostic code on remote
+%%%         nodes and want to know which node evaluated what result, using
+%%%         {@link named_rpc/1}, {@link named_rpc/2}, and {@link named_rpc/3}
+%%%         will wrap the results in a tuple that tells you which node it's
+%%%         coming from, making it easier to identify bad nodes.</dd>
+%%% </dl>
+%%% @end
 -module(recon).
 -export([info/1,info/3,
          proc_count/2, proc_window/3,
