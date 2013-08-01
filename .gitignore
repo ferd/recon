@@ -12,4 +12,4 @@ erl_crash.dump
 /doc/edoc-info
 /doc/erlang.png
 /doc/stylesheet.css
-
+/site/*.html
