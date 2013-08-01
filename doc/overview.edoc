@@ -4,7 +4,7 @@
 @copyright 2012-2013 Fred Hebert (BSD 3-Clause License)
 
 @doc Recon is a library to be dropped into any other Erlang project,
-to be used to assist DevOps people diagnose problem in production
+to be used to assist DevOps people diagnose problems in production
 nodes. Included modules are:
 
 <dl>
