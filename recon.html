@@ -1,0 +1,377 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <link href='http://fonts.googleapis.com/css?family=Titillium+Web:400,300italic,600italic,700,600,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,700italic,400italic' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="screen.css" media="screen, projection" />
+    <title>Recon Library</title>
+  </head>
+  <body>
+    <header>
+        <h1>Recon</h1>
+        <nav>
+          <ul>
+<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_lib.html">recon_lib</a>
+          </ul>
+        </nav>
+    </header>
+    <article>
+    <h2>Module recon</h2>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>Recon, as a module, provides access to the high-level functionality   
+contained in the Recon application.
+
+<p><strong>Authors:</strong> Fred Hebert (<a href="mailto:mononcqc@ferd.ca"><code>mononcqc@ferd.ca</code></a>) [<em>web site:</em> <code><a href="http://ferd.ca/" target="_top">http://ferd.ca/</a></code>].</p>
+
+<h3><a name="description">Description</a></h3><p>Recon, as a module, provides access to the high-level functionality   
+contained in the Recon application.</p>
+  
+   <p>It has functions in five main categories:</p>
+  
+   <dl>
+       <dt>1. State information</dt>
+       <dd>Process information is everything that has to do with the
+           general state of the node. Functions such as <a href="#info-1"><code>info/1</code></a>
+           and <a href="#info-3"><code>info/3</code></a> are wrappers to provide more details than
+           <code>erlang:process_info/2</code>, while providing it in a production-safe
+           manner.</dd>
+       <dd><a href="#proc_count-2"><code>proc_count/2</code></a> and <a href="#proc_window-3"><code>proc_window/3</code></a> are to be used
+           when you require information about processes in a larger sense:
+           biggest consumers of given process information (say memory or
+           reductions), either absolutely or over a sliding time window,
+           respectively.</dd>
+       <dd><a href="#bin_leak-1"><code>bin_leak/1</code></a> is a function that can be used to try and
+           see if your Erlang node is leaking refc binaries. See the function
+           itself for more details.</dd>
+       <dd>Functions to access node statistics, in a manner somewhat similar
+           to what <a href="https://github.com/ferd/vmstats">vmstats</a>
+           provides as a library. There are 3 of them:
+           <a href="#node_stats_print-2"><code>node_stats_print/2</code></a>, which displays them,
+           <a href="#node_stats_list-2"><code>node_stats_list/2</code></a>, which returns them in a list, and
+           <a href="#node_stats-4"><code>node_stats/4</code></a>, which provides a fold-like interface
+           for stats gathering.</dd>
+  
+       <dt>2. OTP tools</dt>
+       <dd>This category provides tools to interact with pieces of OTP
+           more easily. At this point, the only function included is
+           <a href="#get_state-1"><code>get_state/1</code></a>, which works as a wrapper around
+           <code>sys:get_state/1</code> in R16B01, and provides the required
+           functionality for older versions of Erlang.</dd>
+  
+       <dt>3. Code Handling</dt>
+       <dd>Specific functions are in <code>recon</code> for the sole purpose
+           of interacting with source and compiled code.
+           <a href="#remote_load-1"><code>remote_load/1</code></a> and <a href="#remote_load-2"><code>remote_load/2</code></a> will allow
+           to take a local module, and load it remotely (in a diskless
+           manner) on another Erlang node you're connected to.</dd>
+       <dd><a href="#source-1"><code>source/1</code></a> allows to print the source of a loaded module,
+           in case it's not available in the currently running node.</dd>
+  
+       <dt>4. Ports and Sockets</dt>
+       <dd>To make it simpler to debug some network-related issues,
+           recon contains functions to deal with Erlang ports (raw, file
+           handles, or inet). Functions <a href="#tcp-0"><code>tcp/0</code></a>, <a href="#udp-0"><code>udp/0</code></a>,
+           <a href="#sctp-0"><code>sctp/0</code></a>, <a href="#files-0"><code>files/0</code></a>, and <a href="#port_types-0"><code>port_types/0</code></a> will
+           list all the Erlang ports of a given type. The latter function
+           prints counts of all individual types.</dd>
+       <dd>The functions <a href="#inet_count-2"><code>inet_count/2</code></a> and <a href="inet_window.html"><code>inet_window</code></a>
+           provide the absolute or sliding window functionality of
+           <a href="#proc_count-2"><code>proc_count/2</code></a> and <a href="#proc_count-3"><code>proc_count/3</code></a> to inet ports
+           and connections currently on the node.</dd>
+  
+       <dt>5. RPC</dt>
+       <dd>These are wrappers to make RPC work simpler with clusters of
+           Erlang nodes. Default RPC mechanisms (from the <code>rpc</code> module)
+           make it somewhat painful to call shell-defined funs over node
+           boundaries. The functions <a href="#rpc-1"><code>rpc/1</code></a>, <a href="#rpc-2"><code>rpc/2</code></a>, and
+           <a href="#rpc-3"><code>rpc/3</code></a> will do it with a simpler interface.</dd>
+       <dd>Additionally, when you're running diagnostic code on remote
+           nodes and want to know which node evaluated what result, using
+           <a href="#named_rpc-1"><code>named_rpc/1</code></a>, <a href="#named_rpc-2"><code>named_rpc/2</code></a>, and <a href="#named_rpc-3"><code>named_rpc/3</code></a>
+           will wrap the results in a tuple that tells you which node it's
+           coming from, making it easier to identify bad nodes.</dd>
+   </dl>
+<h3><a name="types">Data Types</a></h3>
+
+<h4 class="typedecl"><a name="type-inet_attrs">inet_attrs()</a></h4>
+<p><code>inet_attrs() = {port(), Attr::term(), [{atom(), term()}]}</code></p>
+
+
+<h4 class="typedecl"><a name="type-proc_attrs">proc_attrs()</a></h4>
+<p><code>proc_attrs() = {pid(), Attr::term(), [Name::atom() | {current_function, mfa()} | {initial_call, mfa()}, ...]}</code></p>
+
+
+<h3><a name="index">Function Index</a></h3>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#bin_leak-1">bin_leak/1</a></td><td>Refc binaries can be leaking when barely-busy processes route them
+  around and do little else, or when extremely busy processes reach a stable
+  amount of memory allocated and do the vast majority of their work with refc
+  binaries.</td></tr>
+<tr><td valign="top"><a href="#files-0">files/0</a></td><td>returns a list of all file handles open on the node.</td></tr>
+<tr><td valign="top"><a href="#get_state-1">get_state/1</a></td><td>Fetch the internal state of an OTP process.</td></tr>
+<tr><td valign="top"><a href="#inet_count-2">inet_count/2</a></td><td>Fetches a given attribute from all inet ports (TCP, UDP, SCTP)
+  and returns the biggest <code>Num</code> consumers.</td></tr>
+<tr><td valign="top"><a href="#inet_window-3">inet_window/3</a></td><td>Fetches a given attribute from all inet ports (TCP, UDP, SCTP)  
+and returns the biggest entries, over a sliding time window.</td></tr>
+<tr><td valign="top"><a href="#info-1">info/1</a></td><td>Allows to be similar to <code>erlang:process_info/1</code>, but excludes fields
+  such as the mailbox, which have a tendency to grow and be unsafe when called
+  in production systems.</td></tr>
+<tr><td valign="top"><a href="#info-3">info/3</a></td><td>Equivalent to <code>info(&lt;A.B.C&gt;)</code> where <code>A</code>, <code>B</code>, and <code>C</code> are integers part
+  of a pid.</td></tr>
+<tr><td valign="top"><a href="#named_rpc-1">named_rpc/1</a></td><td>Shorthand for <code>named_rpc([node()|nodes()], Fun)</code>.</td></tr>
+<tr><td valign="top"><a href="#named_rpc-2">named_rpc/2</a></td><td>Shorthand for <code>named_rpc(Nodes, Fun, infinity)</code>.</td></tr>
+<tr><td valign="top"><a href="#named_rpc-3">named_rpc/3</a></td><td>Runs an arbitrary fun (of arity 0) over one or more nodes, and returns the
+  name of the node that computed a given result along with it, in a tuple.</td></tr>
+<tr><td valign="top"><a href="#node_stats-4">node_stats/4</a></td><td>Gathers statistics <code>N</code> time, waiting <code>Interval</code> milliseconds between
+  each run, and accumulates results using a folding function <code>FoldFun</code>.</td></tr>
+<tr><td valign="top"><a href="#node_stats_list-2">node_stats_list/2</a></td><td>Shorthand for <code>node_stats(N, Interval, fun(X,Acc) -&gt; [X|Acc] end, [])</code>
+  with the results reversed to be in the right temporal order.</td></tr>
+<tr><td valign="top"><a href="#node_stats_print-2">node_stats_print/2</a></td><td>Shorthand for <code>node_stats(N, Interval, fun(X,_) -&gt; io:format("~p~n",[X]) end, nostate)</code>.</td></tr>
+<tr><td valign="top"><a href="#port_types-0">port_types/0</a></td><td>Shows a list of all different ports on the node with their respective
+  types.</td></tr>
+<tr><td valign="top"><a href="#proc_count-2">proc_count/2</a></td><td>Fetches a given attribute from all processes and returns
+  the biggest <code>Num</code> consumers.</td></tr>
+<tr><td valign="top"><a href="#proc_window-3">proc_window/3</a></td><td>Fetches a given attribute from all processes and returns  
+the biggest entries, over a sliding time window.</td></tr>
+<tr><td valign="top"><a href="#remote_load-1">remote_load/1</a></td><td>Equivalent to <code>remote_load(nodes(), Mod)</code>.</td></tr>
+<tr><td valign="top"><a href="#remote_load-2">remote_load/2</a></td><td>Loads one or more modules remotely, in a diskless manner.</td></tr>
+<tr><td valign="top"><a href="#rpc-1">rpc/1</a></td><td>Shorthand for <code>rpc([node()|nodes()], Fun)</code>.</td></tr>
+<tr><td valign="top"><a href="#rpc-2">rpc/2</a></td><td>Shorthand for <code>rpc(Nodes, Fun, infinity)</code>.</td></tr>
+<tr><td valign="top"><a href="#rpc-3">rpc/3</a></td><td>Runs an arbitrary fun (of arity 0) over one or more nodes.</td></tr>
+<tr><td valign="top"><a href="#sctp-0">sctp/0</a></td><td>returns a list of all SCTP ports (the data type) open on the node.</td></tr>
+<tr><td valign="top"><a href="#source-1">source/1</a></td><td>Obtain the source code of a module compiled with <code>debug_info</code>.</td></tr>
+<tr><td valign="top"><a href="#tcp-0">tcp/0</a></td><td>returns a list of all TCP ports (the data type) open on the node.</td></tr>
+<tr><td valign="top"><a href="#udp-0">udp/0</a></td><td>returns a list of all UDP ports (the data type) open on the node.</td></tr>
+</table>
+
+<h3><a name="functions">Function Details</a></h3>
+
+<h4 class="function"><a name="bin_leak-1">bin_leak/1</a></h4>
+<div class="spec">
+<p><code>bin_leak(N::pos_integer()) -&gt; [<a href="#type-proc_attrs">proc_attrs()</a>]</code><br></p>
+</div><p><p>Refc binaries can be leaking when barely-busy processes route them
+  around and do little else, or when extremely busy processes reach a stable
+  amount of memory allocated and do the vast majority of their work with refc
+  binaries. When this happens, it may take a very long while before references
+  get deallocated and refc binaries get to be garbage collected, leading to
+  Out Of Memory crashes.
+  This function fetches the number of refc binary references in each process
+  of the node, garbage collects them, and compares the resulting number of
+  references in each of them. The function then returns the <code>N</code> processes  
+that freed the biggest amount of binaries, potentially highlighting leaks.</p>
+ 
+  See <a href="http://www.erlang.org/doc/efficiency_guide/binaryhandling.html#id65722">The efficiency guide</a>
+  for more details on refc binaries</p>
+
+<h4 class="function"><a name="files-0">files/0</a></h4>
+<div class="spec">
+<p><code>files() -&gt; [port()]</code><br></p>
+</div><p>returns a list of all file handles open on the node.</p>
+
+<h4 class="function"><a name="get_state-1">get_state/1</a></h4>
+<div class="spec">
+<p><code>get_state(Name) -&gt; term()</code>
+<ul class="definitions"><li><code>Name = pid() | atom() | {global, term()} | {via, module(), term()}</code></li></ul></p>
+</div><p>Fetch the internal state of an OTP process.
+  Calls <code>sys:get_state/1</code> directly in R16B01+, and fetches
+  it dynamically on older versions of OTP.</p>
+
+<h4 class="function"><a name="inet_count-2">inet_count/2</a></h4>
+<div class="spec">
+<p><code>inet_count(AttributeName, Num) -&gt; [<a href="#type-inet_attrs">inet_attrs()</a>]</code>
+<ul class="definitions"><li><code>AttributeName = recv_cnt | recv_oct | send_cnt | send_oct | cnt | oct</code></li><li><code>Num = non_neg_integer()</code></li></ul></p>
+</div><p><p>Fetches a given attribute from all inet ports (TCP, UDP, SCTP)
+  and returns the biggest <code>Num</code> consumers.</p>
+ 
+  The values to be used can be the number of octets (bytes) sent, received,
+  or both (<code>send_oct</code>, <code>recv_oct</code>, <code>oct</code>, respectively), or the number
+  of packets sent, received, or both (<code>send_cnt</code>, <code>recv_cnt</code>, <code>cnt</code>,
+  respectively). Individual absolute values for each metric will be returned
+  in the 3rd position of the resulting tuple.
+ </p>
+
+<h4 class="function"><a name="inet_window-3">inet_window/3</a></h4>
+<div class="spec">
+<p><code>inet_window(AttributeName, Num, Milliseconds) -&gt; [<a href="#type-inet_attrs">inet_attrs()</a>]</code>
+<ul class="definitions"><li><code>AttributeName = recv_cnt | recv_oct | send_cnt | send_oct | cnt | oct</code></li><li><code>Num = non_neg_integer()</code></li><li><code>Milliseconds = pos_integer()</code></li></ul></p>
+</div><p><p>Fetches a given attribute from all inet ports (TCP, UDP, SCTP)  
+and returns the biggest entries, over a sliding time window.</p>
+ 
+  <p>Warning: this function depends on data gathered at two snapshots, and then  
+building a dictionary with entries to differentiate them. This can take a  
+heavy toll on memory when you have many dozens of thousands of ports open.</p>
+ 
+  The values to be used can be the number of octets (bytes) sent, received,
+  or both (<code>send_oct</code>, <code>recv_oct</code>, <code>oct</code>, respectively), or the number
+  of packets sent, received, or both (<code>send_cnt</code>, <code>recv_cnt</code>, <code>cnt</code>,
+  respectively). Individual absolute values for each metric will be returned
+  in the 3rd position of the resulting tuple.</p>
+
+<h4 class="function"><a name="info-1">info/1</a></h4>
+<div class="spec">
+<p><code>info(Name) -&gt; [{Type, [{Key, Value}]}, ...]</code>
+<ul class="definitions"><li><code>Name = pid() | atom() | string() | {global, term()} | {via, module(), term()}</code></li><li><code>Type = meta | signals | location | memory | work</code></li><li><code>Key = registered_name | dictionary | group_leader | status | links | monitors | monitored_by | trap_exit | initial_call | current_stacktrace | memory | message_queue_len | heap_size | total_heap_size | garbage_collection | reductions</code></li><li><code>Value = term()</code></li></ul></p>
+</div><p><p>Allows to be similar to <code>erlang:process_info/1</code>, but excludes fields
+  such as the mailbox, which have a tendency to grow and be unsafe when called
+  in production systems. Also includes a few more fields than what is usually
+  given (<code>monitors</code>, <code>monitored_by</code>, etc.), and separates the fields in a more  
+readable format based on the type of information contained.</p>
+ 
+  Moreover, it will fetch and read information on local processes that were
+  registered locally (an atom), globally (<code>{global, Name}</code>), or through
+  another registry supported in the <code>{via, Module, Name}</code> syntax (must have a
+  <code>Module:whereis_name/1</code> function). Pids can also be passed in as a string
+  (<code>"&lt;0.39.0&gt;"</code>) and will be converted to be used.</p>
+
+<h4 class="function"><a name="info-3">info/3</a></h4>
+<div class="spec">
+<p><code>info(N, N, N) -&gt; [{atom(), [{atom(), term()}]}, ...]</code>
+<ul class="definitions"><li><code>N = non_neg_integer()</code></li></ul></p>
+</div><p>Equivalent to <code>info(&lt;A.B.C&gt;)</code> where <code>A</code>, <code>B</code>, and <code>C</code> are integers part
+  of a pid</p>
+
+<h4 class="function"><a name="named_rpc-1">named_rpc/1</a></h4>
+<div class="spec">
+<p><code>named_rpc(Fun::fun(() -&gt; term())) -&gt; {[Success::term()], [Fail::term()]}</code><br></p>
+</div><p>Shorthand for <code>named_rpc([node()|nodes()], Fun)</code>.</p>
+
+<h4 class="function"><a name="named_rpc-2">named_rpc/2</a></h4>
+<div class="spec">
+<p><code>named_rpc(Nodes::node() | [node(), ...], Fun::fun(() -&gt; term())) -&gt; {[Success::term()], [Fail::term()]}</code><br></p>
+</div><p>Shorthand for <code>named_rpc(Nodes, Fun, infinity)</code>.</p>
+
+<h4 class="function"><a name="named_rpc-3">named_rpc/3</a></h4>
+<div class="spec">
+<p><code>named_rpc(Nodes::node() | [node(), ...], Fun::fun(() -&gt; term()), Timeout::timeout()) -&gt; {[Success::term()], [Fail::term()]}</code><br></p>
+</div><p>Runs an arbitrary fun (of arity 0) over one or more nodes, and returns the
+  name of the node that computed a given result along with it, in a tuple.</p>
+
+<h4 class="function"><a name="node_stats-4">node_stats/4</a></h4>
+<div class="spec">
+<p><code>node_stats(N, Interval, FoldFun, Acc) -&gt; Acc</code>
+<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Interval = pos_integer()</code></li><li><code>FoldFun = fun((Stats, Acc) -&gt; Acc)</code></li><li><code>Acc = term()</code></li><li><code>Stats = {[Absolutes::{atom(), term()}], [Increments::{atom(), term()}]}</code></li></ul></p>
+</div><p><p>Gathers statistics <code>N</code> time, waiting <code>Interval</code> milliseconds between
+  each run, and accumulates results using a folding function <code>FoldFun</code>.  
+The function will gather statistics in two forms: Absolutes and Increments.</p>
+ 
+  <p>Absolutes are values that keep changing with time, and are useful to know  
+about as a datapoint: process count, size of the run queue, error_logger  
+queue length, and the memory of the node (total, processes, atoms, binaries,  
+and ets tables).</p>
+ 
+  Increments are values that are mostly useful when compared to a previous
+  one to have an idea what they're doing, because otherwise they'd never
+  stop increasing: bytes in and out of the node, number of garbage colelctor
+  runs, words of memory that were garbage collected, and the global reductions
+  count for the node.</p>
+
+<h4 class="function"><a name="node_stats_list-2">node_stats_list/2</a></h4>
+<div class="spec">
+<p><code>node_stats_list(Repeat, Interval) -&gt; [Stats]</code>
+<ul class="definitions"><li><code>Repeat = non_neg_integer()</code></li><li><code>Interval = pos_integer()</code></li><li><code>Stats = {[Absolutes::{atom(), term()}], [Increments::{atom(), term()}]}</code></li></ul></p>
+</div><p>Shorthand for <code>node_stats(N, Interval, fun(X,Acc) -&gt; [X|Acc] end, [])</code>
+  with the results reversed to be in the right temporal order.</p>
+
+<h4 class="function"><a name="node_stats_print-2">node_stats_print/2</a></h4>
+<div class="spec">
+<p><code>node_stats_print(Repeat, Interval) -&gt; term()</code>
+<ul class="definitions"><li><code>Repeat = non_neg_integer()</code></li><li><code>Interval = pos_integer()</code></li></ul></p>
+</div><p>Shorthand for <code>node_stats(N, Interval, fun(X,_) -&gt; io:format("~p~n",[X]) end, nostate)</code>.</p>
+
+<h4 class="function"><a name="port_types-0">port_types/0</a></h4>
+<div class="spec">
+<p><code>port_types() -&gt; [{pos_integer(), Type::string()}]</code><br></p>
+</div><p>Shows a list of all different ports on the node with their respective
+  types.</p>
+
+<h4 class="function"><a name="proc_count-2">proc_count/2</a></h4>
+<div class="spec">
+<p><code>proc_count(AttributeName, Num) -&gt; [<a href="#type-proc_attrs">proc_attrs()</a>]</code>
+<ul class="definitions"><li><code>AttributeName = atom()</code></li><li><code>Num = non_neg_integer()</code></li></ul></p>
+</div><p>Fetches a given attribute from all processes and returns
+  the biggest <code>Num</code> consumers.</p>
+
+<h4 class="function"><a name="proc_window-3">proc_window/3</a></h4>
+<div class="spec">
+<p><code>proc_window(AttributeName, Num, Milliseconds) -&gt; [<a href="#type-proc_attrs">proc_attrs()</a>]</code>
+<ul class="definitions"><li><code>AttributeName = atom()</code></li><li><code>Num = non_neg_integer()</code></li><li><code>Milliseconds = pos_integer()</code></li></ul></p>
+</div><p><p>Fetches a given attribute from all processes and returns  
+the biggest entries, over a sliding time window.</p>
+ 
+  <p>This function is particularly useful when processes on the node  
+are mostly short-lived, usually too short to inspect through other  
+tools, in order to figure out what kind of processes are eating  
+through a lot resources on a given node.</p>
+ 
+  <p>It is important to see this function as a snapshot over a sliding  
+window. A program's timeline during sampling might look like this:</p>
+ 
+   <p><code>--w---- [Sample1] ---x-------------y----- [Sample2] ---z---&gt;</code></p>
+ 
+  <p>Some processes will live between <code>w</code> and die at <code>x</code>, some between <code>y</code> and
+  <code>z</code>, and some between <code>x</code> and <code>y</code>. These samples will not be too significant
+  as they're incomplete. If the majority of your processes run between a time
+  interval <code>x</code>...<code>y</code> (in absolute terms), you should make sure that your
+  sampling time is smaller than this so that for many processes, their
+  lifetime spans the equivalent of <code>w</code> and <code>z</code>. Not doing this can skew the  
+results: long-lived processes, that have 10 times the time to accumulate  
+data (say reductions) will look like bottlenecks when they're not one.</p>
+ 
+  Warning: this function depends on data gathered at two snapshots, and then
+  building a dictionary with entries to differentiate them. This can take a
+  heavy toll on memory when you have many dozens of thousands of processes.</p>
+
+<h4 class="function"><a name="remote_load-1">remote_load/1</a></h4>
+<div class="spec">
+<p><code>remote_load(Mod::module()) -&gt; term()</code><br></p>
+</div><p>Equivalent to <code>remote_load(nodes(), Mod)</code>.</p>
+
+<h4 class="function"><a name="remote_load-2">remote_load/2</a></h4>
+<div class="spec">
+<p><code>remote_load(Nodes, Mod::module()) -&gt; term()</code>
+<ul class="definitions"><li><code>Nodes = [node(), ...] | node()</code></li></ul></p>
+</div><p>Loads one or more modules remotely, in a diskless manner.  Allows to
+  share code loaded locally with a remote node that doesn't have it</p>
+
+<h4 class="function"><a name="rpc-1">rpc/1</a></h4>
+<div class="spec">
+<p><code>rpc(Fun::fun(() -&gt; term())) -&gt; {[Success::term()], [Fail::term()]}</code><br></p>
+</div><p>Shorthand for <code>rpc([node()|nodes()], Fun)</code>.</p>
+
+<h4 class="function"><a name="rpc-2">rpc/2</a></h4>
+<div class="spec">
+<p><code>rpc(Nodes::node() | [node(), ...], Fun::fun(() -&gt; term())) -&gt; {[Success::term()], [Fail::term()]}</code><br></p>
+</div><p>Shorthand for <code>rpc(Nodes, Fun, infinity)</code>.</p>
+
+<h4 class="function"><a name="rpc-3">rpc/3</a></h4>
+<div class="spec">
+<p><code>rpc(Nodes::node() | [node(), ...], Fun::fun(() -&gt; term()), Timeout::timeout()) -&gt; {[Success::term()], [Fail::term()]}</code><br></p>
+</div><p>Runs an arbitrary fun (of arity 0) over one or more nodes.</p>
+
+<h4 class="function"><a name="sctp-0">sctp/0</a></h4>
+<div class="spec">
+<p><code>sctp() -&gt; [port()]</code><br></p>
+</div><p>returns a list of all SCTP ports (the data type) open on the node.</p>
+
+<h4 class="function"><a name="source-1">source/1</a></h4>
+<div class="spec">
+<p><code>source(Module::module()) -&gt; iolist()</code><br></p>
+</div><p>Obtain the source code of a module compiled with <code>debug_info</code>.
+  The returned list sadly does not allow to format the types and typed
+  records the way they look in the original module, but instead goes to
+  an intermediary form used in the AST. They will still be placed
+  in the right module attributes, however.</p>
+
+<h4 class="function"><a name="tcp-0">tcp/0</a></h4>
+<div class="spec">
+<p><code>tcp() -&gt; [port()]</code><br></p>
+</div><p>returns a list of all TCP ports (the data type) open on the node.</p>
+
+<h4 class="function"><a name="udp-0">udp/0</a></h4>
+<div class="spec">
+<p><code>udp() -&gt; [port()]</code><br></p>
+</div><p>returns a list of all UDP ports (the data type) open on the node.</p>
+
+    </article>
+  </body>
+</html>

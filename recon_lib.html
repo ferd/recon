@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <link href='http://fonts.googleapis.com/css?family=Titillium+Web:400,300italic,600italic,700,600,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,700italic,400italic' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="screen.css" media="screen, projection" />
+    <title>Recon Library</title>
+  </head>
+  <body>
+    <header>
+        <h1>Recon</h1>
+        <nav>
+          <ul>
+<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_lib.html">recon_lib</a>
+          </ul>
+        </nav>
+    </header>
+    <article>
+    <h2>Module recon_lib</h2>
+<ul class="index"><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
+
+
+<h3><a name="types">Data Types</a></h3>
+
+<h4 class="typedecl"><a name="type-diff">diff()</a></h4>
+<p><code>diff() = [<a href="recon.html#type-proc_attrs">recon:proc_attrs()</a> | <a href="recon.html#type-inet_attrs">recon:inet_attrs()</a>]</code></p>
+
+
+<h3><a name="index">Function Index</a></h3>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#count-1">count/1</a></td><td>Takes a list of terms, and counts how often each of
+  them appears in the list.</td></tr>
+<tr><td valign="top"><a href="#inet_attrs-1">inet_attrs/1</a></td><td>Returns the attributes (<a href="recon.html#type-inet_attrs"><code>recon:inet_attrs()</code></a>) of
+  all inet ports (UDP, SCTP, TCP) of the node.</td></tr>
+<tr><td valign="top"><a href="#inet_attrs-2">inet_attrs/2</a></td><td>Returns the attributes required for a given inet port (UDP,
+  SCTP, TCP).</td></tr>
+<tr><td valign="top"><a href="#port_list-1">port_list/1</a></td><td>Returns a list of all the open ports in the VM, coupled with
+  one of the properties desired from <code>erlang:port_info/1-2</code>.</td></tr>
+<tr><td valign="top"><a href="#port_list-2">port_list/2</a></td><td>Returns a list of all the open ports in the VM, but only
+  if the <code>Attr</code>'s resulting value matches <code>Val</code>.</td></tr>
+<tr><td valign="top"><a href="#proc_attrs-1">proc_attrs/1</a></td><td>Returns the attributes (<a href="recon.html#type-proc_attrs"><code>recon:proc_attrs()</code></a>) of
+  all processes of the node, except the caller.</td></tr>
+<tr><td valign="top"><a href="#proc_attrs-2">proc_attrs/2</a></td><td>Returns the attributes of a given process.</td></tr>
+<tr><td valign="top"><a href="#sample-2">sample/2</a></td><td>Runs a fun once, waits <code>Ms</code>, runs the fun again,
+  and returns both results.</td></tr>
+<tr><td valign="top"><a href="#sliding_window-2">sliding_window/2</a></td><td>Compare two samples and return a list based on some key.</td></tr>
+<tr><td valign="top"><a href="#time_fold-6">time_fold/6</a></td><td>Calls a given function every <code>Interval</code> milliseconds and supports
+  a fold-like interface (each result is modified and accumulated).</td></tr>
+<tr><td valign="top"><a href="#time_map-5">time_map/5</a></td><td>Calls a given function every <code>Interval</code> milliseconds and supports
+  a map-like interface (each result is modified and returned).</td></tr>
+<tr><td valign="top"><a href="#triple_to_pid-3">triple_to_pid/3</a></td><td>Equivalent of <code>pid(X,Y,Z)</code> in the Erlang shell.</td></tr>
+</table>
+
+<h3><a name="functions">Function Details</a></h3>
+
+<h4 class="function"><a name="count-1">count/1</a></h4>
+<div class="spec">
+<p><code>count(Terms::[term()]) -&gt; [{Count::integer(), term()}]</code><br></p>
+</div><p>Takes a list of terms, and counts how often each of
+  them appears in the list. The list returned is in no
+  particular order.</p>
+
+<h4 class="function"><a name="inet_attrs-1">inet_attrs/1</a></h4>
+<div class="spec">
+<p><code>inet_attrs(AttrName::term()) -&gt; [<a href="recon.html#type-inet_attrs">recon:inet_attrs()</a>]</code><br></p>
+</div><p>Returns the attributes (<a href="recon.html#type-inet_attrs"><code>recon:inet_attrs()</code></a>) of
+  all inet ports (UDP, SCTP, TCP) of the node.</p>
+
+<h4 class="function"><a name="inet_attrs-2">inet_attrs/2</a></h4>
+<div class="spec">
+<p><code>inet_attrs(AttributeName, Port::port()) -&gt; <a href="recon.html#type-inet_attrs">recon:inet_attrs()</a></code>
+<ul class="definitions"><li><code>AttributeName = recv_cnt | recv_oct | send_cnt | send_oct | cnt | oct</code></li></ul></p>
+</div><p>Returns the attributes required for a given inet port (UDP,
+  SCTP, TCP). This form of attributes is standard for most comparison
+  functions for processes in recon.</p>
+
+<h4 class="function"><a name="port_list-1">port_list/1</a></h4>
+<div class="spec">
+<p><code>port_list(Attr::atom()) -&gt; [{port(), term()}]</code><br></p>
+</div><p>Returns a list of all the open ports in the VM, coupled with
+  one of the properties desired from <code>erlang:port_info/1-2</code>.</p>
+
+<h4 class="function"><a name="port_list-2">port_list/2</a></h4>
+<div class="spec">
+<p><code>port_list(Attr::atom(), Val::term()) -&gt; [port()]</code><br></p>
+</div><p>Returns a list of all the open ports in the VM, but only
+  if the <code>Attr</code>'s resulting value matches <code>Val</code>. <code>Attr</code> must be
+  a property accepted by <code>erlang:port_info/2</code>.</p>
+
+<h4 class="function"><a name="proc_attrs-1">proc_attrs/1</a></h4>
+<div class="spec">
+<p><code>proc_attrs(AttrName::term()) -&gt; [<a href="recon.html#type-proc_attrs">recon:proc_attrs()</a>]</code><br></p>
+</div><p>Returns the attributes (<a href="recon.html#type-proc_attrs"><code>recon:proc_attrs()</code></a>) of
+  all processes of the node, except the caller.</p>
+
+<h4 class="function"><a name="proc_attrs-2">proc_attrs/2</a></h4>
+<div class="spec">
+<p><code>proc_attrs(AttrName::term(), Pid::pid()) -&gt; <a href="recon.html#type-proc_attrs">recon:proc_attrs()</a></code><br></p>
+</div><p>Returns the attributes of a given process. This form of attributes
+  is standard for most comparison functions for processes in recon.</p>
+
+<h4 class="function"><a name="sample-2">sample/2</a></h4>
+<div class="spec">
+<p><code>sample(Ms::non_neg_integer(), Fun::fun(() -&gt; term())) -&gt; {First::term(), Second::term()}</code><br></p>
+</div><p>Runs a fun once, waits <code>Ms</code>, runs the fun again,
+  and returns both results.</p>
+
+<h4 class="function"><a name="sliding_window-2">sliding_window/2</a></h4>
+<div class="spec">
+<p><code>sliding_window(First::<a href="#type-diff">diff()</a>, Last::<a href="#type-diff">diff()</a>) -&gt; <a href="#type-diff">diff()</a></code><br></p>
+</div><p>Compare two samples and return a list based on some key. The type mentioned
+  for the structure is <code>diff()</code> (<code>{Key,Val,Other}</code>), which is compatible with
+  the <a href="recon.html#type-proc_attrs"><code>recon:proc_attrs()</code></a> type.</p>
+
+<h4 class="function"><a name="time_fold-6">time_fold/6</a></h4>
+<div class="spec">
+<p><code>time_fold(N, Interval, Fun, State, FoldFun, Init) -&gt; [term()]</code>
+<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Interval = pos_integer()</code></li><li><code>Fun = fun((State) -&gt; {term(), State})</code></li><li><code>State = term()</code></li><li><code>FoldFun = fun((term(), Init) -&gt; Init)</code></li><li><code>Init = term()</code></li></ul></p>
+</div><p>Calls a given function every <code>Interval</code> milliseconds and supports
+  a fold-like interface (each result is modified and accumulated)</p>
+
+<h4 class="function"><a name="time_map-5">time_map/5</a></h4>
+<div class="spec">
+<p><code>time_map(N, Interval, Fun, State, MapFun) -&gt; [term()]</code>
+<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Interval = pos_integer()</code></li><li><code>Fun = fun((State) -&gt; {term(), State})</code></li><li><code>State = term()</code></li><li><code>MapFun = fun((term()) -&gt; term())</code></li></ul></p>
+</div><p>Calls a given function every <code>Interval</code> milliseconds and supports
+  a map-like interface (each result is modified and returned)</p>
+
+<h4 class="function"><a name="triple_to_pid-3">triple_to_pid/3</a></h4>
+<div class="spec">
+<p><code>triple_to_pid(N, N, N) -&gt; pid()</code>
+<ul class="definitions"><li><code>N = non_neg_integer()</code></li></ul></p>
+</div><p>Equivalent of <code>pid(X,Y,Z)</code> in the Erlang shell.</p>
+
+    </article>
+  </body>
+</html>

@@ -1,0 +1,75 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <link href='http://fonts.googleapis.com/css?family=Titillium+Web:400,300italic,600italic,700,600,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,700italic,400italic' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="screen.css" media="screen, projection" />
+    <title>Recon Library</title>
+  </head>
+  <body>
+    <header>
+        <h1>Recon</h1>
+        <nav>
+          <ul>
+<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_lib.html">recon_lib</a>
+          </ul>
+        </nav>
+    </header>
+    <article>
+    <h2>Recon Application</h2>
+<p>Copyright © 2012-2013 Fred Hebert (BSD 3-Clause License)
+</p>
+<p><strong>Authors:</strong> Fred Hebert (<a href="mailto:mononcqc@ferd.ca"><code>mononcqc@ferd.ca</code></a>) [<em>web site:</em> <code><a href="http://ferd.ca/" target="_top">http://ferd.ca/</a></code>].</p>
+<p>Recon is a library to be dropped into any other Erlang project,
+to be used to assist DevOps people diagnose problems in production
+nodes. Included modules are:</p>
+
+<dl>
+    <dt><a href="recon.html"><code>recon</code></a></dt>
+    <dd>
+        Main module, contains basic functionality to interact with
+        the <code>recon</code> application. It includes functions to gather
+        information about processes and the general state of the
+        virtual machine, ports, and OTP behaviours running in the
+        node. It also includes a few functions to facilitate RPC
+        calls with distributed Erlang nodes.
+    </dd>
+
+    <dt><a href="recon_lib.html"><code>recon_lib</code></a></dt>
+    <dd>
+        Regroups useful functionality used by <a href="recon.html"><code>recon</code></a> when dealing
+        with data from the node. Would be an interesting place to look
+        if you were looking to extend Recon's functionality
+    </dd>
+</dl>
+
+<p>This library contains few tests -- most of the functionality has been
+tried directly in production instead, and for many Erlang installs, Recon
+functionality should be safe to use directly in production, assuming there
+is still memory left to be used in the node.</p>
+
+<p>To help with regular DevOps tasks, a variety of scripts has also been included
+in the repository's <code>script/</code> directory:</p>
+
+<dl>
+    <dt><code>add_deps.erl</code></dt>
+    <dd>
+        Escript that relies on graphviz, and produces a dependency graph of all
+        applications in the repository. The script can be run directly from an
+        Erlang shell (if compiled), or as <code>escript app_deps.erl</code>.
+    </dd>
+
+    <dt><code>erl_crashdump_analyzer.sh</code></dt>
+    <dd>
+        Bash script to run on an Erlang crash dump as
+        <code>./erl_crashdump_analyzer.sh &lt;crashdump&gt;</code> and will extract generic
+        information that can be useful in determining the most common causes
+        of node failure.
+    </dd>
+</dl>
+
+    </article>
+  </body>
+</html>
