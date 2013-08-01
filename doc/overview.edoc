@@ -5,7 +5,11 @@
 
 @doc Recon is a library to be dropped into any other Erlang project,
 to be used to assist DevOps people diagnose problems in production
-nodes. Included modules are:
+nodes.
+
+The source code can be obtained from <a href="https://github.com/ferd/recon">the github repo</a>.
+
+Included modules are:
 
 <dl>
     <dt>{@link recon}</dt>
