@@ -39,7 +39,7 @@ To help with regular DevOps tasks, a variety of scripts has also been included
 in the repository's `script/' directory:
 
 <dl>
-    <dt>`add_deps.erl'</dt>
+    <dt>`app_deps.erl'</dt>
     <dd>
         Escript that relies on graphviz, and produces a dependency graph of all
         applications in the repository. The script can be run directly from an
