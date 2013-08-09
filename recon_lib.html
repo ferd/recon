@@ -70,7 +70,7 @@
 
 <h4 class="function"><a name="inet_attrs-2">inet_attrs/2</a></h4>
 <div class="spec">
-<p><code>inet_attrs(AttributeName, Port::port()) -&gt; <a href="recon.html#type-inet_attrs">recon:inet_attrs()</a></code>
+<p><code>inet_attrs(AttributeName, Port::port()) -&gt; {ok, <a href="recon.html#type-inet_attrs">recon:inet_attrs()</a>} | {error, term()}</code>
 <ul class="definitions"><li><code>AttributeName = recv_cnt | recv_oct | send_cnt | send_oct | cnt | oct</code></li></ul></p>
 </div><p>Returns the attributes required for a given inet port (UDP,
   SCTP, TCP). This form of attributes is standard for most comparison
@@ -97,7 +97,7 @@
 
 <h4 class="function"><a name="proc_attrs-2">proc_attrs/2</a></h4>
 <div class="spec">
-<p><code>proc_attrs(AttrName::term(), Pid::pid()) -&gt; <a href="recon.html#type-proc_attrs">recon:proc_attrs()</a></code><br></p>
+<p><code>proc_attrs(AttrName::term(), Pid::pid()) -&gt; {ok, <a href="recon.html#type-proc_attrs">recon:proc_attrs()</a>} | {error, term()}</code><br></p>
 </div><p>Returns the attributes of a given process. This form of attributes
   is standard for most comparison functions for processes in recon.</p>
 
