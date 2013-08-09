@@ -3,7 +3,7 @@
          port_list/1, port_list/2,
          proc_attrs/1, proc_attrs/2,
          inet_attrs/1, inet_attrs/2,
-         triple_to_pid/3,
+         triple_to_pid/3, term_to_pid/1,
          time_map/5, time_fold/6]).
 
 -type diff() :: [recon:proc_attrs() | recon:inet_attrs()].
@@ -114,6 +114,16 @@ triple_to_pid(X, Y, Z) ->
     list_to_pid("<" ++ integer_to_list(X) ++ "." ++
                        integer_to_list(Y) ++ "." ++
                        integer_to_list(Z) ++ ">").
+
+%% @doc Transforms a given term to a pid.
+-spec term_to_pid(recon:pid_term()) -> pid().
+term_to_pid(Pid) when is_pid(Pid) -> Pid;
+term_to_pid(Name) when is_atom(Name) -> whereis(Name);
+term_to_pid(List = "<0."++_) -> list_to_pid(List);
+term_to_pid({global, Name}) -> global:whereis_name(Name);
+term_to_pid({via, Module, Name}) -> Module:whereis_name(Name);
+term_to_pid({X,Y,Z}) when is_integer(X), is_integer(Y), is_integer(Z) ->
+    triple_to_pid(X,Y,Z).
 
 %% @doc Calls a given function every `Interval' milliseconds and supports
 %% a map-like interface (each result is modified and returned)

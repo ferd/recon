@@ -94,7 +94,11 @@
                        Attr::_,
                        [{atom(), term()}]}.
 
--export_type([proc_attrs/0, inet_attrs/0]).
+-type pid_term() :: pid() | atom() | string()
+                  | {global, term()} | {via, module(), term()}
+                  | {non_neg_integer(), non_neg_integer(), non_neg_integer()}.
+
+-export_type([proc_attrs/0, inet_attrs/0, pid_term/0]).
 %%%%%%%%%%%%%%%%%%
 %%% PUBLIC API %%%
 %%%%%%%%%%%%%%%%%%
@@ -117,25 +121,16 @@ info(A,B,C) -> info(recon_lib:triple_to_pid(A,B,C)).
 %% registered locally (an atom), globally (`{global, Name}'), or through
 %% another registry supported in the `{via, Module, Name}' syntax (must have a
 %% `Module:whereis_name/1' function). Pids can also be passed in as a string
-%% (`"<0.39.0>"') and will be converted to be used.
--spec info(Name) -> [{Type, [{Key, Value}]},...] when
-      Name :: pid() | atom() | string()
-           | {global, term()} | {via, module(), term()},
+%% (`"<0.39.0>"') or a triple (`{0,39,0}') and will be converted to be used.
+-spec info(pid_term()) -> [{Type, [{Key, Value}]},...] when
       Type :: meta | signals | location | memory | work,
       Key :: registered_name | dictionary | group_leader | status
            | links | monitors | monitored_by | trap_exit | initial_call
            | current_stacktrace | memory | message_queue_len | heap_size
            | total_heap_size | garbage_collection | reductions,
       Value :: term().
-info(Name) when is_atom(Name) ->
-    info(whereis(Name));
-info(List = "<0."++_) ->
-    info(list_to_pid(List));
-info({global, Name}) ->
-    info(global:whereis_name(Name));
-info({via, Module, Name}) ->
-    info(Module:whereis_name(Name));
-info(Pid) when is_pid(Pid) ->
+info(PidTerm) ->
+    Pid = recon_lib:term_to_pid(PidTerm),
     Info = fun(List) -> erlang:process_info(Pid, List) end,
     [{meta, Info([registered_name, dictionary, group_leader, status])},
      {signals, Info([links, monitors, monitored_by, trap_exit])},
@@ -303,10 +298,10 @@ node_stats(N, Interval, FoldFun, Init) ->
 %% @doc Fetch the internal state of an OTP process.
 %% Calls `sys:get_state/1' directly in R16B01+, and fetches
 %% it dynamically on older versions of OTP.
--spec get_state(Name) -> term() when
-      Name :: pid() | atom() | {global, term()} | {via, module(), term()}.
-get_state(Proc) ->
-    try 
+-spec get_state(pid_term()) -> term().
+get_state(PidTerm) ->
+    Proc = recon_lib:term_to_pid(PidTerm),
+    try
         sys:get_state(Proc)
     catch
         error:undef ->
