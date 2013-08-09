@@ -67,16 +67,19 @@ port_list(Attr, Val) ->
 -spec proc_attrs(term()) -> [recon:proc_attrs()].
 proc_attrs(AttrName) ->
     [Attrs || Pid <- processes() -- [self()],
-              Attrs <- [proc_attrs(AttrName, Pid)]].
+              {ok, Attrs} <- [proc_attrs(AttrName, Pid)]].
 
 %% @doc Returns the attributes of a given process. This form of attributes
 %% is standard for most comparison functions for processes in recon.
--spec proc_attrs(term(), pid()) -> recon:proc_attrs().
+-spec proc_attrs(term(), pid()) -> {ok, recon:proc_attrs()} | {error, term()}.
 proc_attrs(AttrName, Pid) ->
-    [{_, Attr}, {registered_name,Name}, Init, Cur] =
-        process_info(Pid, [AttrName, registered_name,
-                           current_function, initial_call]),
-    {Pid, Attr, [Name || is_atom(Name)]++[Init, Cur]}.
+    case process_info(Pid, [AttrName, registered_name,
+                            current_function, initial_call]) of
+        [{_, Attr}, {registered_name,Name}, Init, Cur] ->
+            {ok, {Pid, Attr, [Name || is_atom(Name)]++[Init, Cur]}};
+        undefined ->
+            {error, undefined}
+    end.
 
 %% @doc Returns the attributes ({@link recon:inet_attrs()}) of
 %% all inet ports (UDP, SCTP, TCP) of the node.
@@ -88,12 +91,13 @@ inet_attrs(AttrName) ->
                      Name =:= "udp_inet" orelse
                      Name =:= "sctp_inet"],
     [Attrs || Port <- Ports,
-              Attrs <- [inet_attrs(AttrName, Port)]].
+              {ok, Attrs} <- [inet_attrs(AttrName, Port)]].
 
 %% @doc Returns the attributes required for a given inet port (UDP,
 %% SCTP, TCP). This form of attributes is standard for most comparison
 %% functions for processes in recon.
--spec inet_attrs(AttributeName, port()) -> recon:inet_attrs() when
+-spec inet_attrs(AttributeName, port()) -> {ok,recon:inet_attrs()}
+                                         | {error,term()} when
       AttributeName :: 'recv_cnt' | 'recv_oct' | 'send_cnt' | 'send_oct'
                      | 'cnt' | 'oct'.
 inet_attrs(Attr, Port) ->
@@ -102,9 +106,13 @@ inet_attrs(Attr, Port) ->
         oct -> [recv_oct, send_oct];
         _ -> [Attr]
     end,
-    {ok, Props} = inet:getstat(Port, Attrs),
-    ValSum = lists:foldl(fun({_,X},Y) -> X+Y end, 0, Props),
-    {Port,ValSum,Props}.
+    case inet:getstat(Port, Attrs) of
+        {ok, Props} ->
+            ValSum = lists:foldl(fun({_,X},Y) -> X+Y end, 0, Props),
+            {ok, {Port,ValSum,Props}};
+        {error, Reason} ->
+            {error, Reason}
+    end.
 
 
 %% @doc Equivalent of `pid(X,Y,Z)' in the Erlang shell.

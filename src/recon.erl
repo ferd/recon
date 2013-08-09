@@ -209,9 +209,9 @@ bin_leak(N) ->
         lists:usort(
             fun({K1,V1,_},{K2,V2,_}) -> {V1,K1} =< {V2,K2} end,
             [try
-                {_,Pre,Id} = recon_lib:proc_attrs(binary, Pid),
+                {ok, {_,Pre,Id}} = recon_lib:proc_attrs(binary, Pid),
                 erlang:garbage_collect(Pid),
-                {_,Post,_} = recon_lib:proc_attrs(binary, Pid),
+                {ok, {_,Post,_}} = recon_lib:proc_attrs(binary, Pid),
                 {Pid, length(Post)-length(Pre), Id}
             catch
                 _:_ -> {Pid, 0}
