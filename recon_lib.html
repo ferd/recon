@@ -45,6 +45,7 @@
 <tr><td valign="top"><a href="#sample-2">sample/2</a></td><td>Runs a fun once, waits <code>Ms</code>, runs the fun again,
   and returns both results.</td></tr>
 <tr><td valign="top"><a href="#sliding_window-2">sliding_window/2</a></td><td>Compare two samples and return a list based on some key.</td></tr>
+<tr><td valign="top"><a href="#term_to_pid-1">term_to_pid/1</a></td><td>Transforms a given term to a pid.</td></tr>
 <tr><td valign="top"><a href="#time_fold-6">time_fold/6</a></td><td>Calls a given function every <code>Interval</code> milliseconds and supports
   a fold-like interface (each result is modified and accumulated).</td></tr>
 <tr><td valign="top"><a href="#time_map-5">time_map/5</a></td><td>Calls a given function every <code>Interval</code> milliseconds and supports
@@ -112,6 +113,11 @@
 </div><p>Compare two samples and return a list based on some key. The type mentioned
   for the structure is <code>diff()</code> (<code>{Key,Val,Other}</code>), which is compatible with
   the <a href="recon.html#type-proc_attrs"><code>recon:proc_attrs()</code></a> type.</p>
+
+<h4 class="function"><a name="term_to_pid-1">term_to_pid/1</a></h4>
+<div class="spec">
+<p><code>term_to_pid(Pid::<a href="recon.html#type-pid_term">recon:pid_term()</a>) -&gt; pid()</code><br></p>
+</div><p>Transforms a given term to a pid.</p>
 
 <h4 class="function"><a name="time_fold-6">time_fold/6</a></h4>
 <div class="spec">

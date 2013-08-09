@@ -98,6 +98,10 @@ contained in the Recon application.</p>
 <p><code>inet_attrs() = {port(), Attr::term(), [{atom(), term()}]}</code></p>
 
 
+<h4 class="typedecl"><a name="type-pid_term">pid_term()</a></h4>
+<p><code>pid_term() = pid() | atom() | string() | {global, term()} | {via, module(), term()} | {non_neg_integer(), non_neg_integer(), non_neg_integer()}</code></p>
+
+
 <h4 class="typedecl"><a name="type-proc_attrs">proc_attrs()</a></h4>
 <p><code>proc_attrs() = {pid(), Attr::term(), [Name::atom() | {current_function, mfa()} | {initial_call, mfa()}, ...]}</code></p>
 
@@ -170,8 +174,7 @@ that freed the biggest amount of binaries, potentially highlighting leaks.</p>
 
 <h4 class="function"><a name="get_state-1">get_state/1</a></h4>
 <div class="spec">
-<p><code>get_state(Name) -&gt; term()</code>
-<ul class="definitions"><li><code>Name = pid() | atom() | {global, term()} | {via, module(), term()}</code></li></ul></p>
+<p><code>get_state(PidTerm::<a href="#type-pid_term">pid_term()</a>) -&gt; term()</code><br></p>
 </div><p>Fetch the internal state of an OTP process.
   Calls <code>sys:get_state/1</code> directly in R16B01+, and fetches
   it dynamically on older versions of OTP.</p>
@@ -209,8 +212,8 @@ heavy toll on memory when you have many dozens of thousands of ports open.</p>
 
 <h4 class="function"><a name="info-1">info/1</a></h4>
 <div class="spec">
-<p><code>info(Name) -&gt; [{Type, [{Key, Value}]}, ...]</code>
-<ul class="definitions"><li><code>Name = pid() | atom() | string() | {global, term()} | {via, module(), term()}</code></li><li><code>Type = meta | signals | location | memory | work</code></li><li><code>Key = registered_name | dictionary | group_leader | status | links | monitors | monitored_by | trap_exit | initial_call | current_stacktrace | memory | message_queue_len | heap_size | total_heap_size | garbage_collection | reductions</code></li><li><code>Value = term()</code></li></ul></p>
+<p><code>info(PidTerm::<a href="#type-pid_term">pid_term()</a>) -&gt; [{Type, [{Key, Value}]}, ...]</code>
+<ul class="definitions"><li><code>Type = meta | signals | location | memory | work</code></li><li><code>Key = registered_name | dictionary | group_leader | status | links | monitors | monitored_by | trap_exit | initial_call | current_stacktrace | memory | message_queue_len | heap_size | total_heap_size | garbage_collection | reductions</code></li><li><code>Value = term()</code></li></ul></p>
 </div><p><p>Allows to be similar to <code>erlang:process_info/1</code>, but excludes fields
   such as the mailbox, which have a tendency to grow and be unsafe when called
   in production systems. Also includes a few more fields than what is usually
@@ -221,7 +224,7 @@ readable format based on the type of information contained.</p>
   registered locally (an atom), globally (<code>{global, Name}</code>), or through
   another registry supported in the <code>{via, Module, Name}</code> syntax (must have a
   <code>Module:whereis_name/1</code> function). Pids can also be passed in as a string
-  (<code>"&lt;0.39.0&gt;"</code>) and will be converted to be used.</p>
+  (<code>"&lt;0.39.0&gt;"</code>) or a triple (<code>{0,39,0}</code>) and will be converted to be used.</p>
 
 <h4 class="function"><a name="info-3">info/3</a></h4>
 <div class="spec">
