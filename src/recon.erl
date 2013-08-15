@@ -214,7 +214,7 @@ bin_leak(N) ->
                 {ok, {_,Post,_}} = recon_lib:proc_attrs(binary, Pid),
                 {Pid, length(Post)-length(Pre), Id}
             catch
-                _:_ -> {Pid, 0}
+                _:_ -> {Pid, 0, []}
             end || Pid <- processes()]),
         N).
 
