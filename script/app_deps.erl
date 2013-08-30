@@ -13,6 +13,8 @@
 main(_) ->
     AppFiles = filelib:wildcard("deps/*/ebin/*.app")
                ++
+               filelib:wildcard("apps/*/ebin/*.app")
+               ++
                filelib:wildcard("ebin/*.app"),
     to_graphviz(read_deps(AppFiles)).
 

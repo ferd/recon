@@ -12,6 +12,7 @@ Documentation for the library can be obtained at http://ferd.github.io/recon/
 Changelog
 ---------
 
+- 0.4.2 (WIP): extended `app_deps.erl` to read apps/ directories for releases
 - 0.4.1: fixed bug where nodes with lots of processes could see the GC call
   fail if said processes failed between long calls within the `bin_leak`
   function call.
