@@ -10,8 +10,9 @@
 %%%     <dd>Process information is everything that has to do with the
 %%%         general state of the node. Functions such as {@link info/1}
 %%%         and {@link info/3} are wrappers to provide more details than
-%%%         `erlang:process_info/2', while providing it in a production-safe
-%%%         manner.</dd>
+%%%         `erlang:process_info/1', while providing it in a production-safe
+%%%         manner. They have equivalents to `erlang:process_info/2' in
+%%%         the functions {@link info/2} and {@link info/4}, respectively.</dd>
 %%%     <dd>{@link proc_count/2} and {@link proc_window/3} are to be used
 %%%         when you require information about processes in a larger sense:
 %%%         biggest consumers of given process information (say memory or
@@ -70,7 +71,7 @@
 %%% </dl>
 %%% @end
 -module(recon).
--export([info/1,info/3,
+-export([info/1, info/2, info/3, info/4,
          proc_count/2, proc_window/3,
          bin_leak/1,
          node_stats_print/2, node_stats_list/2, node_stats/4]).
@@ -90,6 +91,7 @@
                        [Name::atom()
                        |{current_function, mfa()}
                        |{initial_call, mfa()}, ...]}.
+
 -type inet_attrs() :: {port(),
                        Attr::_,
                        [{atom(), term()}]}.
@@ -98,7 +100,23 @@
                   | {global, term()} | {via, module(), term()}
                   | {non_neg_integer(), non_neg_integer(), non_neg_integer()}.
 
+-type info_type() :: meta | signals | location | memory_used | work.
+
+-type info_meta_key() :: registered_name | dictionary | group_leader | status.
+-type info_signals_key() :: links | monitors | monitored_by | trap_exit.
+-type info_location_key() :: initial_call | current_stacktrace.
+-type info_memory_key() :: memory | message_queue_len | heap_size
+                         | total_heap_size | garbage_collection.
+-type info_work_key() :: reductions.
+
+-type info_key() :: info_meta_key() | info_signals_key() | info_location_key()
+                  | info_memory_key() | info_work_key().
+
+
 -export_type([proc_attrs/0, inet_attrs/0, pid_term/0]).
+-export_type([info_type/0, info_key/0,
+              info_meta_key/0, info_signals_key/0, info_location_key/0,
+              info_memory_key/0, info_work_key/0]).
 %%%%%%%%%%%%%%%%%%
 %%% PUBLIC API %%%
 %%%%%%%%%%%%%%%%%%
@@ -107,9 +125,17 @@
 
 %% @doc Equivalent to `info(<A.B.C>)' where `A', `B', and `C' are integers part
 %% of a pid
--spec info(N,N,N) -> [{atom(), [{atom(),term()}]},...] when
+-spec info(N,N,N) -> [{info_type(), [{info_key(),term()}]},...] when
       N :: non_neg_integer().
 info(A,B,C) -> info(recon_lib:triple_to_pid(A,B,C)).
+
+%% @doc Equivalent to `info(<A.B.C>, Key)' where `A', `B', and `C' are integers part
+%% of a pid
+-spec info(N,N,N, Key) -> term() when
+      N :: non_neg_integer(),
+      Key :: info_type() | [atom()] | atom().
+info(A,B,C, Key) -> info(recon_lib:triple_to_pid(A,B,C), Key).
+
 
 %% @doc Allows to be similar to `erlang:process_info/1', but excludes fields
 %% such as the mailbox, which have a tendency to grow and be unsafe when called
@@ -122,22 +148,51 @@ info(A,B,C) -> info(recon_lib:triple_to_pid(A,B,C)).
 %% another registry supported in the `{via, Module, Name}' syntax (must have a
 %% `Module:whereis_name/1' function). Pids can also be passed in as a string
 %% (`"<0.39.0>"') or a triple (`{0,39,0}') and will be converted to be used.
--spec info(pid_term()) -> [{Type, [{Key, Value}]},...] when
-      Type :: meta | signals | location | memory | work,
-      Key :: registered_name | dictionary | group_leader | status
-           | links | monitors | monitored_by | trap_exit | initial_call
-           | current_stacktrace | memory | message_queue_len | heap_size
-           | total_heap_size | garbage_collection | reductions,
+-spec info(pid_term()) -> [{info_type(), [{info_key(), Value}]},...] when
       Value :: term().
 info(PidTerm) ->
     Pid = recon_lib:term_to_pid(PidTerm),
-    Info = fun(List) -> erlang:process_info(Pid, List) end,
-    [{meta, Info([registered_name, dictionary, group_leader, status])},
-     {signals, Info([links, monitors, monitored_by, trap_exit])},
-     {location, Info([initial_call, current_stacktrace])},
-     {memory, Info([memory, message_queue_len, heap_size, total_heap_size,
-                    garbage_collection])},
-     {work, Info([reductions])}].
+    [info(Pid, Type) || Type <- [meta, signals, location, memory_used, work]].
+
+%% @doc Allows to be similar to `erlang:process_info/2', but allows to
+%% sort fields by safe categories and pre-selections, avoiding items such
+%% as the mailbox, which may have a tendency to grow and be unsafe when
+%% called in production systems.
+%%
+%% Moreover, it will fetch and read information on local processes that were
+%% registered locally (an atom), globally (`{global, Name}'), or through
+%% another registry supported in the `{via, Module, Name}' syntax (must have a
+%% `Module:whereis_name/1' function). Pids can also be passed in as a string
+%% (`"<0.39.0>"') or a triple (`{0,39,0}') and will be converted to be used.
+%%
+%% Although the type signature doesn't show it in generated documentation,
+%% a list of arguments or individual arguments accepted by
+%% `erlang:process_info/2' and return them as that function would.
+-spec info(pid_term(), info_type()) -> {info_type(), [{info_key(), term()}]}
+    ;     (pid_term(), [atom()]) -> [{atom(), term()}]
+    ;     (pid_term(), atom()) -> {atom(), term()}.
+info(PidTerm, meta) ->
+    info_type(PidTerm, meta, [registered_name, dictionary, group_leader,
+                              status]);
+info(PidTerm, signals) ->
+    info_type(PidTerm, signals, [links, monitors, monitored_by, trap_exit]);
+info(PidTerm, location) ->
+    info_type(PidTerm, location, [initial_call, current_stacktrace]);
+info(PidTerm, memory_used) ->
+    info_type(PidTerm, memory_used, [memory, message_queue_len, heap_size,
+                                     total_heap_size, garbage_collection]);
+info(PidTerm, work) ->
+    info_type(PidTerm, work, [reductions]);
+info(PidTerm, Keys) ->
+    process_info(recon_lib:term_to_pid(PidTerm), Keys).
+
+%% @private makes access to `info_type()' calls simpler.
+-spec info_type(pid_term(), info_type(), [info_key()]) ->
+    {info_type(), [{info_key(), term()}]}.
+info_type(PidTerm, Type, Keys) ->
+    Pid = recon_lib:term_to_pid(PidTerm),
+    {Type, erlang:process_info(Pid, Keys)}.
+
 
 %% @doc Fetches a given attribute from all processes and returns
 %% the biggest `Num' consumers.

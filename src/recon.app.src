@@ -1,6 +1,6 @@
 {application, recon,
  [{description, "Diagnostic tools for production use"},
-  {vsn, "0.4.1"},
+  {vsn, "1.0.0"},
   {modules, [recon]},
   {registered, []},
   {applications, [kernel, stdlib]}]}.
