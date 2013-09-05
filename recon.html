@@ -34,8 +34,9 @@ contained in the Recon application.</p>
        <dd>Process information is everything that has to do with the
            general state of the node. Functions such as <a href="#info-1"><code>info/1</code></a>
            and <a href="#info-3"><code>info/3</code></a> are wrappers to provide more details than
-           <code>erlang:process_info/2</code>, while providing it in a production-safe
-           manner.</dd>
+           <code>erlang:process_info/1</code>, while providing it in a production-safe
+           manner. They have equivalents to <code>erlang:process_info/2</code> in
+           the functions <a href="#info-2"><code>info/2</code></a> and <a href="#info-4"><code>info/4</code></a>, respectively.</dd>
        <dd><a href="#proc_count-2"><code>proc_count/2</code></a> and <a href="#proc_window-3"><code>proc_window/3</code></a> are to be used
            when you require information about processes in a larger sense:
            biggest consumers of given process information (say memory or
@@ -98,6 +99,34 @@ contained in the Recon application.</p>
 <p><code>inet_attrs() = {port(), Attr::term(), [{atom(), term()}]}</code></p>
 
 
+<h4 class="typedecl"><a name="type-info_key">info_key()</a></h4>
+<p><code>info_key() = <a href="#type-info_meta_key">info_meta_key()</a> | <a href="#type-info_signals_key">info_signals_key()</a> | <a href="#type-info_location_key">info_location_key()</a> | <a href="#type-info_memory_key">info_memory_key()</a> | <a href="#type-info_work_key">info_work_key()</a></code></p>
+
+
+<h4 class="typedecl"><a name="type-info_location_key">info_location_key()</a></h4>
+<p><code>info_location_key() = initial_call | current_stacktrace</code></p>
+
+
+<h4 class="typedecl"><a name="type-info_memory_key">info_memory_key()</a></h4>
+<p><code>info_memory_key() = memory | message_queue_len | heap_size | total_heap_size | garbage_collection</code></p>
+
+
+<h4 class="typedecl"><a name="type-info_meta_key">info_meta_key()</a></h4>
+<p><code>info_meta_key() = registered_name | dictionary | group_leader | status</code></p>
+
+
+<h4 class="typedecl"><a name="type-info_signals_key">info_signals_key()</a></h4>
+<p><code>info_signals_key() = links | monitors | monitored_by | trap_exit</code></p>
+
+
+<h4 class="typedecl"><a name="type-info_type">info_type()</a></h4>
+<p><code>info_type() = meta | signals | location | memory_used | work</code></p>
+
+
+<h4 class="typedecl"><a name="type-info_work_key">info_work_key()</a></h4>
+<p><code>info_work_key() = reductions</code></p>
+
+
 <h4 class="typedecl"><a name="type-pid_term">pid_term()</a></h4>
 <p><code>pid_term() = pid() | atom() | string() | {global, term()} | {via, module(), term()} | {non_neg_integer(), non_neg_integer(), non_neg_integer()}</code></p>
 
@@ -120,7 +149,13 @@ and returns the biggest entries, over a sliding time window.</td></tr>
 <tr><td valign="top"><a href="#info-1">info/1</a></td><td>Allows to be similar to <code>erlang:process_info/1</code>, but excludes fields
   such as the mailbox, which have a tendency to grow and be unsafe when called
   in production systems.</td></tr>
+<tr><td valign="top"><a href="#info-2">info/2</a></td><td>Allows to be similar to <code>erlang:process_info/2</code>, but allows to  
+sort fields by safe categories and pre-selections, avoiding items such  
+as the mailbox, which may have a tendency to grow and be unsafe when  
+called in production systems.</td></tr>
 <tr><td valign="top"><a href="#info-3">info/3</a></td><td>Equivalent to <code>info(&lt;A.B.C&gt;)</code> where <code>A</code>, <code>B</code>, and <code>C</code> are integers part
+  of a pid.</td></tr>
+<tr><td valign="top"><a href="#info-4">info/4</a></td><td>Equivalent to <code>info(&lt;A.B.C&gt;, Key)</code> where <code>A</code>, <code>B</code>, and <code>C</code> are integers part
   of a pid.</td></tr>
 <tr><td valign="top"><a href="#named_rpc-1">named_rpc/1</a></td><td>Shorthand for <code>named_rpc([node()|nodes()], Fun)</code>.</td></tr>
 <tr><td valign="top"><a href="#named_rpc-2">named_rpc/2</a></td><td>Shorthand for <code>named_rpc(Nodes, Fun, infinity)</code>.</td></tr>
@@ -212,8 +247,8 @@ heavy toll on memory when you have many dozens of thousands of ports open.</p>
 
 <h4 class="function"><a name="info-1">info/1</a></h4>
 <div class="spec">
-<p><code>info(PidTerm::<a href="#type-pid_term">pid_term()</a>) -&gt; [{Type, [{Key, Value}]}, ...]</code>
-<ul class="definitions"><li><code>Type = meta | signals | location | memory | work</code></li><li><code>Key = registered_name | dictionary | group_leader | status | links | monitors | monitored_by | trap_exit | initial_call | current_stacktrace | memory | message_queue_len | heap_size | total_heap_size | garbage_collection | reductions</code></li><li><code>Value = term()</code></li></ul></p>
+<p><code>info(PidTerm::<a href="#type-pid_term">pid_term()</a>) -&gt; [{<a href="#type-info_type">info_type()</a>, [{<a href="#type-info_key">info_key()</a>, Value}]}, ...]</code>
+<ul class="definitions"><li><code>Value = term()</code></li></ul></p>
 </div><p><p>Allows to be similar to <code>erlang:process_info/1</code>, but excludes fields
   such as the mailbox, which have a tendency to grow and be unsafe when called
   in production systems. Also includes a few more fields than what is usually
@@ -226,11 +261,36 @@ readable format based on the type of information contained.</p>
   <code>Module:whereis_name/1</code> function). Pids can also be passed in as a string
   (<code>"&lt;0.39.0&gt;"</code>) or a triple (<code>{0,39,0}</code>) and will be converted to be used.</p>
 
+<h4 class="function"><a name="info-2">info/2</a></h4>
+<div class="spec">
+<p><code>info(PidTerm::<a href="#type-pid_term">pid_term()</a>, Keys::<a href="#type-info_type">info_type()</a>) -&gt; {<a href="#type-info_type">info_type()</a>, [{<a href="#type-info_key">info_key()</a>, term()}]}</code><br></p>
+</div><p><p>Allows to be similar to <code>erlang:process_info/2</code>, but allows to  
+sort fields by safe categories and pre-selections, avoiding items such  
+as the mailbox, which may have a tendency to grow and be unsafe when  
+called in production systems.</p>
+ 
+  <p>Moreover, it will fetch and read information on local processes that were
+  registered locally (an atom), globally (<code>{global, Name}</code>), or through
+  another registry supported in the <code>{via, Module, Name}</code> syntax (must have a
+  <code>Module:whereis_name/1</code> function). Pids can also be passed in as a string
+  (<code>"&lt;0.39.0&gt;"</code>) or a triple (<code>{0,39,0}</code>) and will be converted to be used.</p>
+ 
+  Although the type signature doesn't show it in generated documentation,
+  a list of arguments or individual arguments accepted by
+  <code>erlang:process_info/2</code> and return them as that function would.</p>
+
 <h4 class="function"><a name="info-3">info/3</a></h4>
 <div class="spec">
-<p><code>info(N, N, N) -&gt; [{atom(), [{atom(), term()}]}, ...]</code>
+<p><code>info(N, N, N) -&gt; [{<a href="#type-info_type">info_type()</a>, [{<a href="#type-info_key">info_key()</a>, term()}]}, ...]</code>
 <ul class="definitions"><li><code>N = non_neg_integer()</code></li></ul></p>
 </div><p>Equivalent to <code>info(&lt;A.B.C&gt;)</code> where <code>A</code>, <code>B</code>, and <code>C</code> are integers part
+  of a pid</p>
+
+<h4 class="function"><a name="info-4">info/4</a></h4>
+<div class="spec">
+<p><code>info(N, N, N, Key) -&gt; term()</code>
+<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Key = <a href="#type-info_type">info_type()</a> | [atom()] | atom()</code></li></ul></p>
+</div><p>Equivalent to <code>info(&lt;A.B.C&gt;, Key)</code> where <code>A</code>, <code>B</code>, and <code>C</code> are integers part
   of a pid</p>
 
 <h4 class="function"><a name="named_rpc-1">named_rpc/1</a></h4>
