@@ -3,7 +3,7 @@
 /logs
 /log
 .DS_Store
-/test/*.beam
+*.beam
 *.swp
 *.swo
 erl_crash.dump
