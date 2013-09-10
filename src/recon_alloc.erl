@@ -129,10 +129,11 @@ cache_hit_rates() ->
     WeighedData = [begin
       Mem = proplists:get_value(memkind, Props),
       {_,Hits} = lists:keyfind(cache_hits, 1, proplists:get_value(status,Mem)),
-      {_,_,Alloc} = lists:keyfind(mseg_alloc,1,proplists:get_value(calls,Mem)),
-      HitRate = usage(Hits,Alloc),
-      Weight = (1.00 - HitRate)*Alloc,
-      {Weight, {instance,N}, [{hit_rate,HitRate}, {hits,Hits}, {alloc,Alloc}]}
+      {_,Giga,Ones} = lists:keyfind(mseg_alloc,1,proplists:get_value(calls,Mem)),
+      Calls = 1000000000*Giga + Ones,
+      HitRate = usage(Hits,Calls),
+      Weight = (1.00 - HitRate)*Calls,
+      {Weight, {instance,N}, [{hit_rate,HitRate}, {hits,Hits}, {calls,Calls}]}
     end || {instance, N, Props} <- erlang:system_info({allocator,mseg_alloc})],
     [{Key,Val} || {_W,Key,Val} <- lists:reverse(lists:sort(WeighedData))].
 
