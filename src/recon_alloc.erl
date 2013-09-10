@@ -36,7 +36,8 @@
 -define(CURRENT_POS, 2). % pos in sizes tuples
 -define(MAX_POS, 4). % pos in sizes tuples
 
--export([memory/1, fragmentation/1, cache_hit_rates/0, average_sizes/0]).
+-export([memory/1, fragmentation/1, cache_hit_rates/0, average_sizes/0,
+         sbcs_to_mbcs/0, allocators/0]).
 
 %%%%%%%%%%%%%%
 %%% Public %%%
@@ -163,11 +164,63 @@ average_sizes() ->
     allocators()),
     average_group(average_calc(lists:sort(dict:to_list(Dict)))).
 
+%% @doc compares the amount of single block carriers (`sbcs') vs. the
+%% number of multiblock carriers (`mbcs') for each individual allocator in
+%% {@link allocator()}.
+%%
+%% When a specific piece of data is allocated, it is compared to a threshold,
+%% called the 'single block carrier threshold' (`sbct'). When the data is
+%% larget than the `sbct', it gets sent to a single block carrier. When the
+%% data is smaller than the `sbct', it gets placed into a multiblock carrier.
+%%
+%% Ideally, most of the data should fit inside main multiblock carriers. If
+%% most of the data ends up in `sbcs', you may need to adjust the multiblock
+%% carrier sizes, specifically the maximal value (`lmbcs').
+%%
+%% Given the value returned is a ratio of sbcs/mbcs, the higher the value,
+%% the worst the condition. The list is sorted accordingly.
+-spec sbcs_to_mbcs() -> [allocdata(term())].
+sbcs_to_mbcs() ->
+    Pos = ?CURRENT_POS,
+    WeightedList = [begin
+      LS = proplists:get_value(sbcs, Props),
+      LM = proplists:get_value(mbcs,Props),
+      Sbcs = element(Pos, lists:keyfind(blocks,1,LS)),
+      Mbcs = element(Pos, lists:keyfind(blocks,1,LM)),
+      Ratio = case {Sbcs, Mbcs} of
+        {0,0} -> 0;
+        {_,0} -> infinity; % that is bad!
+        {_,_} -> Sbcs / Mbcs
+      end,
+      {Ratio, {Allocator,N}}
+     end || {{Allocator, N}, Props} <- allocators()],
+    [{Alloc,Ratio} || {Ratio,Alloc} <- lists:reverse(lists:sort(WeightedList))].
+
 %% @doc returns a dump of all allocator settings and values
 -spec allocators() -> [allocdata(term())].
 allocators() ->
     [{{A,N},Props} || A <- ?ALLOCATORS,
                       {_,N,Props} <- erlang:system_info({allocator,A})].
+
+%% In these comments: replacing the allocator default thingy
+%% with an actual dump from somewhere. For debugging purposes,
+%% hence being commented.
+%
+%allocators() ->
+%    {ok,[Term]} = file:consult("/tmp/leakalloc.dat"),
+%    dump_to_allocators(Term).
+%
+%%% Convert an existing allocator dump to a format this module can manage
+%dump_to_allocators([]) -> [];
+%dump_to_allocators([{Name, Instances}|Rest]) ->
+%    case lists:member(Name, ?ALLOCATORS) of
+%        true ->
+%            [{{Name,N},Props} || {instance,N,Props} <- Instances]
+%            ++
+%            dump_to_allocators(Rest);
+%        false ->
+%            dump_to_allocators(Rest)
+%    end.
 
 %%%%%%%%%%%%%%%
 %%% Private %%%
