@@ -12,11 +12,13 @@ Documentation for the library can be obtained at http://ferd.github.io/recon/
 Changelog
 ---------
 
+- 1.0.1: (WIP) add `recon_lib:term_to_port` to convert a string back to a
+  usable port.
 - 1.0.0: add `info/2` and `info/4`. The `memory` info type thus gets renamed
   to `memory_used`, in order to avoid conflicts when picking between a type
   and a specific process attribute. Types exported by the module also get
   updated.
-- 0.4.2 (WIP): extended `app_deps.erl` to read apps/ directories for releases
+- 0.4.2: extended `app_deps.erl` to read apps/ directories for releases
 - 0.4.1: fixed bug where nodes with lots of processes could see the GC call
   fail if said processes failed between long calls within the `bin_leak`
   function call.

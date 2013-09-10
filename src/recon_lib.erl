@@ -4,6 +4,7 @@
          proc_attrs/1, proc_attrs/2,
          inet_attrs/1, inet_attrs/2,
          triple_to_pid/3, term_to_pid/1,
+         term_to_port/1,
          time_map/5, time_fold/6]).
 
 -type diff() :: [recon:proc_attrs() | recon:inet_attrs()].
@@ -132,6 +133,25 @@ term_to_pid({global, Name}) -> global:whereis_name(Name);
 term_to_pid({via, Module, Name}) -> Module:whereis_name(Name);
 term_to_pid({X,Y,Z}) when is_integer(X), is_integer(Y), is_integer(Z) ->
     triple_to_pid(X,Y,Z).
+
+%% @doc Transforms a given term to a port
+-spec term_to_port(recon:port_term()) -> port().
+term_to_port(Port) when is_port(Port) -> Port;
+term_to_port("#Port<0."++Id) ->
+    %% We rebuild the term from the int received:
+    %% http://www.erlang.org/doc/apps/erts/erl_ext_dist.html#id86892
+    N = list_to_integer(lists:sublist(Id, length(Id)-1)), % drop trailing '>'
+    Name = iolist_to_binary(atom_to_list(node())),
+    NameLen = iolist_size(Name),
+    Vsn = binary:last(term_to_binary(self())),
+    Bin = <<131, % term encoding value
+            102, % port tag
+            100, % atom ext tag, used for node name
+            NameLen:2/unit:8,
+            Name:NameLen/binary,
+            N:4/unit:8, % actual counter value
+            Vsn:8>>, % version
+    binary_to_term(Bin).
 
 %% @doc Calls a given function every `Interval' milliseconds and supports
 %% a map-like interface (each result is modified and returned)

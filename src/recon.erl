@@ -100,6 +100,8 @@
                   | {global, term()} | {via, module(), term()}
                   | {non_neg_integer(), non_neg_integer(), non_neg_integer()}.
 
+-type port_term() :: port() | string().
+
 -type info_type() :: meta | signals | location | memory_used | work.
 
 -type info_meta_key() :: registered_name | dictionary | group_leader | status.
@@ -113,7 +115,7 @@
                   | info_memory_key() | info_work_key().
 
 
--export_type([proc_attrs/0, inet_attrs/0, pid_term/0]).
+-export_type([proc_attrs/0, inet_attrs/0, pid_term/0, port_term/0]).
 -export_type([info_type/0, info_key/0,
               info_meta_key/0, info_signals_key/0, info_location_key/0,
               info_memory_key/0, info_work_key/0]).
