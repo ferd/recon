@@ -96,7 +96,8 @@ memory(usage) ->
 %% numbers, and max values, the values at the peak. Comparing both together
 %% can give an idea of whether the node is currently being at its memory peak
 %% when possibly leaky, or if it isn't. This information can in turn
-%% influence the tuning of allocators to better fit sizes.
+%% influence the tuning of allocators to better fit sizes of blocks and/or
+%% carriers.
 -spec fragmentation(current | max) -> [allocdata([{atom(), term()}])].
 fragmentation(Keyword) ->
     Pos = case Keyword of
@@ -120,8 +121,24 @@ fragmentation(Keyword) ->
 %% allocators in {@link allocator()}) and returns information relative to
 %% the cache hit rates. Unless memory has expected spiky behaviour, it should
 %% usually be above 0.80 (80%).
-%% The values returned are sorted by a weight combining the lower cache hit
-%% joined to the largest memory values allocated.
+%%
+%% Cache can be tweaked using three VM flags: `+MMmcs', `+MMrmcbf', and
+%% `+MMamcbf'.
+%%
+%% `+MMmcs' stands for the maximum amount of cached memory segments. Its
+%% default value is '10' and can be anything from 0 to 30. Increasing
+%% it first and verifying if cache hits get better should be the first
+%% step taken.
+%%
+%% The two other options specify what are the maximal values of a segment
+%% to cache, in relative (in percent) and absolute terms (in kilobytes),
+%% respectively. Increasing these may allow more segments to be cached, but
+%% should also add overheads to memory allocation. An Erlang node that has
+%% limited memory and increases these values may make things worse on
+%% that point.
+%%
+%% The values returned by this function are sorted by a weight combining
+%% the lower cache hit joined to the largest memory values allocated.
 -spec cache_hit_rates() -> [{{instance,instance()}, [{Key,Val}]}] when
     Key :: hit_rate | hits | alloc,
     Val :: term().
@@ -143,7 +160,15 @@ cache_hit_rates() ->
 %% used for. This can be related to the VM's largest multiblock carrier size
 %% (`lmbcs') and smallest multiblock carrier size (`smbcs') to specify
 %% allocation strategies regarding the block sizes to be used.
-%% @todo explain what values could lead to what strategies
+%%
+%% This function isn't exceptionally useful unless you know you have some
+%% specific problem, say with sbcs/mbcs ratios (see {@link sbcs_to_mbcs/0})
+%% or fragmentation for a specific allocator, and want to figure out what
+%% values to pick to increase or decrease sizes compared to the currently
+%% configured value.
+%%
+%% Do note that values for `lmbcs' and `smbcs' are going to be rounded up
+%% to the next power of two when configuring them.
 -spec average_sizes() -> [{allocator(), [{Key,Val}]}] when
     Key :: mbcs | sbcs,
     Val :: number().
@@ -171,12 +196,21 @@ average_sizes() ->
 %%
 %% When a specific piece of data is allocated, it is compared to a threshold,
 %% called the 'single block carrier threshold' (`sbct'). When the data is
-%% larget than the `sbct', it gets sent to a single block carrier. When the
+%% larger than the `sbct', it gets sent to a single block carrier. When the
 %% data is smaller than the `sbct', it gets placed into a multiblock carrier.
+%%
+%% mbcs are to be prefered to sbcs because they basically represent pre-
+%% allocated memory, whereas sbcs will map to one call to sys_alloc (often
+%% just malloc) or mmap, which is more expensive than redistributing data
+%% that was obtain for multiblock carriers. Moreover, the VM is able to do
+%% specific work with mbcs that should help reduce fragmentation in ways
+%% sys_alloc or mmap usually won't.
 %%
 %% Ideally, most of the data should fit inside main multiblock carriers. If
 %% most of the data ends up in `sbcs', you may need to adjust the multiblock
-%% carrier sizes, specifically the maximal value (`lmbcs').
+%% carrier sizes, specifically the maximal value (`lmbcs') and the threshold
+%% (`sbct'). On 32 bit VMs, `sbct' is limited to 8MBs, but 64 bit VMs can go
+%% to pretty much any practical size.
 %%
 %% Given the value returned is a ratio of sbcs/mbcs, the higher the value,
 %% the worst the condition. The list is sorted accordingly.
