@@ -206,7 +206,7 @@ average_sizes() ->
 %% specific work with mbcs that should help reduce fragmentation in ways
 %% sys_alloc or mmap usually won't.
 %%
-%% Ideally, most of the data should fit inside main multiblock carriers. If
+%% Ideally, most of the data should fit inside multiblock carriers. If
 %% most of the data ends up in `sbcs', you may need to adjust the multiblock
 %% carrier sizes, specifically the maximal value (`lmbcs') and the threshold
 %% (`sbct'). On 32 bit VMs, `sbct' is limited to 8MBs, but 64 bit VMs can go
