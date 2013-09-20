@@ -1,27 +1,115 @@
-%%% @doc Functions to deal with Erlang's memory allocators
-%%% http://www.erlang.org/doc/man/erts_alloc.html
-%%% This module is not to be considered stable yet.
+%%% @doc Functions to deal with
+%%% <a href="http://www.erlang.org/doc/man/erts_alloc.html">Erlang's memory
+%%% allocators</a>, or particularly, to try to present the allocator data
+%%% in a way that makes it simpler to discover possible problems.
+%%% 
+%%% Tweaking Erlang memory allocators and their behaviour is a very tricky
+%%% ordeal whenever you have to give up the default settings. This module
+%%% (and its documentation) will try and provide helpful pointers to help
+%%% in this task.
+%%%
+%%% This module should mostly be helpful to figure out <em>if</em> there is
+%%% a problem, but will offer little help to figure out <em>what</em> is wrong.
+%%%
+%%% To figure this out, you need to dig deeper into the allocator data
+%%% (obtainable with {@link allocators/0}), and/or have some precise knowledge
+%%% about the type of load and work done by the VM to be able to assess what
+%%% each reaction to individual tweak should be.
+%%%
+%%% A lot of trial and error might be required to figure out if tweaks have
+%%% helped or not, ultimately.
 %%%
 %%% Glossary:
-%%%  - `sbcs': single-block carriers.
-%%%  - `mbcs': multiblock carriers.
+%%% <dl>
+%%%   <dt>sys_alloc</dt>
+%%%   <dd>System allocator, usually just malloc</dd>
+%%%   
+%%%   <dt>mseg_alloc</dt>
+%%%   <dd>Used by other allocators, can do mmap. Caches allocations</dd>
+%%%
+%%%   <dt>temp_alloc</dt>
+%%%   <dd>Used for temporary allocations</dd>
+%%%
+%%%   <dt>eheap_alloc</dt>
+%%%   <dd>Heap data (i.e. process heaps) allocator</dd>
+%%%
+%%%   <dt>binary_alloc</dt>
+%%%   <dd>Global binary heap allocator</dd>
+%%%
+%%%   <dt>ets_alloc</dt>
+%%%   <dd>ETS data allocator</dd>
+%%%
+%%%   <dt>driver_alloc</dt>
+%%%   <dd>Driver data allocator</dd>
+%%%
+%%%   <dt>sl_alloc</dt>
+%%%   <dd>Short-lived memory blocks allocator</dd>
+%%%
+%%%   <dt>ll_alloc</dt>
+%%%   <dd>Long-lived data (i.e. Erlang code itself) allocator</dd>
+%%%
+%%%   <dt>fix_alloc</dt>
+%%%   <dd>Frequently used fixed-size data allocator</dd>
+%%%
+%%%  <dt>std_alloc</dt>
+%%%  <dd>Allocator for other memory blocks</dd>
+%%%
+%%%  <dt>carrier</dt>
+%%%  <dd>When a given area of memory is allocated by the OS to the
+%%%    VM (through sys_alloc or mseg_alloc), it is put into a 'carrier'. There
+%%%    are two kinds of carriers: multiblock and single block. The default
+%%%    carriers data is sent to are multiblock carriers, owned by a specific
+%%%    allocator (ets_alloc, binary_alloc, etc.). The specific allocator can
+%%%    thus do allocation for specific Erlang requirements within bits of
+%%%    memory that has been preallocated before. This allows more reuse,
+%%%    and we can even measure the cache hit rates {@link cache_hit_rates/0}.
+%%%
+%%%    There is however a threshold above which an item in memory won't fit
+%%%    a multiblock carrier. When that happens, the specific allocator does
+%%%    a special allocation to a single block carrier. This is done by the
+%%%    allocator basically asking for space directly from sys_alloc or
+%%%    mseg_alloc rather than a previously multiblock area already obtained
+%%%    before.
+%%%
+%%%    This leads to various allocation strategies where you decide to
+%%%    choose:
+%%%    <ol>
+%%%      <li>which multiblock carrier you're going to (if at all)</li>
+%%%      <li>which block in that carrier you're going to</li>
+%%%    </ol>
+%%%
+%%%    See <a href="http://www.erlang.org/doc/man/erts_alloc.html">the official
+%%%    documantation on erts_alloc</a> for more details.
+%%%  </dd>
+%%%
+%%%  <dt>mbcs</dt>
+%%%  <dd>Multiblock carriers.
+%%%
+%%%  <dt>sbcs</dt>
+%%%  <dd>Single block carriers.
+%%%
+%%%  <dt>lmbcs</dt>
+%%%  <dd>Largest multiblock carrier size
+%%%
+%%%  <dt>smbcs</dt>
+%%%  <dd>Smallest multiblock carrier size
+%%%
+%%%  <dt>sbct</dt>
+%%%  <dd>Single block carrier threshold</dd>
+%%% </dl>
 %%%
 %%% All sizes returned by this module are in bytes.
 %%%
-%%% @todo extend definitions and docs
 -module(recon_alloc).
-%% specific allocators. Not included: 
-%% - sys_alloc (malloc)
-%% - mseg_alloc used by other allocs, mmap-only. Caches allocations.
--define(ALLOCATORS, [temp_alloc,    % used for temporary allocations
-                     eheap_alloc,   % heap data (i.e. process heaps)
-                     binary_alloc,  % global binary heap
-                     ets_alloc,     % ETS data
-                     driver_alloc,  % driver data
-                     sl_alloc,      % short lived memory blocks
-                     ll_alloc,      % long-libed data (i.e. Erlang code)
-                     fix_alloc,     % frequently used fixed-size data
-                     std_alloc      % other memory blocks
+-define(ALLOCATORS, [temp_alloc,
+                     eheap_alloc,
+                     binary_alloc,
+                     ets_alloc,
+                     driver_alloc,
+                     sl_alloc,
+                     ll_alloc,
+                     fix_alloc,
+                     std_alloc
                     ]).
 
 -type allocator() :: temp_alloc | eheap_alloc | binary_alloc | ets_alloc
@@ -31,10 +119,8 @@
 -type allocdata(T) :: {{allocator(), instance()}, T}.
 -export_type([allocator/0, instance/0, allocdata/1]).
 
-%% sbcs: single-block carriers
-%% mbcs: multiblock carriers
--define(CURRENT_POS, 2). % pos in sizes tuples
--define(MAX_POS, 4). % pos in sizes tuples
+-define(CURRENT_POS, 2). % pos in sizes tuples for current value
+-define(MAX_POS, 4). % pos in sizes tuples for max value
 
 -export([memory/1, fragmentation/1, cache_hit_rates/0, average_sizes/0,
          sbcs_to_mbcs/0, allocators/0]).
@@ -242,7 +328,7 @@ allocators() ->
 %% hence being commented.
 %
 %allocators() ->
-%    {ok,[Term]} = file:consult("/tmp/leakalloc.dat"),
+%    {ok,[Term]} = file:consult("alloc.dat"),
 %    dump_to_allocators(Term).
 %
 %%% Convert an existing allocator dump to a format this module can manage
