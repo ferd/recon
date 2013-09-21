@@ -52,6 +52,11 @@
 %%%         {@link sctp/0}, {@link files/0}, and {@link port_types/0} will
 %%%         list all the Erlang ports of a given type. The latter function
 %%%         prints counts of all individual types.</dd>
+%%%     <dd>Port state information can be useful to figure out why certain
+%%%         parts of the system misbehave. Functions such as 
+%%%         {@link port_info/1} and {@link port_info/2} are wrappers to provide
+%%%         more similar or more details than `erlang:port_info/1-2', and, for
+%%%         inet ports, statistics and options for each socket.</dd>
 %%%     <dd>Finally, the functions {@link inet_count/2} and {@link inet_window/3}
 %%%         provide the absolute or sliding window functionality of
 %%%         {@link proc_count/2} and {@link proc_count/3} to inet ports
