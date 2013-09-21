@@ -12,8 +12,10 @@ Documentation for the library can be obtained at http://ferd.github.io/recon/
 Changelog
 ---------
 
-- 1.0.1: (WIP) add `recon_lib:term_to_port` to convert a string back to a
-  usable port.
+- 1.1.0: (WIP)
+-- add `recon_lib:term_to_port` to convert a string back to a
+   usable port.
+-- add `recon:port_info/1` and `recon:port_info/2`
 - 1.0.0: add `info/2` and `info/4`. The `memory` info type thus gets renamed
   to `memory_used`, in order to avoid conflicts when picking between a type
   and a specific process attribute. Types exported by the module also get

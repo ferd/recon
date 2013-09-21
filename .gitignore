@@ -3,9 +3,9 @@
 /logs
 /log
 .DS_Store
-/test/*.beam
 *.swp
 *.swo
+*.beam
 erl_crash.dump
 .eunit
 /doc/*.html

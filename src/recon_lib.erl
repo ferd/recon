@@ -137,10 +137,13 @@ term_to_pid({X,Y,Z}) when is_integer(X), is_integer(Y), is_integer(Z) ->
 %% @doc Transforms a given term to a port
 -spec term_to_port(recon:port_term()) -> port().
 term_to_port(Port) when is_port(Port) -> Port;
+term_to_port(Name) when is_atom(Name) -> whereis(Name);
 term_to_port("#Port<0."++Id) ->
+    N = list_to_integer(lists:sublist(Id, length(Id)-1)), % drop trailing '>'
+    term_to_port(N);
+term_to_port(N) when is_integer(N) ->
     %% We rebuild the term from the int received:
     %% http://www.erlang.org/doc/apps/erts/erl_ext_dist.html#id86892
-    N = list_to_integer(lists:sublist(Id, length(Id)-1)), % drop trailing '>'
     Name = iolist_to_binary(atom_to_list(node())),
     NameLen = iolist_size(Name),
     Vsn = binary:last(term_to_binary(self())),

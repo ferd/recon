@@ -79,7 +79,8 @@
 -export([remote_load/1, remote_load/2,
          source/1]).
 -export([tcp/0, udp/0, sctp/0, files/0, port_types/0,
-         inet_count/2, inet_window/3]).
+         inet_count/2, inet_window/3,
+         port_info/1, port_info/2]).
 -export([rpc/1, rpc/2, rpc/3,
          named_rpc/1, named_rpc/2, named_rpc/3]).
 
@@ -100,8 +101,6 @@
                   | {global, term()} | {via, module(), term()}
                   | {non_neg_integer(), non_neg_integer(), non_neg_integer()}.
 
--type port_term() :: port() | string().
-
 -type info_type() :: meta | signals | location | memory_used | work.
 
 -type info_meta_key() :: registered_name | dictionary | group_leader | status.
@@ -114,11 +113,29 @@
 -type info_key() :: info_meta_key() | info_signals_key() | info_location_key()
                   | info_memory_key() | info_work_key().
 
+-type port_term() :: port() | string() | atom() | pos_integer().
+
+-type port_info_type() :: meta | signals | io | memory_used | specific.
+
+-type port_info_meta_key() :: registered_name | id | name | os_pid | parallelism.
+-type port_info_signals_key() :: connected | links | monitors.
+-type port_info_io_key() :: input | output.
+-type port_info_memory_key() :: memory | queue_size.
+-type port_info_specific_key() :: atom().
+
+-type port_info_key() :: port_info_meta_key() | port_info_signals_key()
+                       | port_info_io_key() | port_info_memory_key()
+                       | port_info_specific_key().
+
 
 -export_type([proc_attrs/0, inet_attrs/0, pid_term/0, port_term/0]).
 -export_type([info_type/0, info_key/0,
               info_meta_key/0, info_signals_key/0, info_location_key/0,
               info_memory_key/0, info_work_key/0]).
+-export_type([port_info_type/0, port_info_key/0,
+              port_info_meta_key/0, port_info_signals_key/0, port_info_io_key/0,
+              port_info_memory_key/0, port_info_specific_key/0]).
+
 %%%%%%%%%%%%%%%%%%
 %%% PUBLIC API %%%
 %%%%%%%%%%%%%%%%%%
@@ -476,6 +493,103 @@ inet_window(Attr, Num, Time) when is_atom(Attr) ->
         fun({_,A,_},{_,B,_}) -> A > B end,
         recon_lib:sliding_window(First, Last)
     ), Num).
+
+%% @doc Allows to be similar to `erlang:port_info/1', but allows
+%% more flexible port usage: usual ports, ports that were registered
+%% locally (an atom), ports represented as strings (`"#Port<0.2013>"'),
+%% or through an index lookup (`2013', for the same result as
+%% `"#Port<0.2013>"').
+%%
+%% Moreover, the function will try to fetch implementation-specific
+%% details based on the port type (only inet ports have this feature
+%% so far). For example, TCP ports will include information about the
+%% remote peer, transfer statistics, and socket options being used.
+%%
+%% The information-specific and the basic port info are sorted and 
+%% categorized in broader categories ({@link port_info_type()}).
+-spec port_info(port_term()) -> [{port_info_type(),
+                                  [{port_info_key(), term()}]},...].
+port_info(PortTerm) ->
+    Port = recon_lib:term_to_port(PortTerm),
+    [port_info(Port, Type) || Type <- [meta, signals, io, memory_used,
+                                       specific]].
+
+%% @doc Allows to be similar to `erlang:port_info/2', but allows
+%% more flexible port usage: usual ports, ports that were registered
+%% locally (an atom), ports represented as strings (`"#Port<0.2013>"'),
+%% or through an index lookup (`2013', for the same result as
+%% `"#Port<0.2013>"').
+%%
+%% Moreover, the function allows to to fetch information by category
+%% as defined in {@link port_info_type()}, and although the type signature
+%% doesn't show it in the generated documentation, individual items
+%% accepted by `erlang:port_info/2' are accepted, and lists of them too.
+-spec port_info(port_term(), port_info_type()) -> {port_info_type(),
+                                                   [{port_info_key(), _}]}
+    ;          (port_term(), [atom()]) -> [{atom(), term()}]
+    ;          (port_term(), atom()) -> {atom(), term()}.
+port_info(PortTerm, meta) ->
+    {meta, List} = port_info_type(PortTerm, meta, [id, name, os_pid,
+                                                   parallelism]),
+    case port_info(PortTerm, registered_name) of
+        [] -> {meta, List};
+        Name -> {meta, [Name | List]}
+    end;
+port_info(PortTerm, signals) ->
+    port_info_type(PortTerm, signals, [connected, links, monitors]);
+port_info(PortTerm, io) ->
+    port_info_type(PortTerm, io, [input, output]);
+port_info(PortTerm, memory_used) ->
+    port_info_type(PortTerm, memory_used, [memory, queue_size]);
+port_info(PortTerm, specific) ->
+    Port = recon_lib:term_to_port(PortTerm),
+    Props = case erlang:port_info(Port, name) of
+        {_,Type} when Type =:= "udp_inet";
+                      Type =:= "tcp_inet";
+                      Type =:= "sctp_inet" ->
+            case inet:getstat(Port) of
+                {ok, Stats} -> [{statistics, Stats}];
+                _ -> []
+            end ++
+            case inet:peername(Port) of
+                {ok, Peer} -> [{peername, Peer}];
+                {error, _} ->  []
+            end ++
+            case inet:sockname(Port) of
+                {ok, Local} -> [{sockname, Local}];
+                {error, _} -> []
+            end ++
+            case inet:getopts(Port, [active, broadcast, buffer, delay_send,
+                                     dontroute, exit_on_close, header,
+                                     high_watermark, ipv6_v6only, keepalive,
+                                     linger, low_watermark, mode, nodelay,
+                                     packet, packet_size, priority,
+                                     read_packets, recbuf, reuseaddr,
+                                     send_timeout, sndbuf]) of
+                {ok, Opts} -> [{options, Opts}];
+                {error, _} -> []
+            end;
+        {_,"efile"} ->
+            %% would be nice to support file-specific info, but things
+            %% are too vague with the file_server and how it works in
+            %% order to make this work efficiently
+            [];
+        _ ->
+            []
+    end,
+    {type, Props};
+port_info(PortTerm, Keys) when is_list(Keys) ->
+    Port = recon_lib:term_to_port(PortTerm),
+    [erlang:port_info(Port,Key) || Key <- Keys];
+port_info(PortTerm, Key) when is_atom(Key) ->
+    erlang:port_info(recon_lib:term_to_port(PortTerm), Key).
+
+%% @private makes access to `port_info_type()' calls simpler.
+%-spec port_info_type(pid_term(), port_info_type(), [port_info_key()]) ->
+%    {port_info_type(), [{port_info_key(), term()}]}.
+port_info_type(PortTerm, Type, Keys) ->
+    Port = recon_lib:term_to_port(PortTerm),
+    {Type, [erlang:port_info(Port,Key) || Key <- Keys]}.
 
 
 %%% RPC Utils %%%
