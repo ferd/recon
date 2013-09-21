@@ -28,6 +28,13 @@ Included modules are:
         with data from the node. Would be an interesting place to look
         if you were looking to extend Recon's functionality
     </dd>
+
+    <dt>{@link recon_alloc}</dt>
+    <dd>
+        Regroups functions to deal with Erlang's memory allocators, or
+        particularly, to try to present the allocator data in a way that
+        makes it simpler to discover the presence of possible problems.
+    </dd>
 </dl>
 
 This library contains few tests -- most of the functionality has been

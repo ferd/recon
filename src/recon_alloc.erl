@@ -2,7 +2,7 @@
 %%% <a href="http://www.erlang.org/doc/man/erts_alloc.html">Erlang's memory
 %%% allocators</a>, or particularly, to try to present the allocator data
 %%% in a way that makes it simpler to discover possible problems.
-%%% 
+%%%
 %%% Tweaking Erlang memory allocators and their behaviour is a very tricky
 %%% ordeal whenever you have to give up the default settings. This module
 %%% (and its documentation) will try and provide helpful pointers to help
@@ -23,7 +23,7 @@
 %%% <dl>
 %%%   <dt>sys_alloc</dt>
 %%%   <dd>System allocator, usually just malloc</dd>
-%%%   
+%%%
 %%%   <dt>mseg_alloc</dt>
 %%%   <dd>Used by other allocators, can do mmap. Caches allocations</dd>
 %%%
@@ -83,16 +83,16 @@
 %%%  </dd>
 %%%
 %%%  <dt>mbcs</dt>
-%%%  <dd>Multiblock carriers.
+%%%  <dd>Multiblock carriers.</dd>
 %%%
 %%%  <dt>sbcs</dt>
-%%%  <dd>Single block carriers.
+%%%  <dd>Single block carriers.</dd>
 %%%
 %%%  <dt>lmbcs</dt>
-%%%  <dd>Largest multiblock carrier size
+%%%  <dd>Largest multiblock carrier size</dd>
 %%%
 %%%  <dt>smbcs</dt>
-%%%  <dd>Smallest multiblock carrier size
+%%%  <dd>Smallest multiblock carrier size</dd>
 %%%
 %%%  <dt>sbct</dt>
 %%%  <dd>Single block carrier threshold</dd>
@@ -132,16 +132,19 @@
 %% @doc reports one of multiple possible memory values for the entire
 %% node depending on what is to be reported:
 %%
-%% - `memory(used)' reports the memory that is actively used for allocated
-%%   Erlang data;
-%% - `memory(allocated)' reports the memory that is reserved by the VM. It
-%%   includes the memory used, but also the memory yet-to-be-used but still
-%%   given by the OS. This is the amount you want if you're dealing with
-%%   ulimit and OS-reported values.
-%% - `memory(unused)' reports the amount of memory reserved by the VM that
-%%   is not being allocated. Equivalent to `memory(allocated) - memory(used)'.
-%% - `memory(usage)' returns a percentage (0.0 .. 1.0) of `used/allocated'
-%%   memory ratios.
+%% <ul>
+%%   <li>`memory(used)' reports the memory that is actively used for allocated
+%%       Erlang data;</li>
+%%   <li>`memory(allocated)' reports the memory that is reserved by the VM. It
+%%       includes the memory used, but also the memory yet-to-be-used but still
+%%       given by the OS. This is the amount you want if you're dealing with
+%%       ulimit and OS-reported values.</li>
+%%   <li>`memory(unused)' reports the amount of memory reserved by the VM that
+%%       is not being allocated.
+%%       Equivalent to `memory(allocated) - memory(used)'.</li>
+%%   <li>`memory(usage)' returns a percentage (0.0 .. 1.0) of `used/allocated'
+%%       memory ratios.</li>
+%% </ul>
 %%
 %% The memory reported by `memory(allocated)' should roughly
 %% match what the OS reports. If this amount is different by a large margin,
