@@ -14,7 +14,7 @@ It is recommended that you use tags if you do not want bleeding edge and develop
 Changelog
 ---------
 
-- 1.1.0: (WIP)
+- 1.1.0:
   - add `recon_lib:term_to_port` to convert a string back to a
     usable port.
   - add `recon:port_info/1` and `recon:port_info/2`
