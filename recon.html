@@ -13,7 +13,7 @@
         <h1>Recon</h1>
         <nav>
           <ul>
-<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_lib.html">recon_lib</a>
+<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a>
           </ul>
         </nav>
     </header>
@@ -76,6 +76,11 @@ contained in the Recon application.</p>
            <a href="#sctp-0"><code>sctp/0</code></a>, <a href="#files-0"><code>files/0</code></a>, and <a href="#port_types-0"><code>port_types/0</code></a> will
            list all the Erlang ports of a given type. The latter function
            prints counts of all individual types.</dd>
+       <dd>Port state information can be useful to figure out why certain
+           parts of the system misbehave. Functions such as
+           <a href="#port_info-1"><code>port_info/1</code></a> and <a href="#port_info-2"><code>port_info/2</code></a> are wrappers to provide
+           more similar or more details than <code>erlang:port_info/1-2</code>, and, for
+           inet ports, statistics and options for each socket.</dd>
        <dd>Finally, the functions <a href="#inet_count-2"><code>inet_count/2</code></a> and <a href="#inet_window-3"><code>inet_window/3</code></a>
            provide the absolute or sliding window functionality of
            <a href="#proc_count-2"><code>proc_count/2</code></a> and <a href="#proc_count-3"><code>proc_count/3</code></a> to inet ports
@@ -131,6 +136,38 @@ contained in the Recon application.</p>
 <p><code>pid_term() = pid() | atom() | string() | {global, term()} | {via, module(), term()} | {non_neg_integer(), non_neg_integer(), non_neg_integer()}</code></p>
 
 
+<h4 class="typedecl"><a name="type-port_info_io_key">port_info_io_key()</a></h4>
+<p><code>port_info_io_key() = input | output</code></p>
+
+
+<h4 class="typedecl"><a name="type-port_info_key">port_info_key()</a></h4>
+<p><code>port_info_key() = <a href="#type-port_info_meta_key">port_info_meta_key()</a> | <a href="#type-port_info_signals_key">port_info_signals_key()</a> | <a href="#type-port_info_io_key">port_info_io_key()</a> | <a href="#type-port_info_memory_key">port_info_memory_key()</a> | <a href="#type-port_info_specific_key">port_info_specific_key()</a></code></p>
+
+
+<h4 class="typedecl"><a name="type-port_info_memory_key">port_info_memory_key()</a></h4>
+<p><code>port_info_memory_key() = memory | queue_size</code></p>
+
+
+<h4 class="typedecl"><a name="type-port_info_meta_key">port_info_meta_key()</a></h4>
+<p><code>port_info_meta_key() = registered_name | id | name | os_pid | parallelism</code></p>
+
+
+<h4 class="typedecl"><a name="type-port_info_signals_key">port_info_signals_key()</a></h4>
+<p><code>port_info_signals_key() = connected | links | monitors</code></p>
+
+
+<h4 class="typedecl"><a name="type-port_info_specific_key">port_info_specific_key()</a></h4>
+<p><code>port_info_specific_key() = atom()</code></p>
+
+
+<h4 class="typedecl"><a name="type-port_info_type">port_info_type()</a></h4>
+<p><code>port_info_type() = meta | signals | io | memory_used | specific</code></p>
+
+
+<h4 class="typedecl"><a name="type-port_term">port_term()</a></h4>
+<p><code>port_term() = port() | string() | atom() | pos_integer()</code></p>
+
+
 <h4 class="typedecl"><a name="type-proc_attrs">proc_attrs()</a></h4>
 <p><code>proc_attrs() = {pid(), Attr::term(), [Name::atom() | {current_function, mfa()} | {initial_call, mfa()}, ...]}</code></p>
 
@@ -166,6 +203,16 @@ called in production systems.</td></tr>
 <tr><td valign="top"><a href="#node_stats_list-2">node_stats_list/2</a></td><td>Shorthand for <code>node_stats(N, Interval, fun(X,Acc) -&gt; [X|Acc] end, [])</code>
   with the results reversed to be in the right temporal order.</td></tr>
 <tr><td valign="top"><a href="#node_stats_print-2">node_stats_print/2</a></td><td>Shorthand for <code>node_stats(N, Interval, fun(X,_) -&gt; io:format("~p~n",[X]) end, nostate)</code>.</td></tr>
+<tr><td valign="top"><a href="#port_info-1">port_info/1</a></td><td>Allows to be similar to <code>erlang:port_info/1</code>, but allows
+  more flexible port usage: usual ports, ports that were registered
+  locally (an atom), ports represented as strings (<code>"#Port&lt;0.2013&gt;"</code>),
+  or through an index lookup (<code>2013</code>, for the same result as
+  <code>"#Port&lt;0.2013&gt;"</code>).</td></tr>
+<tr><td valign="top"><a href="#port_info-2">port_info/2</a></td><td>Allows to be similar to <code>erlang:port_info/2</code>, but allows
+  more flexible port usage: usual ports, ports that were registered
+  locally (an atom), ports represented as strings (<code>"#Port&lt;0.2013&gt;"</code>),
+  or through an index lookup (<code>2013</code>, for the same result as
+  <code>"#Port&lt;0.2013&gt;"</code>).</td></tr>
 <tr><td valign="top"><a href="#port_types-0">port_types/0</a></td><td>Shows a list of all different ports on the node with their respective
   types.</td></tr>
 <tr><td valign="top"><a href="#proc_count-2">proc_count/2</a></td><td>Fetches a given attribute from all processes and returns
@@ -340,6 +387,37 @@ and ets tables).</p>
 <p><code>node_stats_print(Repeat, Interval) -&gt; term()</code>
 <ul class="definitions"><li><code>Repeat = non_neg_integer()</code></li><li><code>Interval = pos_integer()</code></li></ul></p>
 </div><p>Shorthand for <code>node_stats(N, Interval, fun(X,_) -&gt; io:format("~p~n",[X]) end, nostate)</code>.</p>
+
+<h4 class="function"><a name="port_info-1">port_info/1</a></h4>
+<div class="spec">
+<p><code>port_info(PortTerm::<a href="#type-port_term">port_term()</a>) -&gt; [{<a href="#type-port_info_type">port_info_type()</a>, [{<a href="#type-port_info_key">port_info_key()</a>, term()}]}, ...]</code><br></p>
+</div><p><p>Allows to be similar to <code>erlang:port_info/1</code>, but allows
+  more flexible port usage: usual ports, ports that were registered
+  locally (an atom), ports represented as strings (<code>"#Port&lt;0.2013&gt;"</code>),
+  or through an index lookup (<code>2013</code>, for the same result as
+  <code>"#Port&lt;0.2013&gt;"</code>).</p>
+ 
+  <p>Moreover, the function will try to fetch implementation-specific  
+details based on the port type (only inet ports have this feature  
+so far). For example, TCP ports will include information about the  
+remote peer, transfer statistics, and socket options being used.</p>
+ 
+  The information-specific and the basic port info are sorted and
+  categorized in broader categories (<a href="#type-port_info_type"><code>port_info_type()</code></a>).</p>
+
+<h4 class="function"><a name="port_info-2">port_info/2</a></h4>
+<div class="spec">
+<p><code>port_info(PortTerm::<a href="#type-port_term">port_term()</a>, Keys::<a href="#type-port_info_type">port_info_type()</a>) -&gt; {<a href="#type-port_info_type">port_info_type()</a>, [{<a href="#type-port_info_key">port_info_key()</a>, term()}]}</code><br></p>
+</div><p><p>Allows to be similar to <code>erlang:port_info/2</code>, but allows
+  more flexible port usage: usual ports, ports that were registered
+  locally (an atom), ports represented as strings (<code>"#Port&lt;0.2013&gt;"</code>),
+  or through an index lookup (<code>2013</code>, for the same result as
+  <code>"#Port&lt;0.2013&gt;"</code>).</p>
+ 
+  Moreover, the function allows to to fetch information by category
+  as defined in <a href="#type-port_info_type"><code>port_info_type()</code></a>, and although the type signature
+  doesn't show it in the generated documentation, individual items
+  accepted by <code>erlang:port_info/2</code> are accepted, and lists of them too.</p>
 
 <h4 class="function"><a name="port_types-0">port_types/0</a></h4>
 <div class="spec">

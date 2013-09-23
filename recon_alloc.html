@@ -1,0 +1,290 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <link href='http://fonts.googleapis.com/css?family=Titillium+Web:400,300italic,600italic,700,600,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,700italic,400italic' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="screen.css" media="screen, projection" />
+    <title>Recon Library</title>
+  </head>
+  <body>
+    <header>
+        <h1>Recon</h1>
+        <nav>
+          <ul>
+<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a>
+          </ul>
+        </nav>
+    </header>
+    <article>
+    <h2>Module recon_alloc</h2>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>Functions to deal with
+   <a href="http://www.erlang.org/doc/man/erts_alloc.html">Erlang's memory
+   allocators</a>, or particularly, to try to present the allocator data   
+in a way that makes it simpler to discover possible problems.
+
+
+<h3><a name="description">Description</a></h3><p>Functions to deal with
+   <a href="http://www.erlang.org/doc/man/erts_alloc.html">Erlang's memory
+   allocators</a>, or particularly, to try to present the allocator data   
+in a way that makes it simpler to discover possible problems.</p>
+  
+   <p>Tweaking Erlang memory allocators and their behaviour is a very tricky   
+ordeal whenever you have to give up the default settings. This module   
+(and its documentation) will try and provide helpful pointers to help   
+in this task.</p>
+  
+   <p>This module should mostly be helpful to figure out <em>if</em> there is
+   a problem, but will offer little help to figure out <em>what</em> is wrong.</p>
+  
+   <p>To figure this out, you need to dig deeper into the allocator data
+   (obtainable with <a href="#allocators-0"><code>allocators/0</code></a>), and/or have some precise knowledge   
+about the type of load and work done by the VM to be able to assess what   
+each reaction to individual tweak should be.</p>
+  
+   <p>A lot of trial and error might be required to figure out if tweaks have   
+helped or not, ultimately.</p>
+  
+   Glossary:
+   <dl>
+     <dt>sys_alloc</dt>
+     <dd>System allocator, usually just malloc</dd>
+  
+     <dt>mseg_alloc</dt>
+     <dd>Used by other allocators, can do mmap. Caches allocations</dd>
+  
+     <dt>temp_alloc</dt>
+     <dd>Used for temporary allocations</dd>
+  
+     <dt>eheap_alloc</dt>
+     <dd>Heap data (i.e. process heaps) allocator</dd>
+  
+     <dt>binary_alloc</dt>
+     <dd>Global binary heap allocator</dd>
+  
+     <dt>ets_alloc</dt>
+     <dd>ETS data allocator</dd>
+  
+     <dt>driver_alloc</dt>
+     <dd>Driver data allocator</dd>
+  
+     <dt>sl_alloc</dt>
+     <dd>Short-lived memory blocks allocator</dd>
+  
+     <dt>ll_alloc</dt>
+     <dd>Long-lived data (i.e. Erlang code itself) allocator</dd>
+  
+     <dt>fix_alloc</dt>
+     <dd>Frequently used fixed-size data allocator</dd>
+  
+    <dt>std_alloc</dt>
+    <dd>Allocator for other memory blocks</dd>
+  
+    <dt>carrier</dt>
+    <dd><p>When a given area of memory is allocated by the OS to the
+      VM (through sys_alloc or mseg_alloc), it is put into a 'carrier'. There
+      are two kinds of carriers: multiblock and single block. The default
+      carriers data is sent to are multiblock carriers, owned by a specific
+      allocator (ets_alloc, binary_alloc, etc.). The specific allocator can
+      thus do allocation for specific Erlang requirements within bits of
+      memory that has been preallocated before. This allows more reuse,
+      and we can even measure the cache hit rates <a href="#cache_hit_rates-0"><code>cache_hit_rates/0</code></a>.</p>
+  
+      <p>There is however a threshold above which an item in memory won't fit      
+a multiblock carrier. When that happens, the specific allocator does      
+a special allocation to a single block carrier. This is done by the      
+allocator basically asking for space directly from sys_alloc or      
+mseg_alloc rather than a previously multiblock area already obtained      
+before.</p>
+  
+      This leads to various allocation strategies where you decide to
+      choose:
+      <ol>
+        <li>which multiblock carrier you're going to (if at all)</li>
+        <li>which block in that carrier you're going to</li>
+      </ol>
+  
+      See <a href="http://www.erlang.org/doc/man/erts_alloc.html">the official
+      documantation on erts_alloc</a> for more details.
+    </dd>
+  
+    <dt>mbcs</dt>
+    <dd>Multiblock carriers.</dd>
+  
+    <dt>sbcs</dt>
+    <dd>Single block carriers.</dd>
+  
+    <dt>lmbcs</dt>
+    <dd>Largest multiblock carrier size</dd>
+  
+    <dt>smbcs</dt>
+    <dd>Smallest multiblock carrier size</dd>
+  
+    <dt>sbct</dt>
+    <dd>Single block carrier threshold</dd>
+   </dl>
+  
+   All sizes returned by this module are in bytes.
+  
+<h3><a name="types">Data Types</a></h3>
+
+<h4 class="typedecl"><a name="type-allocator">allocator()</a></h4>
+<p><code>allocator() = temp_alloc | eheap_alloc | binary_alloc | ets_alloc | driver_alloc | sl_alloc | ll_alloc | fix_alloc | std_alloc</code></p>
+
+
+<h4 class="typedecl"><a name="type-allocdata">allocdata()</a></h4>
+<p><code>allocdata(T) = {{<a href="#type-allocator">allocator()</a>, <a href="#type-instance">instance()</a>}, T}</code></p>
+
+
+<h4 class="typedecl"><a name="type-instance">instance()</a></h4>
+<p><code>instance() = non_neg_integer()</code></p>
+
+
+<h3><a name="index">Function Index</a></h3>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#allocators-0">allocators/0</a></td><td>returns a dump of all allocator settings and values.</td></tr>
+<tr><td valign="top"><a href="#average_sizes-0">average_sizes/0</a></td><td>Checks all allocators in <a href="#type-allocator"><code>allocator()</code></a> and returns the average
+  carrier sized being used for <code>mbcs</code> and <code>sbcs</code>.</td></tr>
+<tr><td valign="top"><a href="#cache_hit_rates-0">cache_hit_rates/0</a></td><td>looks at the <code>mseg_alloc</code> allocator (allocator used by all the
+  allocators in <a href="#type-allocator"><code>allocator()</code></a>) and returns information relative to  
+the cache hit rates.</td></tr>
+<tr><td valign="top"><a href="#fragmentation-1">fragmentation/1</a></td><td>Compares the block sizes to the carrier sizes, both for
+  single block (<code>sbcs</code>) and multiblock (<code>mbcs</code>) carriers.</td></tr>
+<tr><td valign="top"><a href="#memory-1">memory/1</a></td><td>reports one of multiple possible memory values for the entire  
+node depending on what is to be reported:.</td></tr>
+<tr><td valign="top"><a href="#sbcs_to_mbcs-0">sbcs_to_mbcs/0</a></td><td>compares the amount of single block carriers (<code>sbcs</code>) vs.</td></tr>
+</table>
+
+<h3><a name="functions">Function Details</a></h3>
+
+<h4 class="function"><a name="allocators-0">allocators/0</a></h4>
+<div class="spec">
+<p><code>allocators() -&gt; [<a href="#type-allocdata">allocdata</a>(term())]</code><br></p>
+</div><p>returns a dump of all allocator settings and values</p>
+
+<h4 class="function"><a name="average_sizes-0">average_sizes/0</a></h4>
+<div class="spec">
+<p><code>average_sizes() -&gt; [{<a href="#type-allocator">allocator()</a>, [{Key, Val}]}]</code>
+<ul class="definitions"><li><code>Key = mbcs | sbcs</code></li><li><code>Val = number()</code></li></ul></p>
+</div><p><p>Checks all allocators in <a href="#type-allocator"><code>allocator()</code></a> and returns the average
+  carrier sized being used for <code>mbcs</code> and <code>sbcs</code>. This value is interesting
+  to use because it will tell us how used most carriers are individually being
+  used for. This can be related to the VM's largest multiblock carrier size
+  (<code>lmbcs</code>) and smallest multiblock carrier size (<code>smbcs</code>) to specify  
+allocation strategies regarding the block sizes to be used.</p>
+ 
+  <p>This function isn't exceptionally useful unless you know you have some
+  specific problem, say with sbcs/mbcs ratios (see <a href="#sbcs_to_mbcs-0"><code>sbcs_to_mbcs/0</code></a>)  
+or fragmentation for a specific allocator, and want to figure out what  
+values to pick to increase or decrease sizes compared to the currently  
+configured value.</p>
+ 
+  Do note that values for <code>lmbcs</code> and <code>smbcs</code> are going to be rounded up
+  to the next power of two when configuring them.</p>
+
+<h4 class="function"><a name="cache_hit_rates-0">cache_hit_rates/0</a></h4>
+<div class="spec">
+<p><code>cache_hit_rates() -&gt; [{{instance, <a href="#type-instance">instance()</a>}, [{Key, Val}]}]</code>
+<ul class="definitions"><li><code>Key = hit_rate | hits | alloc</code></li><li><code>Val = term()</code></li></ul></p>
+</div><p><p>looks at the <code>mseg_alloc</code> allocator (allocator used by all the
+  allocators in <a href="#type-allocator"><code>allocator()</code></a>) and returns information relative to  
+the cache hit rates. Unless memory has expected spiky behaviour, it should  
+usually be above 0.80 (80%).</p>
+ 
+  <p>Cache can be tweaked using three VM flags: <code>+MMmcs</code>, <code>+MMrmcbf</code>, and
+  <code>+MMamcbf</code>.</p>
+ 
+  <p><code>+MMmcs</code> stands for the maximum amount of cached memory segments. Its  
+default value is '10' and can be anything from 0 to 30. Increasing  
+it first and verifying if cache hits get better should be the first  
+step taken.</p>
+ 
+  <p>The two other options specify what are the maximal values of a segment  
+to cache, in relative (in percent) and absolute terms (in kilobytes),  
+respectively. Increasing these may allow more segments to be cached, but  
+should also add overheads to memory allocation. An Erlang node that has  
+limited memory and increases these values may make things worse on  
+that point.</p>
+ 
+  The values returned by this function are sorted by a weight combining
+  the lower cache hit joined to the largest memory values allocated.</p>
+
+<h4 class="function"><a name="fragmentation-1">fragmentation/1</a></h4>
+<div class="spec">
+<p><code>fragmentation(Keyword::current | max) -&gt; [<a href="#type-allocdata">allocdata</a>([{atom(), term()}])]</code><br></p>
+</div><p><p>Compares the block sizes to the carrier sizes, both for
+  single block (<code>sbcs</code>) and multiblock (<code>mbcs</code>) carriers.</p>
+ 
+  <p>The returned results are sorted by a weight system that is
+  somewhat likely to return the most fragmented allocators first,
+  based on their percentage of use and the total size of the carriers,
+  for both <code>sbcs</code> and <code>mbcs</code>.</p>
+ 
+  The values can both be returned for <code>current</code> allocator values, and
+  for <code>max</code> allocator values. The current values hold the present allocation
+  numbers, and max values, the values at the peak. Comparing both together
+  can give an idea of whether the node is currently being at its memory peak
+  when possibly leaky, or if it isn't. This information can in turn
+  influence the tuning of allocators to better fit sizes of blocks and/or
+  carriers.</p>
+
+<h4 class="function"><a name="memory-1">memory/1</a></h4>
+<div class="spec">
+<p><code>memory(X1::used | allocated | unused) -&gt; pos_integer()</code><br></p>
+</div><p><p>reports one of multiple possible memory values for the entire  
+node depending on what is to be reported:</p>
+ 
+  <ul>
+    <li><code>memory(used)</code> reports the memory that is actively used for allocated
+        Erlang data;</li>
+    <li><code>memory(allocated)</code> reports the memory that is reserved by the VM. It
+        includes the memory used, but also the memory yet-to-be-used but still
+        given by the OS. This is the amount you want if you're dealing with
+        ulimit and OS-reported values.</li>
+    <li><code>memory(unused)</code> reports the amount of memory reserved by the VM that
+        is not being allocated.
+        Equivalent to <code>memory(allocated) - memory(used)</code>.</li>
+    <li><code>memory(usage)</code> returns a percentage (0.0 .. 1.0) of <code>used/allocated</code>
+        memory ratios.</li>
+  </ul>
+ 
+  <p>The memory reported by <code>memory(allocated)</code> should roughly  
+match what the OS reports. If this amount is different by a large margin,  
+it may be the sign that someone is allocating memory in C directly, outside  
+of Erlang's own allocator -- a big warning sign.</p>
+ 
+  Also note that low memory usages can be the sign of fragmentation in
+  memory, in which case exploring which specific allocator is at fault
+  is recommended (see <a href="#fragmentation-1"><code>fragmentation/1</code></a>)</p>
+
+<h4 class="function"><a name="sbcs_to_mbcs-0">sbcs_to_mbcs/0</a></h4>
+<div class="spec">
+<p><code>sbcs_to_mbcs() -&gt; [<a href="#type-allocdata">allocdata</a>(term())]</code><br></p>
+</div><p><p>compares the amount of single block carriers (<code>sbcs</code>) vs. the
+  number of multiblock carriers (<code>mbcs</code>) for each individual allocator in
+  <a href="#type-allocator"><code>allocator()</code></a>.</p>
+ 
+  <p>When a specific piece of data is allocated, it is compared to a threshold,
+  called the 'single block carrier threshold' (<code>sbct</code>). When the data is
+  larger than the <code>sbct</code>, it gets sent to a single block carrier. When the
+  data is smaller than the <code>sbct</code>, it gets placed into a multiblock carrier.</p>
+ 
+  <p>mbcs are to be prefered to sbcs because they basically represent pre-  
+allocated memory, whereas sbcs will map to one call to sys_alloc (often  
+just malloc) or mmap, which is more expensive than redistributing data  
+that was obtain for multiblock carriers. Moreover, the VM is able to do  
+specific work with mbcs that should help reduce fragmentation in ways  
+sys_alloc or mmap usually won't.</p>
+ 
+  <p>Ideally, most of the data should fit inside multiblock carriers. If
+  most of the data ends up in <code>sbcs</code>, you may need to adjust the multiblock
+  carrier sizes, specifically the maximal value (<code>lmbcs</code>) and the threshold
+  (<code>sbct</code>). On 32 bit VMs, <code>sbct</code> is limited to 8MBs, but 64 bit VMs can go  
+to pretty much any practical size.</p>
+ 
+  Given the value returned is a ratio of sbcs/mbcs, the higher the value,
+  the worst the condition. The list is sorted accordingly.</p>
+
+    </article>
+  </body>
+</html>
