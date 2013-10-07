@@ -279,7 +279,7 @@ average_sizes() ->
     allocators()),
     average_group(average_calc(lists:sort(dict:to_list(Dict)))).
 
-%% @doc compares the amount of single block carriers (`sbcs') vs. the
+%% @doc compares the amount of single block carriers (`sbcs') vs the
 %% number of multiblock carriers (`mbcs') for each individual allocator in
 %% {@link allocator()}.
 %%
@@ -350,7 +350,7 @@ allocators() ->
 %%% Private %%%
 %%%%%%%%%%%%%%%
 
-%% Sort on small usage vs. large size.
+%% Sort on small usage vs large size.
 %% The weight cares about both the sbcs and mbcs values, and also
 %% returns a proplist of possibly interesting values.
 weighed_values({SbcsBlockSize, SbcsCarrierSize},
