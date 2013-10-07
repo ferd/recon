@@ -152,7 +152,9 @@ the cache hit rates.</td></tr>
   single block (<code>sbcs</code>) and multiblock (<code>mbcs</code>) carriers.</td></tr>
 <tr><td valign="top"><a href="#memory-1">memory/1</a></td><td>reports one of multiple possible memory values for the entire  
 node depending on what is to be reported:.</td></tr>
-<tr><td valign="top"><a href="#sbcs_to_mbcs-0">sbcs_to_mbcs/0</a></td><td>compares the amount of single block carriers (<code>sbcs</code>) vs.</td></tr>
+<tr><td valign="top"><a href="#sbcs_to_mbcs-0">sbcs_to_mbcs/0</a></td><td>compares the amount of single block carriers (<code>sbcs</code>) vs the
+  number of multiblock carriers (<code>mbcs</code>) for each individual allocator in
+  <a href="#type-allocator"><code>allocator()</code></a>.</td></tr>
 </table>
 
 <h3><a name="functions">Function Details</a></h3>
@@ -260,7 +262,7 @@ of Erlang's own allocator -- a big warning sign.</p>
 <h4 class="function"><a name="sbcs_to_mbcs-0">sbcs_to_mbcs/0</a></h4>
 <div class="spec">
 <p><code>sbcs_to_mbcs() -&gt; [<a href="#type-allocdata">allocdata</a>(term())]</code><br></p>
-</div><p><p>compares the amount of single block carriers (<code>sbcs</code>) vs. the
+</div><p><p>compares the amount of single block carriers (<code>sbcs</code>) vs the
   number of multiblock carriers (<code>mbcs</code>) for each individual allocator in
   <a href="#type-allocator"><code>allocator()</code></a>.</p>
  
