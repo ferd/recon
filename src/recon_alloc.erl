@@ -19,6 +19,10 @@
 %%% A lot of trial and error might be required to figure out if tweaks have
 %%% helped or not, ultimately.
 %%%
+%%% In order to help do offline debugging of memory allocator problems
+%%% recon_alloc also has a few functions that store snapshots of the
+%%% memory statistics. See {@link snapshot_load/1} for a simple use-case.
+%%%
 %%% Glossary:
 %%% <dl>
 %%%   <dt>sys_alloc</dt>
@@ -101,16 +105,16 @@
 %%% All sizes returned by this module are in bytes.
 %%%
 -module(recon_alloc).
--define(ALLOCATORS, [temp_alloc,
-                     eheap_alloc,
-                     binary_alloc,
-                     ets_alloc,
-                     driver_alloc,
-                     sl_alloc,
-                     ll_alloc,
-                     fix_alloc,
-                     std_alloc
-                    ]).
+-define(UTIL_ALLOCATORS, [temp_alloc,
+                          eheap_alloc,
+                          binary_alloc,
+                          ets_alloc,
+                          driver_alloc,
+                          sl_alloc,
+                          ll_alloc,
+                          fix_alloc,
+                          std_alloc
+                         ]).
 
 -type allocator() :: temp_alloc | eheap_alloc | binary_alloc | ets_alloc
                    | driver_alloc | sl_alloc | ll_alloc | fix_alloc
@@ -124,6 +128,13 @@
 
 -export([memory/1, fragmentation/1, cache_hit_rates/0, average_sizes/0,
          sbcs_to_mbcs/0, allocators/0]).
+
+%% Snapshot handling
+-type memory() :: [{atom(),atom()}].
+-type snapshot() :: {memory(),[allocdata(term())]}.
+-export([snapshot/0,  snapshot_clear/0,
+         snapshot_print/0, snapshot_get/0,
+         snapshot_save/1,  snapshot_load/1]).
 
 %%%%%%%%%%%%%%
 %%% Public %%%
@@ -157,9 +168,9 @@
 -spec memory(used | allocated | unused) -> pos_integer()
     ;       (usage) -> number().
 memory(used) ->
-    erlang:memory(total);
+    mem(total);
 memory(allocated) ->
-    AllocProps = [Prop || {_Alloc,Prop} <- allocators()],
+    AllocProps = [Prop || {_Alloc,Prop} <- util_alloc()],
     lists:sum(lists:map(fun(Props) ->
         SbcsProps = proplists:get_value(sbcs, Props),
         MbcsProps = proplists:get_value(mbcs, Props),
@@ -203,7 +214,7 @@ fragmentation(Keyword) ->
       {Weight, Vals} = weighed_values({BlockSbcs,CarSbcs},
                                       {BlockMbcs,CarMbcs}),
       {Weight, {Allocator,N}, Vals}
-    end || {{Allocator, N}, Props} <- allocators()],
+    end || {{Allocator, N}, Props} <- util_alloc()],
     [{Key,Val} || {_W, Key, Val} <- lists:reverse(lists:sort(WeighedData))].
 
 %% @doc looks at the `mseg_alloc' allocator (allocator used by all the
@@ -240,7 +251,7 @@ cache_hit_rates() ->
       HitRate = usage(Hits,Calls),
       Weight = (1.00 - HitRate)*Calls,
       {Weight, {instance,N}, [{hit_rate,HitRate}, {hits,Hits}, {calls,Calls}]}
-    end || {instance, N, Props} <- erlang:system_info({allocator,mseg_alloc})],
+    end || {{_, N}, Props} <- alloc([mseg_alloc])],
     [{Key,Val} || {_W,Key,Val} <- lists:reverse(lists:sort(WeighedData))].
 
 %% @doc Checks all allocators in {@link allocator()} and returns the average
@@ -276,7 +287,7 @@ average_sizes() ->
       Dict4
     end,
     dict:new(),
-    allocators()),
+    util_alloc()),
     average_group(average_calc(lists:sort(dict:to_list(Dict)))).
 
 %% @doc compares the amount of single block carriers (`sbcs') vs the
@@ -317,34 +328,106 @@ sbcs_to_mbcs() ->
         {_,_} -> Sbcs / Mbcs
       end,
       {Ratio, {Allocator,N}}
-     end || {{Allocator, N}, Props} <- allocators()],
+     end || {{Allocator, N}, Props} <- util_alloc()],
     [{Alloc,Ratio} || {Ratio,Alloc} <- lists:reverse(lists:sort(WeightedList))].
 
 %% @doc returns a dump of all allocator settings and values
 -spec allocators() -> [allocdata(term())].
 allocators() ->
-    [{{A,N},Props} || A <- ?ALLOCATORS,
-                      {_,N,Props} <- erlang:system_info({allocator,A})].
+    {_libc,_Vsn,Allocators,_Opts} = erlang:system_info(allocator),
+    %% versions is deleted in order to use orddict api, and also I've
+    %% never come a across a case where it was useful to know.
+    [{{A,N},proplists:delete(versions,Props)} ||
+        A <- Allocators,
+        {_,N,Props} <- erlang:system_info({allocator,A})].
 
-%% In these comments: replacing the allocator default thingy
-%% with an actual dump from somewhere. For debugging purposes,
-%% hence being commented.
-%
-%allocators() ->
-%    {ok,[Term]} = file:consult("alloc.dat"),
-%    dump_to_allocators(Term).
-%
-%%% Convert an existing allocator dump to a format this module can manage
-%dump_to_allocators([]) -> [];
-%dump_to_allocators([{Name, Instances}|Rest]) ->
-%    case lists:member(Name, ?ALLOCATORS) of
-%        true ->
-%            [{{Name,N},Props} || {instance,N,Props} <- Instances]
-%            ++
-%            dump_to_allocators(Rest);
-%        false ->
-%            dump_to_allocators(Rest)
-%    end.
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Snapshot handling %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% @doc take a new snapshot of the current memory allocator statistics.
+%% The snapshot is stored in the pdict of self(), with all the limitations
+%% that implies.
+-spec snapshot() -> snapshot() | undefined.
+snapshot() ->
+    put(recon_alloc_snapshot, snapshot_int()).
+
+%% @doc clear the current snapshot
+-spec snapshot_clear() -> snapshot() | undefined.
+snapshot_clear() ->
+    put(recon_alloc_snapshot, undefined).
+
+%% @doc print a dump of the current snapshot
+-spec snapshot_print() -> ok.
+snapshot_print() ->
+    io:format("~p.~n",[snapshot_get()]).
+
+%% @doc returns the current snapshot
+-spec snapshot_get() -> snapshot() | undefined.
+snapshot_get() ->
+    get(recon_alloc_snapshot).
+
+%% @doc save the current snapshot to the file indicated. If there is no
+%% current snapshot, a snaphot of the current allocator statistics will
+%% be written to the file.
+-spec snapshot_save(Filename) -> ok when
+      Filename :: file:name().
+snapshot_save(Filename) ->
+    Snapshot = case snapshot_get() of
+                   undefined ->
+                       snapshot_int();
+                   Snap ->
+                       Snap
+               end,
+    case file:write_file(Filename,io_lib:format("~p.~n",[Snapshot])) of
+        ok -> ok;
+        {error,Reason} ->
+            erlang:error(Reason,[Filename])
+    end.
+
+
+%% @doc load a snapshot from the given file. The format of the data in the
+%% file can be either that outputted by {@link snapshot_save()},
+%% or you can copy paste the output of
+%% `{erlang:memory(),[{A,erlang:system_info({allocator,A})} || A <- element(3,erlang:system_info(allocator))]}.'
+%% to a file. If you do this, don't forget to add the fullstop at the end
+%% as snapshot_load used file:consult/1 to read the term.
+%%
+%% Example usage:
+%%
+%%```On target machine:
+%%     1> recon_alloc:snapshot().
+%%     unefined
+%%     2> recon_alloc:memory(used).
+%%     18411064
+%%     3> recon_alloc:snapshot_save("recon_snapshot.terms").
+%%     ok
+%%
+%%   On other machine:
+%%     1> recon_alloc:snapshot_load("recon_snapshot.terms").
+%%     undefined
+%%     2> recon_alloc:memory(used).
+%%     18411064'''
+%%
+-spec snapshot_load(Filename) -> snapshot() | undefined when
+      Filename :: file:name().
+snapshot_load(Filename) ->
+    {ok,[Terms]} = file:consult(Filename),
+    Snapshot =
+        case Terms of
+            %% We handle someone using
+            %% {erlang:memory(),
+            %%  [{A,erlang:system_info({allocator,A})} ||
+            %%     A <- element(3,erlang:system_info(allocator))]}.
+            %% to dump data.
+            {M,[{Alloc,_D}|_] = Allocs} when is_atom(Alloc) ->
+                {M,[{{A,N},proplists:delete(versions,Props)} ||
+                       {A,Instances} <- Allocs,
+                       {_, N, Props} <- Instances]};
+            Terms ->
+                Terms
+        end,
+    put(recon_alloc_snapshot,Snapshot).
 
 %%%%%%%%%%%%%%%
 %%% Private %%%
@@ -388,3 +471,34 @@ average_group([]) -> [];
 average_group([{Instance,Type1,N},{Instance,Type2,M} | Rest]) ->
     [{Instance,[{Type1,N},{Type2,M}]} | average_group(Rest)].
 
+%% Create a new snapshot
+snapshot_int() ->
+    {erlang:memory(),allocators()}.
+
+%% If no snapshot has been taken/loaded then we use current values
+snapshot_get_int() ->
+    case snapshot_get() of
+        undefined ->
+            snapshot_int();
+        Snapshot ->
+            Snapshot
+    end.
+
+%% Get the alloc part of a snapshot
+alloc() ->
+    {_Mem,Allocs} = snapshot_get_int(),
+    Allocs.
+alloc(Type) ->
+    [{{T,Instance},Props} || {{T,Instance},Props} <- alloc(),
+                             lists:member(T,Type)].
+
+%% Get only alloc_util allocs
+util_alloc() ->
+    alloc(?UTIL_ALLOCATORS).
+
+%% Get the erlang:memory part of a snapshot
+mem() ->
+    {Mem,_Allocs} = snapshot_get_int(),
+    Mem.
+mem(Type) ->
+    orddict:fetch(Type,mem()).
