@@ -145,6 +145,9 @@
          snapshot_print/0, snapshot_get/0,
          snapshot_save/1,  snapshot_load/1]).
 
+%% Unit handling
+-export([set_unit/1]).
+
 %%%%%%%%%%%%%%
 %%% Public %%%
 %%%%%%%%%%%%%%
@@ -461,6 +464,70 @@ snapshot_load(Filename) ->
         end,
     put(recon_alloc_snapshot,Snapshot).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Handling of units %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% @doc set the current unit to be used by recon_alloc. This effects all
+%% functions that return bytes.
+%%
+%% Eg.
+%% ```1> recon_alloc:memory(used,current).
+%%    17548752
+%%    2> recon_alloc:set_unit(kilobyte).
+%%    undefined
+%%    3> recon_alloc:memory(used,current).
+%%    17576.90625'''
+%%
+-spec set_unit(byte | kilobyte | megabyte | gigabyte) -> ok.
+set_unit(byte) ->
+    put(recon_alloc_unit,undefined);
+set_unit(kilobyte) ->
+    put(recon_alloc_unit,1024);
+set_unit(megabyte) ->
+    put(recon_alloc_unit,1024*1024);
+set_unit(gigabyte) ->
+    put(recon_alloc_unit,1024*1024*1024).
+
+conv({Mem,Allocs} = D) ->
+    case get(recon_alloc_unit) of
+        undefined ->
+            D;
+        Factor ->
+            {conv_mem(Mem,Factor),conv_alloc(Allocs,Factor)}
+    end.
+
+conv_mem(Mem,Factor) ->
+    [{T,M / Factor} || {T,M} <- Mem].
+
+conv_alloc([{{sys_alloc,_I},_Props} = Alloc|R], Factor) ->
+    [Alloc|conv_alloc(R,Factor)];
+conv_alloc([{{mseg_alloc,_I} = AI,Props}|R], Factor) ->
+    MemKind = orddict:fetch(memkind,Props),
+    Status = orddict:fetch(status,MemKind),
+    {segments_size,Curr,Last,Max} = lists:keyfind(segments_size,1,Status),
+    NewSegSize = {segments_size,Curr/Factor,Last/Factor,Max/Factor},
+    NewStatus = lists:keyreplace(segments_size,1,Status,NewSegSize),
+    NewProps = orddict:store(memkind,orddict:store(status,NewStatus,MemKind),
+                             Props),
+    [{AI,NewProps}|conv_alloc(R,Factor)];
+conv_alloc([{AI,Props}|R], Factor) ->
+    FactorFun = fun({T,Curr,Last,Max}) when
+                          T =:= blocks_size; T =:= carriers_size;
+                          T =:= mseg_alloc_carriers_size;
+                          T =:= sys_alloc_carriers_size ->
+                        {T,Curr/Factor,Last/Factor,Max/Factor};
+                   (T) ->
+                        T
+                end,
+    NewMbcsProp = [FactorFun(Prop) || Prop <- orddict:fetch(mbcs,Props)],
+    NewSbcsProp = [FactorFun(Prop) || Prop <- orddict:fetch(sbcs,Props)],
+    NewProps = orddict:store(sbcs,NewSbcsProp,
+                             orddict:store(mbcs,NewMbcsProp,Props)),
+    [{AI,NewProps}|conv_alloc(R,Factor)];
+conv_alloc([],_Factor) ->
+    [].
+
 %%%%%%%%%%%%%%%
 %%% Private %%%
 %%%%%%%%%%%%%%%
@@ -529,9 +596,9 @@ snapshot_int() ->
 snapshot_get_int() ->
     case snapshot_get() of
         undefined ->
-            snapshot_int();
+            conv(snapshot_int());
         Snapshot ->
-            Snapshot
+            conv(Snapshot)
     end.
 
 %% Get the alloc part of a snapshot
