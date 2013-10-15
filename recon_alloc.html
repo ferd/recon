@@ -46,6 +46,15 @@ each reaction to individual tweak should be.</p>
    <p>A lot of trial and error might be required to figure out if tweaks have   
 helped or not, ultimately.</p>
   
+   <p>In order to help do offline debugging of memory allocator problems
+   recon_alloc also has a few functions that store snapshots of the
+   memory statistics.
+   These snapshots can be used to freeze the current allocation values so that
+   they do not change during analysis while using the regular functionality of
+   this module, so that the allocator values can be saved, or that
+   they can be shared, dumped, and reloaded for further analysis using files.
+   See <a href="#snapshot_load-1"><code>snapshot_load/1</code></a> for a simple use-case.</p>
+  
    Glossary:
    <dl>
      <dt>sys_alloc</dt>
@@ -141,6 +150,14 @@ before.</p>
 <p><code>instance() = non_neg_integer()</code></p>
 
 
+<h4 class="typedecl"><a name="type-memory">memory()</a></h4>
+<p><code>memory() = [{atom(), atom()}]</code></p>
+
+
+<h4 class="typedecl"><a name="type-snapshot">snapshot()</a></h4>
+<p><code>snapshot() = {<a href="#type-memory">memory()</a>, [<a href="#type-allocdata">allocdata</a>(term())]}</code></p>
+
+
 <h3><a name="index">Function Index</a></h3>
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#allocators-0">allocators/0</a></td><td>returns a dump of all allocator settings and values.</td></tr>
 <tr><td valign="top"><a href="#average_sizes-0">average_sizes/0</a></td><td>Checks all allocators in <a href="#type-allocator"><code>allocator()</code></a> and returns the average
@@ -155,6 +172,14 @@ node depending on what is to be reported:.</td></tr>
 <tr><td valign="top"><a href="#sbcs_to_mbcs-0">sbcs_to_mbcs/0</a></td><td>compares the amount of single block carriers (<code>sbcs</code>) vs the
   number of multiblock carriers (<code>mbcs</code>) for each individual allocator in
   <a href="#type-allocator"><code>allocator()</code></a>.</td></tr>
+<tr><td valign="top"><a href="#snapshot-0">snapshot/0</a></td><td>Take a new snapshot of the current memory allocator statistics.</td></tr>
+<tr><td valign="top"><a href="#snapshot_clear-0">snapshot_clear/0</a></td><td>clear the current snapshot in the process dictionary, if present,
+  and return the value it had before being unset.</td></tr>
+<tr><td valign="top"><a href="#snapshot_get-0">snapshot_get/0</a></td><td>returns the current snapshot stored by <a href="#snapshot-0"><code>snapshot/0</code></a>.</td></tr>
+<tr><td valign="top"><a href="#snapshot_load-1">snapshot_load/1</a></td><td>load a snapshot from a given file.</td></tr>
+<tr><td valign="top"><a href="#snapshot_print-0">snapshot_print/0</a></td><td>print a dump of the current snapshot stored by <a href="#snapshot-0"><code>snapshot/0</code></a>
+  Returns <code>undefined</code> if no snapshot has been taken.</td></tr>
+<tr><td valign="top"><a href="#snapshot_save-1">snapshot_save/1</a></td><td>save the current snapshot taken by <a href="#snapshot-0"><code>snapshot/0</code></a> to a file.</td></tr>
 </table>
 
 <h3><a name="functions">Function Details</a></h3>
@@ -286,6 +311,70 @@ to pretty much any practical size.</p>
  
   Given the value returned is a ratio of sbcs/mbcs, the higher the value,
   the worst the condition. The list is sorted accordingly.</p>
+
+<h4 class="function"><a name="snapshot-0">snapshot/0</a></h4>
+<div class="spec">
+<p><code>snapshot() -&gt; <a href="#type-snapshot">snapshot()</a> | undefined</code><br></p>
+</div><p>Take a new snapshot of the current memory allocator statistics.
+  The snapshot is stored in the process dictionary of the calling process,
+  with all the limitations that it implies (i.e. no garbage-collection).
+  To unsert the snapshot, see <a href="#snapshot_clear-1"><code>snapshot_clear/1</code></a>.</p>
+
+<h4 class="function"><a name="snapshot_clear-0">snapshot_clear/0</a></h4>
+<div class="spec">
+<p><code>snapshot_clear() -&gt; <a href="#type-snapshot">snapshot()</a> | undefined</code><br></p>
+</div><p>clear the current snapshot in the process dictionary, if present,
+  and return the value it had before being unset.</p>
+
+<h4 class="function"><a name="snapshot_get-0">snapshot_get/0</a></h4>
+<div class="spec">
+<p><code>snapshot_get() -&gt; <a href="#type-snapshot">snapshot()</a> | undefined</code><br></p>
+</div><p>returns the current snapshot stored by <a href="#snapshot-0"><code>snapshot/0</code></a>.
+  Returns <code>undefined</code> if no snapshot has been taken.</p>
+
+<h4 class="function"><a name="snapshot_load-1">snapshot_load/1</a></h4>
+<div class="spec">
+<p><code>snapshot_load(Filename) -&gt; <a href="#type-snapshot">snapshot()</a> | undefined</code>
+<ul class="definitions"><li><code>Filename = <a href="file.html#type-name">file:name()</a></code></li></ul></p>
+</div><p><p>load a snapshot from a given file. The format of the data in the
+  file can be either the same as output by <a href="#type-snapshot_save"><code>snapshot_save()</code></a>,
+  or the output obtained by calling
+   <code>{erlang:memory(),[{A,erlang:system_info({allocator,A})} || A &lt;- element(3,erlang:system_info(allocator))]}.</code>
+  and storing it in a file.
+  If the latter option is taken, please remember to add a full stop at the end
+  of the resulting Erlang term, as this function uses <code>file:consult/1</code> to load  
+the file.</p>
+ 
+  <p>Example usage:</p>
+ 
+ <pre>    On target machine:
+      1&gt; recon_alloc:snapshot().
+      unefined
+      2&gt; recon_alloc:memory(used).
+      18411064
+      3&gt; recon_alloc:snapshot_save("recon_snapshot.terms").
+      ok
+ 
+    On other machine:
+      1&gt; recon_alloc:snapshot_load("recon_snapshot.terms").
+      undefined
+      2&gt; recon_alloc:memory(used).
+      18411064</pre>
+ </p>
+
+<h4 class="function"><a name="snapshot_print-0">snapshot_print/0</a></h4>
+<div class="spec">
+<p><code>snapshot_print() -&gt; ok</code><br></p>
+</div><p>print a dump of the current snapshot stored by <a href="#snapshot-0"><code>snapshot/0</code></a>
+  Returns <code>undefined</code> if no snapshot has been taken.</p>
+
+<h4 class="function"><a name="snapshot_save-1">snapshot_save/1</a></h4>
+<div class="spec">
+<p><code>snapshot_save(Filename) -&gt; ok</code>
+<ul class="definitions"><li><code>Filename = <a href="file.html#type-name">file:name()</a></code></li></ul></p>
+</div><p>save the current snapshot taken by <a href="#snapshot-0"><code>snapshot/0</code></a> to a file.
+  If there is no current snapshot, a snaphot of the current allocator
+  statistics will be written to the file.</p>
 
     </article>
   </body>
