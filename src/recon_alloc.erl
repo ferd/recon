@@ -21,7 +21,12 @@
 %%%
 %%% In order to help do offline debugging of memory allocator problems
 %%% recon_alloc also has a few functions that store snapshots of the
-%%% memory statistics. See {@link snapshot_load/1} for a simple use-case.
+%%% memory statistics.
+%%% These snapshots can be used to freeze the current allocation values so that
+%%% they do not change during analysis while using the regular functionality of
+%%% this module, so that the allocator values can be saved, or that
+%%% they can be shared, dumped, and reloaded for further analysis using files.
+%%% See {@link snapshot_load/1} for a simple use-case.
 %%%
 %%% Glossary:
 %%% <dl>
@@ -126,12 +131,16 @@
 -define(CURRENT_POS, 2). % pos in sizes tuples for current value
 -define(MAX_POS, 4). % pos in sizes tuples for max value
 
+%% Regular usage
 -export([memory/1, fragmentation/1, cache_hit_rates/0, average_sizes/0,
          sbcs_to_mbcs/0, allocators/0]).
 
 %% Snapshot handling
 -type memory() :: [{atom(),atom()}].
 -type snapshot() :: {memory(),[allocdata(term())]}.
+
+-export_type([memory/0, snapshot/0]).
+
 -export([snapshot/0,  snapshot_clear/0,
          snapshot_print/0, snapshot_get/0,
          snapshot_save/1,  snapshot_load/1]).
@@ -335,8 +344,8 @@ sbcs_to_mbcs() ->
 -spec allocators() -> [allocdata(term())].
 allocators() ->
     {_libc,_Vsn,Allocators,_Opts} = erlang:system_info(allocator),
-    %% versions is deleted in order to use orddict api, and also I've
-    %% never come a across a case where it was useful to know.
+    %% versions is deleted in order to allow the use of the orddict api,
+    %% and never really having come across a case where it was useful to know.
     [{{A,N},proplists:delete(versions,Props)} ||
         A <- Allocators,
         {_,N,Props} <- erlang:system_info({allocator,A})].
@@ -345,31 +354,37 @@ allocators() ->
 %%% Snapshot handling %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% @doc take a new snapshot of the current memory allocator statistics.
-%% The snapshot is stored in the pdict of self(), with all the limitations
-%% that implies.
+%% @doc Take a new snapshot of the current memory allocator statistics.
+%% The snapshot is stored in the process dictionary of the calling process,
+%% with all the limitations that it implies (i.e. no garbage-collection).
+%% To unsert the snapshot, see {@link snapshot_clear/1}.
 -spec snapshot() -> snapshot() | undefined.
 snapshot() ->
     put(recon_alloc_snapshot, snapshot_int()).
 
-%% @doc clear the current snapshot
+%% @doc clear the current snapshot in the process dictionary, if present,
+%% and return the value it had before being unset.
+%% @end
+%% Maybe we should use erlang:delete(Key) here instead?
 -spec snapshot_clear() -> snapshot() | undefined.
 snapshot_clear() ->
     put(recon_alloc_snapshot, undefined).
 
-%% @doc print a dump of the current snapshot
+%% @doc print a dump of the current snapshot stored by {@link snapshot/0}
+%% Returns `undefined' if no snapshot has been taken.
 -spec snapshot_print() -> ok.
 snapshot_print() ->
     io:format("~p.~n",[snapshot_get()]).
 
-%% @doc returns the current snapshot
+%% @doc returns the current snapshot stored by {@link snapshot/0}.
+%% Returns `undefined' if no snapshot has been taken.
 -spec snapshot_get() -> snapshot() | undefined.
 snapshot_get() ->
     get(recon_alloc_snapshot).
 
-%% @doc save the current snapshot to the file indicated. If there is no
-%% current snapshot, a snaphot of the current allocator statistics will
-%% be written to the file.
+%% @doc save the current snapshot taken by {@link snapshot/0} to a file. 
+%% If there is no current snapshot, a snaphot of the current allocator
+%% statistics will be written to the file.
 -spec snapshot_save(Filename) -> ok when
       Filename :: file:name().
 snapshot_save(Filename) ->
@@ -386,12 +401,14 @@ snapshot_save(Filename) ->
     end.
 
 
-%% @doc load a snapshot from the given file. The format of the data in the
-%% file can be either that outputted by {@link snapshot_save()},
-%% or you can copy paste the output of
-%% `{erlang:memory(),[{A,erlang:system_info({allocator,A})} || A <- element(3,erlang:system_info(allocator))]}.'
-%% to a file. If you do this, don't forget to add the fullstop at the end
-%% as snapshot_load used file:consult/1 to read the term.
+%% @doc load a snapshot from a given file. The format of the data in the
+%% file can be either the same as output by {@link snapshot_save()},
+%% or the output obtained by calling
+%%  `{erlang:memory(),[{A,erlang:system_info({allocator,A})} || A <- element(3,erlang:system_info(allocator))]}.'
+%% and storing it in a file.
+%% If the latter option is taken, please remember to add a full stop at the end
+%% of the resulting Erlang term, as this function uses `file:consult/1' to load
+%% the file.
 %%
 %% Example usage:
 %%
@@ -424,6 +441,7 @@ snapshot_load(Filename) ->
                 {M,[{{A,N},proplists:delete(versions,Props)} ||
                        {A,Instances} <- Allocs,
                        {_, N, Props} <- Instances]};
+            %% We assume someone used recon_alloc:snapshot() to store this one
             Terms ->
                 Terms
         end,
