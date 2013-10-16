@@ -306,10 +306,10 @@ average_block_sizes(Keyword) ->
 %% data is smaller than the `sbct', it gets placed into a multiblock carrier.
 %%
 %% mbcs are to be prefered to sbcs because they basically represent pre-
-%% allocated memory, whereas sbcs will map to one call to sys_alloc (often
-%% just malloc) or mmap, which is more expensive than redistributing data
-%% that was obtain for multiblock carriers. Moreover, the VM is able to do
-%% specific work with mbcs that should help reduce fragmentation in ways
+%% allocated memory, whereas sbcs will map to one call to sys_alloc
+%% or mseg_alloc, which is more expensive than redistributing
+%% data that was obtain for multiblock carriers. Moreover, the VM is able to
+%% do specific work with mbcs that should help reduce fragmentation in ways
 %% sys_alloc or mmap usually won't.
 %%
 %% Ideally, most of the data should fit inside multiblock carriers. If
