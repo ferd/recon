@@ -131,9 +131,8 @@
 -define(CURRENT_POS, 2). % pos in sizes tuples for current value
 -define(MAX_POS, 4). % pos in sizes tuples for max value
 
-%% Regular usage
--export([memory/1, fragmentation/1, cache_hit_rates/0, average_sizes/0,
-         sbcs_to_mbcs/0, allocators/0]).
+-export([memory/1, fragmentation/1, cache_hit_rates/0,
+         average_block_sizes/1, sbcs_to_mbcs/0, allocators/0]).
 
 %% Snapshot handling
 -type memory() :: [{atom(),atom()}].
@@ -209,10 +208,7 @@ memory(usage) ->
 %% carriers.
 -spec fragmentation(current | max) -> [allocdata([{atom(), term()}])].
 fragmentation(Keyword) ->
-    Pos = case Keyword of
-        current -> ?CURRENT_POS;
-        max -> ?MAX_POS
-    end,
+    Pos = key2pos(Keyword),
     WeighedData = [begin
       LS = proplists:get_value(sbcs, Props),
       BlockSbcs = element(Pos, lists:keyfind(blocks_size,1,LS)),
@@ -264,11 +260,11 @@ cache_hit_rates() ->
     [{Key,Val} || {_W,Key,Val} <- lists:reverse(lists:sort(WeighedData))].
 
 %% @doc Checks all allocators in {@link allocator()} and returns the average
-%% carrier sized being used for `mbcs' and `sbcs'. This value is interesting
-%% to use because it will tell us how used most carriers are individually being
-%% used for. This can be related to the VM's largest multiblock carrier size
+%% block sizes being used for `mbcs' and `sbcs'. This value is interesting
+%% to use because it will tell us how large most blocks are.
+%% This can be related to the VM's largest multiblock carrier size
 %% (`lmbcs') and smallest multiblock carrier size (`smbcs') to specify
-%% allocation strategies regarding the block sizes to be used.
+%% allocation strategies regarding the carrier sizes to be used.
 %%
 %% This function isn't exceptionally useful unless you know you have some
 %% specific problem, say with sbcs/mbcs ratios (see {@link sbcs_to_mbcs/0})
@@ -278,17 +274,18 @@ cache_hit_rates() ->
 %%
 %% Do note that values for `lmbcs' and `smbcs' are going to be rounded up
 %% to the next power of two when configuring them.
--spec average_sizes() -> [{allocator(), [{Key,Val}]}] when
+-spec average_block_sizes(current | max) -> [{allocator(), [{Key,Val}]}] when
     Key :: mbcs | sbcs,
     Val :: number().
-average_sizes() ->
+average_block_sizes(Keyword) ->
+    Pos = key2pos(Keyword),
     Dict = lists:foldl(fun({{Instance,_},Props},Dict0) ->
       LS = proplists:get_value(sbcs, Props),
-      CarSbcs = element(?CURRENT_POS, lists:keyfind(carriers,1,LS)),
-      SizeSbcs = element(?CURRENT_POS, lists:keyfind(carriers_size,1,LS)),
+      CarSbcs = element(Pos, lists:keyfind(blocks,1,LS)),
+      SizeSbcs = element(Pos, lists:keyfind(blocks_size,1,LS)),
       LM = proplists:get_value(mbcs,Props),
-      CarMbcs = element(?CURRENT_POS, lists:keyfind(carriers,1,LM)),
-      SizeMbcs = element(?CURRENT_POS, lists:keyfind(carriers_size,1,LM)),
+      CarMbcs = element(Pos, lists:keyfind(blocks,1,LM)),
+      SizeMbcs = element(Pos, lists:keyfind(blocks_size,1,LM)),
       Dict1 = dict:update_counter({Instance,sbcs,count},CarSbcs,Dict0),
       Dict2 = dict:update_counter({Instance,sbcs,size},SizeSbcs,Dict1),
       Dict3 = dict:update_counter({Instance,mbcs,count},CarMbcs,Dict2),
@@ -520,3 +517,8 @@ mem() ->
     Mem.
 mem(Type) ->
     orddict:fetch(Type,mem()).
+
+key2pos(current) ->
+    ?CURRENT_POS;
+key2pos(max) ->
+    ?MAX_POS.
