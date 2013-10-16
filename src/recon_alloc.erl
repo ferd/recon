@@ -133,7 +133,7 @@
 -define(MAX_POS, 4). % pos in sizes tuples for max value
 
 -export([memory/2, fragmentation/1, cache_hit_rates/0,
-         average_block_sizes/1, sbcs_to_mbcs/0, allocators/0]).
+         average_block_sizes/1, sbcs_to_mbcs/1, allocators/0]).
 
 %% Snapshot handling
 -type memory() :: [{atom(),atom()}].
@@ -336,9 +336,9 @@ average_block_sizes(Keyword) ->
 %%
 %% Given the value returned is a ratio of sbcs/mbcs, the higher the value,
 %% the worst the condition. The list is sorted accordingly.
--spec sbcs_to_mbcs() -> [allocdata(term())].
-sbcs_to_mbcs() ->
-    Pos = ?CURRENT_POS,
+-spec sbcs_to_mbcs(max | current) -> [allocdata(term())].
+sbcs_to_mbcs(Keyword) ->
+    Pos = key2pos(Keyword),
     WeightedList = [begin
       LS = proplists:get_value(sbcs, Props),
       LM = proplists:get_value(mbcs,Props),
