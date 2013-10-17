@@ -107,7 +107,8 @@
 %%%  <dd>Single block carrier threshold</dd>
 %%% </dl>
 %%%
-%%% All sizes returned by this module are in bytes.
+%%% By default all sizes returned by this module are in bytes. You can change
+%%% this by calling {@link set_unit/1}.
 %%%
 -module(recon_alloc).
 -define(UTIL_ALLOCATORS, [temp_alloc,
@@ -131,9 +132,8 @@
 -define(CURRENT_POS, 2). % pos in sizes tuples for current value
 -define(MAX_POS, 4). % pos in sizes tuples for max value
 
-%% Regular usage
--export([memory/1, fragmentation/1, cache_hit_rates/0, average_sizes/0,
-         sbcs_to_mbcs/0, allocators/0]).
+-export([memory/2, fragmentation/1, cache_hit_rates/0,
+         average_block_sizes/1, sbcs_to_mbcs/1, allocators/0]).
 
 %% Snapshot handling
 -type memory() :: [{atom(),atom()}].
@@ -145,6 +145,9 @@
          snapshot_print/0, snapshot_get/0,
          snapshot_save/1,  snapshot_load/1]).
 
+%% Unit handling
+-export([set_unit/1]).
+
 %%%%%%%%%%%%%%
 %%% Public %%%
 %%%%%%%%%%%%%%
@@ -153,20 +156,26 @@
 %% node depending on what is to be reported:
 %%
 %% <ul>
-%%   <li>`memory(used)' reports the memory that is actively used for allocated
+%%   <li>`used' reports the memory that is actively used for allocated
 %%       Erlang data;</li>
-%%   <li>`memory(allocated)' reports the memory that is reserved by the VM. It
+%%   <li>`allocated' reports the memory that is reserved by the VM. It
 %%       includes the memory used, but also the memory yet-to-be-used but still
 %%       given by the OS. This is the amount you want if you're dealing with
-%%       ulimit and OS-reported values.</li>
-%%   <li>`memory(unused)' reports the amount of memory reserved by the VM that
+%%       ulimit and OS-reported values. </li>
+%%   <li>`allocated_types' report the memory that is reserved by the
+%%       VM grouped into the different util allocators.</li>
+%%   <li>`allocated_instances' report the memory that is reserved
+%%       by the VM grouped into the different schedulers. Note that
+%%       instance id 0 is the global allocator used to allocate data from
+%%       non-managed threads, i.e. async and driver threads.</li>
+%%   <li>`unused' reports the amount of memory reserved by the VM that
 %%       is not being allocated.
-%%       Equivalent to `memory(allocated) - memory(used)'.</li>
-%%   <li>`memory(usage)' returns a percentage (0.0 .. 1.0) of `used/allocated'
+%%       Equivalent to `allocated - used'.</li>
+%%   <li>`usage' returns a percentage (0.0 .. 1.0) of `used/allocated'
 %%       memory ratios.</li>
 %% </ul>
 %%
-%% The memory reported by `memory(allocated)' should roughly
+%% The memory reported by `allocated' should roughly
 %% match what the OS reports. If this amount is different by a large margin,
 %% it may be the sign that someone is allocating memory in C directly, outside
 %% of Erlang's own allocator -- a big warning sign.
@@ -174,23 +183,32 @@
 %% Also note that low memory usages can be the sign of fragmentation in
 %% memory, in which case exploring which specific allocator is at fault
 %% is recommended (see {@link fragmentation/1})
--spec memory(used | allocated | unused) -> pos_integer()
-    ;       (usage) -> number().
-memory(used) ->
-    mem(total);
-memory(allocated) ->
-    AllocProps = [Prop || {_Alloc,Prop} <- util_alloc()],
-    lists:sum(lists:map(fun(Props) ->
-        SbcsProps = proplists:get_value(sbcs, Props),
-        MbcsProps = proplists:get_value(mbcs, Props),
-        {carriers_size,Sbcs,_,_} = lists:keyfind(carriers_size,1, SbcsProps),
-        {carriers_size,Mbcs,_,_} = lists:keyfind(carriers_size,1, MbcsProps),
-        Sbcs+Mbcs
-    end, AllocProps));
-memory(unused) ->
-    memory(allocated) - memory(used);
-memory(usage) ->
-    memory(used) / memory(allocated).
+-spec memory(used | allocated | unused, current | max) -> pos_integer()
+    ;       (usage, current | max) -> number()
+    ;       (allocated_types|allocated_instances, current | max) ->
+                    [{allocator(),pos_integer()}].
+memory(used,Keyword) ->
+    lists:sum(lists:map(fun({_,Prop}) ->
+                                block_size(Prop,Keyword)
+                        end,util_alloc()));
+memory(allocated,Keyword) ->
+    lists:sum(lists:map(fun({_,Prop}) ->
+                                carrier_size(Prop,Keyword)
+                        end,util_alloc()));
+memory(allocated_types,Keyword) ->
+    lists:foldl(fun({{Alloc,_N},Props},Acc) ->
+                        CZ = carrier_size(Props,Keyword),
+                        orddict:update_counter(Alloc,CZ,Acc)
+                end,orddict:new(),util_alloc());
+memory(allocated_instances,Keyword) ->
+    lists:foldl(fun({{_Alloc,N},Props},Acc) ->
+                        CZ = carrier_size(Props,Keyword),
+                        orddict:update_counter(N,CZ,Acc)
+                end,orddict:new(),util_alloc());
+memory(unused,Keyword) ->
+    memory(allocated,Keyword) - memory(used,Keyword);
+memory(usage,Keyword) ->
+    memory(used,Keyword) / memory(allocated,Keyword).
 
 %% @doc Compares the block sizes to the carrier sizes, both for
 %% single block (`sbcs') and multiblock (`mbcs') carriers.
@@ -209,10 +227,7 @@ memory(usage) ->
 %% carriers.
 -spec fragmentation(current | max) -> [allocdata([{atom(), term()}])].
 fragmentation(Keyword) ->
-    Pos = case Keyword of
-        current -> ?CURRENT_POS;
-        max -> ?MAX_POS
-    end,
+    Pos = key2pos(Keyword),
     WeighedData = [begin
       LS = proplists:get_value(sbcs, Props),
       BlockSbcs = element(Pos, lists:keyfind(blocks_size,1,LS)),
@@ -264,11 +279,11 @@ cache_hit_rates() ->
     [{Key,Val} || {_W,Key,Val} <- lists:reverse(lists:sort(WeighedData))].
 
 %% @doc Checks all allocators in {@link allocator()} and returns the average
-%% carrier sized being used for `mbcs' and `sbcs'. This value is interesting
-%% to use because it will tell us how used most carriers are individually being
-%% used for. This can be related to the VM's largest multiblock carrier size
+%% block sizes being used for `mbcs' and `sbcs'. This value is interesting
+%% to use because it will tell us how large most blocks are.
+%% This can be related to the VM's largest multiblock carrier size
 %% (`lmbcs') and smallest multiblock carrier size (`smbcs') to specify
-%% allocation strategies regarding the block sizes to be used.
+%% allocation strategies regarding the carrier sizes to be used.
 %%
 %% This function isn't exceptionally useful unless you know you have some
 %% specific problem, say with sbcs/mbcs ratios (see {@link sbcs_to_mbcs/0})
@@ -278,17 +293,18 @@ cache_hit_rates() ->
 %%
 %% Do note that values for `lmbcs' and `smbcs' are going to be rounded up
 %% to the next power of two when configuring them.
--spec average_sizes() -> [{allocator(), [{Key,Val}]}] when
+-spec average_block_sizes(current | max) -> [{allocator(), [{Key,Val}]}] when
     Key :: mbcs | sbcs,
     Val :: number().
-average_sizes() ->
+average_block_sizes(Keyword) ->
+    Pos = key2pos(Keyword),
     Dict = lists:foldl(fun({{Instance,_},Props},Dict0) ->
       LS = proplists:get_value(sbcs, Props),
-      CarSbcs = element(?CURRENT_POS, lists:keyfind(carriers,1,LS)),
-      SizeSbcs = element(?CURRENT_POS, lists:keyfind(carriers_size,1,LS)),
+      CarSbcs = element(Pos, lists:keyfind(blocks,1,LS)),
+      SizeSbcs = element(Pos, lists:keyfind(blocks_size,1,LS)),
       LM = proplists:get_value(mbcs,Props),
-      CarMbcs = element(?CURRENT_POS, lists:keyfind(carriers,1,LM)),
-      SizeMbcs = element(?CURRENT_POS, lists:keyfind(carriers_size,1,LM)),
+      CarMbcs = element(Pos, lists:keyfind(blocks,1,LM)),
+      SizeMbcs = element(Pos, lists:keyfind(blocks_size,1,LM)),
       Dict1 = dict:update_counter({Instance,sbcs,count},CarSbcs,Dict0),
       Dict2 = dict:update_counter({Instance,sbcs,size},SizeSbcs,Dict1),
       Dict3 = dict:update_counter({Instance,mbcs,count},CarMbcs,Dict2),
@@ -309,10 +325,10 @@ average_sizes() ->
 %% data is smaller than the `sbct', it gets placed into a multiblock carrier.
 %%
 %% mbcs are to be prefered to sbcs because they basically represent pre-
-%% allocated memory, whereas sbcs will map to one call to sys_alloc (often
-%% just malloc) or mmap, which is more expensive than redistributing data
-%% that was obtain for multiblock carriers. Moreover, the VM is able to do
-%% specific work with mbcs that should help reduce fragmentation in ways
+%% allocated memory, whereas sbcs will map to one call to sys_alloc
+%% or mseg_alloc, which is more expensive than redistributing
+%% data that was obtain for multiblock carriers. Moreover, the VM is able to
+%% do specific work with mbcs that should help reduce fragmentation in ways
 %% sys_alloc or mmap usually won't.
 %%
 %% Ideally, most of the data should fit inside multiblock carriers. If
@@ -323,9 +339,9 @@ average_sizes() ->
 %%
 %% Given the value returned is a ratio of sbcs/mbcs, the higher the value,
 %% the worst the condition. The list is sorted accordingly.
--spec sbcs_to_mbcs() -> [allocdata(term())].
-sbcs_to_mbcs() ->
-    Pos = ?CURRENT_POS,
+-spec sbcs_to_mbcs(max | current) -> [allocdata(term())].
+sbcs_to_mbcs(Keyword) ->
+    Pos = key2pos(Keyword),
     WeightedList = [begin
       LS = proplists:get_value(sbcs, Props),
       LM = proplists:get_value(mbcs,Props),
@@ -346,7 +362,7 @@ allocators() ->
     {_libc,_Vsn,Allocators,_Opts} = erlang:system_info(allocator),
     %% versions is deleted in order to allow the use of the orddict api,
     %% and never really having come across a case where it was useful to know.
-    [{{A,N},proplists:delete(versions,Props)} ||
+    [{{A,N},lists:sort(proplists:delete(versions,Props))} ||
         A <- Allocators,
         {_,N,Props} <- erlang:system_info({allocator,A})].
 
@@ -438,14 +454,79 @@ snapshot_load(Filename) ->
             %%     A <- element(3,erlang:system_info(allocator))]}.
             %% to dump data.
             {M,[{Alloc,_D}|_] = Allocs} when is_atom(Alloc) ->
-                {M,[{{A,N},proplists:delete(versions,Props)} ||
+                {M,[{{A,N},lists:sort(proplists:delete(versions,Props))} ||
                        {A,Instances} <- Allocs,
                        {_, N, Props} <- Instances]};
             %% We assume someone used recon_alloc:snapshot() to store this one
-            Terms ->
-                Terms
+            {M,Allocs} ->
+                {M,[{AN,lists:sort(proplists:delete(versions,Props))} ||
+                       {AN, Props} <- Allocs]}
         end,
     put(recon_alloc_snapshot,Snapshot).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Handling of units %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% @doc set the current unit to be used by recon_alloc. This effects all
+%% functions that return bytes.
+%%
+%% Eg.
+%% ```1> recon_alloc:memory(used,current).
+%%    17548752
+%%    2> recon_alloc:set_unit(kilobyte).
+%%    undefined
+%%    3> recon_alloc:memory(used,current).
+%%    17576.90625'''
+%%
+-spec set_unit(byte | kilobyte | megabyte | gigabyte) -> ok.
+set_unit(byte) ->
+    put(recon_alloc_unit,undefined);
+set_unit(kilobyte) ->
+    put(recon_alloc_unit,1024);
+set_unit(megabyte) ->
+    put(recon_alloc_unit,1024*1024);
+set_unit(gigabyte) ->
+    put(recon_alloc_unit,1024*1024*1024).
+
+conv({Mem,Allocs} = D) ->
+    case get(recon_alloc_unit) of
+        undefined ->
+            D;
+        Factor ->
+            {conv_mem(Mem,Factor),conv_alloc(Allocs,Factor)}
+    end.
+
+conv_mem(Mem,Factor) ->
+    [{T,M / Factor} || {T,M} <- Mem].
+
+conv_alloc([{{sys_alloc,_I},_Props} = Alloc|R], Factor) ->
+    [Alloc|conv_alloc(R,Factor)];
+conv_alloc([{{mseg_alloc,_I} = AI,Props}|R], Factor) ->
+    MemKind = orddict:fetch(memkind,Props),
+    Status = orddict:fetch(status,MemKind),
+    {segments_size,Curr,Last,Max} = lists:keyfind(segments_size,1,Status),
+    NewSegSize = {segments_size,Curr/Factor,Last/Factor,Max/Factor},
+    NewStatus = lists:keyreplace(segments_size,1,Status,NewSegSize),
+    NewProps = orddict:store(memkind,orddict:store(status,NewStatus,MemKind),
+                             Props),
+    [{AI,NewProps}|conv_alloc(R,Factor)];
+conv_alloc([{AI,Props}|R], Factor) ->
+    FactorFun = fun({T,Curr,Last,Max}) when
+                          T =:= blocks_size; T =:= carriers_size;
+                          T =:= mseg_alloc_carriers_size;
+                          T =:= sys_alloc_carriers_size ->
+                        {T,Curr/Factor,Last/Factor,Max/Factor};
+                   (T) ->
+                        T
+                end,
+    NewMbcsProp = [FactorFun(Prop) || Prop <- orddict:fetch(mbcs,Props)],
+    NewSbcsProp = [FactorFun(Prop) || Prop <- orddict:fetch(sbcs,Props)],
+    NewProps = orddict:store(sbcs,NewSbcsProp,
+                             orddict:store(mbcs,NewMbcsProp,Props)),
+    [{AI,NewProps}|conv_alloc(R,Factor)];
+conv_alloc([],_Factor) ->
+    [].
 
 %%%%%%%%%%%%%%%
 %%% Private %%%
@@ -480,7 +561,7 @@ average_calc([]) ->
     [];
 average_calc([{{Instance,Type,count},Ct},{{Instance,Type,size},Size}|Rest]) ->
     case {Size,Ct} of
-        {0,0} -> [{Instance, Type, 0} | average_calc(Rest)];
+        {_,0} when Size == 0 -> [{Instance, Type, 0} | average_calc(Rest)];
         _ -> [{Instance,Type,Size/Ct} | average_calc(Rest)]
     end.
 
@@ -488,6 +569,24 @@ average_calc([{{Instance,Type,count},Ct},{{Instance,Type,size},Size}|Rest]) ->
 average_group([]) -> [];
 average_group([{Instance,Type1,N},{Instance,Type2,M} | Rest]) ->
     [{Instance,[{Type1,N},{Type2,M}]} | average_group(Rest)].
+
+%% Get the total carrier size
+carrier_size(Props, Keyword) ->
+    Pos = key2pos(Keyword),
+    SbcsProps = proplists:get_value(sbcs, Props),
+    MbcsProps = proplists:get_value(mbcs, Props),
+    Sbcs = element(Pos,lists:keyfind(carriers_size, 1, SbcsProps)),
+    Mbcs = element(Pos,lists:keyfind(carriers_size, 1, MbcsProps)),
+    Sbcs+Mbcs.
+
+%% Get the total block size
+block_size(Props, Keyword) ->
+    Pos = key2pos(Keyword),
+    SbcsProps = proplists:get_value(sbcs, Props),
+    MbcsProps = proplists:get_value(mbcs, Props),
+    Sbcs = element(Pos,lists:keyfind(blocks_size, 1, SbcsProps)),
+    Mbcs = element(Pos,lists:keyfind(blocks_size, 1, MbcsProps)),
+    Sbcs+Mbcs.
 
 %% Create a new snapshot
 snapshot_int() ->
@@ -497,9 +596,9 @@ snapshot_int() ->
 snapshot_get_int() ->
     case snapshot_get() of
         undefined ->
-            snapshot_int();
+            conv(snapshot_int());
         Snapshot ->
-            Snapshot
+            conv(Snapshot)
     end.
 
 %% Get the alloc part of a snapshot
@@ -514,9 +613,7 @@ alloc(Type) ->
 util_alloc() ->
     alloc(?UTIL_ALLOCATORS).
 
-%% Get the erlang:memory part of a snapshot
-mem() ->
-    {Mem,_Allocs} = snapshot_get_int(),
-    Mem.
-mem(Type) ->
-    orddict:fetch(Type,mem()).
+key2pos(current) ->
+    ?CURRENT_POS;
+key2pos(max) ->
+    ?MAX_POS.
