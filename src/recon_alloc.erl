@@ -132,7 +132,7 @@
 -define(CURRENT_POS, 2). % pos in sizes tuples for current value
 -define(MAX_POS, 4). % pos in sizes tuples for max value
 
--export([memory/2, fragmentation/1, cache_hit_rates/0,
+-export([memory/1, memory/2, fragmentation/1, cache_hit_rates/0,
          average_block_sizes/1, sbcs_to_mbcs/1, allocators/0]).
 
 %% Snapshot handling
@@ -151,6 +151,14 @@
 %%%%%%%%%%%%%%
 %%% Public %%%
 %%%%%%%%%%%%%%
+
+
+%% @doc Equivalent to `memory(Key, current)'.
+-spec memory(used | allocated | unused) -> pos_integer()
+      ;     (usage) -> number()
+      ;     (allocated_types | allocated_instances) ->
+                 [{allocator(), pos_integer()}].
+memory(Key) -> memory(Key, current).
 
 %% @doc reports one of multiple possible memory values for the entire
 %% node depending on what is to be reported:
@@ -327,7 +335,7 @@ average_block_sizes(Keyword) ->
 %% mbcs are to be prefered to sbcs because they basically represent pre-
 %% allocated memory, whereas sbcs will map to one call to sys_alloc
 %% or mseg_alloc, which is more expensive than redistributing
-%% data that was obtain for multiblock carriers. Moreover, the VM is able to
+%% data that was obtained for multiblock carriers. Moreover, the VM is able to
 %% do specific work with mbcs that should help reduce fragmentation in ways
 %% sys_alloc or mmap usually won't.
 %%
