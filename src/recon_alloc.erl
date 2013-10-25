@@ -249,7 +249,7 @@ fragmentation(Keyword) ->
 %% The values returned by this function are sorted by a weight combining
 %% the lower cache hit joined to the largest memory values allocated.
 -spec cache_hit_rates() -> [{{instance,instance()}, [{Key,Val}]}] when
-    Key :: hit_rate | hits | alloc,
+    Key :: hit_rate | hits | calls,
     Val :: term().
 cache_hit_rates() ->
     WeighedData = [begin
@@ -371,7 +371,7 @@ snapshot_clear() ->
     put(recon_alloc_snapshot, undefined).
 
 %% @doc print a dump of the current snapshot stored by {@link snapshot/0}
-%% Returns `undefined' if no snapshot has been taken.
+%% Prints `undefined' if no snapshot has been taken.
 -spec snapshot_print() -> ok.
 snapshot_print() ->
     io:format("~p.~n",[snapshot_get()]).
