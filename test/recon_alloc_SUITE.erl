@@ -6,8 +6,8 @@
 -include_lib("common_test/include/ct.hrl").
 -compile(export_all).
 
-all() -> [memory, fragmentation, cache_hit_rates, average_sizes,
-          sbcs_to_mbcs, allocators, snapshots].
+all() -> [memory, fragmentation, cache_hit_rates, average_block_sizes,
+          sbcs_to_mbcs, allocators, snapshots, units].
 
 memory(_Config) ->
     %% Freeze memory values for tests
@@ -17,12 +17,41 @@ memory(_Config) ->
     Alloc = recon_alloc:memory(allocated),
     Unused = recon_alloc:memory(unused),
     Usage = recon_alloc:memory(usage),
+    Types = recon_alloc:memory(allocated_types),
+    Instances = recon_alloc:memory(allocated_instances),
+    %% equivalent to memory(_, current)
+    Used = recon_alloc:memory(used, current),
+    Alloc = recon_alloc:memory(allocated, current),
+    Unused = recon_alloc:memory(unused, current),
+    Usage = recon_alloc:memory(usage, current),
+    Types = recon_alloc:memory(allocated_types, current),
+    Instances = recon_alloc:memory(allocated_instances, current),
     %% relationships, and variation rates
     Alloc = Used + Unused,
     Usage = Used/Alloc,
     true = Alloc > 0,
     true = Usage > 0,
     true = Unused > 0,
+    %% Current vs. Max
+    true = Used =< recon_alloc:memory(used, max),
+    true = Alloc =< recon_alloc:memory(allocated, max),
+    true = Unused =< recon_alloc:memory(unused, max),
+    true = Usage =< recon_alloc:memory(usage, max),
+    true = Types =< recon_alloc:memory(allocated_types, max),
+    true = Instances =< recon_alloc:memory(allocated_instances, max),
+    %% Key presences in allocateds
+    [{binary_alloc,_},
+     {driver_alloc,_},
+     {eheap_alloc,_},
+     {ets_alloc,_},
+     {fix_alloc,_},
+     {ll_alloc,_},
+     {sl_alloc,_},
+     {std_alloc,_},
+     {temp_alloc,_}] = Types,
+    MaxInstance = lists:max(proplists:get_keys(Instances)),
+    true = lists:sort(proplists:get_keys(Instances))
+         =:= lists:seq(0,MaxInstance),
     %% allocate a bunch of memory and see if the memory used goes
     %% up and relationships change accordingly.
     [spawn(fun() -> lists:seq(1,1000), timer:sleep(1000) end)
@@ -52,23 +81,31 @@ cache_hit_rates(_Config) ->
     true = allocdata(Cache),
     true = each_keys([hit_rate, hits, calls], Cache).
 
-average_sizes(_Config) ->
-    Sizes = recon_alloc:average_sizes(),
+average_block_sizes(_Config) ->
+    CurrentSizes = recon_alloc:average_block_sizes(current),
+    MaxSizes = recon_alloc:average_block_sizes(max),
     true = lists:all(fun({K,V}) -> is_atom(K) andalso is_list(V) end,
-                     Sizes),
-    true = each_keys([mbcs, sbcs], Sizes).
+                     CurrentSizes),
+    true = each_keys([mbcs, sbcs], CurrentSizes),
+    true = lists:all(fun({K,V}) -> is_atom(K) andalso is_list(V) end,
+                     MaxSizes),
+    true = each_keys([mbcs, sbcs], MaxSizes).
 
 sbcs_to_mbcs(_Config) ->
-    Ratio = recon_alloc:sbcs_to_mbcs(),
-    true = lists:all(fun({{Alloc,N},_}) ->
-                         is_atom(Alloc) andalso is_integer(N)
-                     end,
-                     Ratio),
-    true = lists:all(fun({_,infinity}) -> true;
-                        ({_,0}) -> true;
-                        ({_,N}) -> is_float(N)
-                     end,
-                     Ratio).
+    Check = fun(Ratio) ->
+        true = lists:all(fun({{Alloc,N},_}) ->
+                            is_atom(Alloc) andalso is_integer(N)
+                        end,
+                        Ratio),
+        true = lists:all(fun({_,infinity}) -> true;
+                            ({_,0}) -> true;
+                            ({_,N}) -> is_float(N)
+                        end,
+                        Ratio)
+    end,
+    Check(recon_alloc:sbcs_to_mbcs(current)),
+    Check(recon_alloc:sbcs_to_mbcs(max)).
+
 
 allocators(_Config) ->
     true = allocdata(recon_alloc:allocators()).
@@ -101,7 +138,26 @@ snapshots(Config) ->
     true = is_snapshot(recon_alloc:snapshot_get()),
     recon_alloc:snapshot_clear().
 
-
+units(_Config) ->
+    recon_alloc:snapshot(),
+    ByteMem = recon_alloc:memory(used),
+    ByteAvg = [X || {_,[{_,X}|_]} <- recon_alloc:average_block_sizes(max)],
+    recon_alloc:set_unit(byte),
+    ByteMem = recon_alloc:memory(used),
+    ByteAvg = [X || {_,[{_,X}|_]} <- recon_alloc:average_block_sizes(max)],
+    recon_alloc:set_unit(kilobyte),
+    true = ByteMem/1024 == recon_alloc:memory(used),
+    true = [X/1024 || X <- ByteAvg]
+        == [X || {_,[{_,X}|_]} <- recon_alloc:average_block_sizes(max)],
+    recon_alloc:set_unit(megabyte),
+    true = ByteMem/(1024*1024) == recon_alloc:memory(used),
+    true = [X/(1024*1024) || X <- ByteAvg]
+        == [X || {_,[{_,X}|_]} <- recon_alloc:average_block_sizes(max)],
+    recon_alloc:set_unit(gigabyte),
+    true = ByteMem/(1024*1024*1024) == recon_alloc:memory(used),
+    true = [X/(1024*1024*1024) || X <- ByteAvg]
+        == [X || {_,[{_,X}|_]} <- recon_alloc:average_block_sizes(max)],
+    recon_alloc:snapshot_clear().
 
 %%% Helpers
 allocdata(L) ->
