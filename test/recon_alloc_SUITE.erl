@@ -1,4 +1,4 @@
-%%% Test suite for erlang_alloc. Because many of the tests in
+%%% Test suite for recon_alloc. Because many of the tests in
 %%% here depend on memory allocation and this is *not* transparent,
 %%% the tests are rather weak and more or less check for interface
 %%% conformance and obvious changes more than anything.
