@@ -1,3 +1,9 @@
+%%% @author Fred Hebert <mononcqc@ferd.ca>
+%%%  [http://ferd.ca/]
+%%% @doc Regroups useful functionality used by recon when dealing with data
+%%% from the node. The functions in this module allow quick runtime access
+%%% to fancier behaviour than what would be done using recon module itself.
+%%% @end
 -module(recon_lib).
 -export([sliding_window/2, sample/2, count/1,
          port_list/1, port_list/2,
