@@ -1,3 +1,6 @@
+%%% @author Fred Hebert <mononcqc@ferd.ca>
+%%%  [http://ferd.ca/]
+%%% @author Lukas Larsson <lukas@erlang.org>
 %%% @doc Functions to deal with
 %%% <a href="http://www.erlang.org/doc/man/erts_alloc.html">Erlang's memory
 %%% allocators</a>, or particularly, to try to present the allocator data
