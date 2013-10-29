@@ -18,6 +18,8 @@ Changelog
   - add `recon_alloc:snapshot*` functions, which allow memory allocation
     snapshots to be taken, saved on disk, reloaded, and analyzed on-demand.
     Thanks to Lukas Larsson for this functionality.
+  - remove `parallelism` data from `port_info` for better OTP backwards
+    compatibility with little loss of information.
 - 1.1.0:
   - add `recon_lib:term_to_port` to convert a string back to a
     usable port.
