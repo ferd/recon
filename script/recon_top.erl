@@ -1,10 +1,10 @@
-%%% run with escript recon_top.erl. Will load the recon_top module
-%%% remotely to the other node.
+%%% run with escript recon_top.erl
 -module(recon_top).
 -export([main/1]).
 
 main(Args) ->
     try
+        maybe_help(Args),
         parse_args(Args),
         default_args(),
         connect(),
@@ -77,6 +77,9 @@ key(Val) -> put(key, Val).
 
 num() -> get(num).
 num(Val) -> put(num, Val).
+
+maybe_help([]) -> io:format(help());
+maybe_help(_) -> ok.
 
 parse_args([]) ->
     ok;
