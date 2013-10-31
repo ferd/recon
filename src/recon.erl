@@ -405,7 +405,7 @@ remote_load(Mod) -> remote_load(nodes(), Mod).
 -spec remote_load(Nodes, module()) -> term() when
       Nodes :: [node(),...] | node().
 remote_load(Nodes=[_|_], Mod) when is_atom(Mod) ->
-    {Mod, Bin, File} = code:get_object_code(Mod), 
+    {Mod, Bin, File} = code:get_object_code(Mod),
     rpc:multicall(Nodes, code, load_binary, [Mod, File, Bin]);
 remote_load(Nodes=[_|_], Modules) when is_list(Modules) ->
     [remote_load(Nodes, Mod) || Mod <- Modules];
