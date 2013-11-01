@@ -1,6 +1,15 @@
 %%% run with escript recon_top.erl
 -module(recon_top).
 -export([main/1]).
+-mode(compile).
+
+-define(PIDLEN, 15).
+-define(PORTLEN, 18).
+-define(MINLEN, 15).
+-define(KEYPCT, 0.25).
+
+-record(state, {type,
+                ref}).
 
 main(Args) ->
     try
@@ -128,7 +137,7 @@ parse_args(["-i", Num | Rest]) ->
     interval(list_to_integer(Num)),
     parse_args(Rest);
 parse_args(["-k", Key | Rest]) ->
-    key(list_to_existing_atom(Key)),
+    key(list_to_atom(Key)),
     parse_args(Rest);
 parse_args(["-n", Num | Rest]) ->
     num(list_to_integer(Num)),
@@ -184,15 +193,15 @@ connect() ->
 run(stats) ->
     Ref = make_ref(),
     rpc:cast(remote(), recon_escript, stats, [interval(), self(), Ref]),
-    loop(Ref);
+    init(stats, Ref);
 run(procs) ->
     Ref = make_ref(),
     rpc:cast(remote(), recon_escript, procs, [key(), num(), interval(), self(), Ref]),
-    loop(Ref);
+    init(procs, Ref);
 run(inet) ->
     Ref = make_ref(),
     rpc:cast(remote(), recon_escript, inet, [key(), num(), interval(), self(), Ref]),
-    loop(Ref).
+    init(inet, Ref).
 
 nametype(Node) ->
     {match,[_,Host]} = re:run(atom_to_list(Node),
@@ -203,13 +212,139 @@ nametype(Node) ->
         _ -> longnames
     end.
 
-loop(Ref) ->
+init(Type, Ref) ->
     process_flag(trap_exit, true),
+    loop(#state{type=Type, ref=Ref}).
+
+loop(State=#state{ref=Ref}) ->
+    {ok, Cols} = io:columns(),
+    {ok, Rows} = io:rows(),
     receive
-        {Ref, IoList} ->
-            io:format("\e[0;0H\e[2J"), % erase preious screen
-            io:format("~s", [IoList]);
+        {Ref, Data} ->
+            IoList = format(State, Cols, Rows, Data),
+            io:format("\e[0;0H\e[2J"), % erase previous screen
+            io:format("~s", [IoList]),
+            loop(State);
         {'EXIT', _Pid, Reason} ->
             throw({remote_exit, Reason})
-    end,
-    loop(Ref).
+    end.
+
+format(#state{type=stats}, Cols, Rows, Data) ->
+   Mem = ["Memory (total: ",
+             integer_to_list(proplists:get_value(memory_total, Data)), ")\n",
+          pad("", Cols, "="), "\n",
+          "Processes: ",
+             to_io(proplists:get_value(memory_procs, Data),
+                   (Cols div 2) - 12, " "),
+          "Binary: ",
+             to_io(proplists:get_value(memory_bin, Data),
+                   (Cols div 2) - 9, " "),
+          "\n",
+          "ETS: ",
+             to_io(proplists:get_value(memory_ets, Data),
+                   (Cols div 2) - 6, " "),
+          "Atoms: ",
+             to_io(proplists:get_value(memory_atoms, Data),
+                   (Cols div 2) - 8, " "),
+          "\n\n",
+          "Garbage Collections: ",
+             to_io(proplists:get_value(gc_count, Data),
+                   (Cols div 2) - 22, " "),
+          "Words Reclaimed: ",
+             to_io(proplists:get_value(gc_words_reclaimed, Data),
+                   (Cols div 2) - 19, " "),
+             "\n", pad("", Cols, "-"), "\n\n"],
+   Procs = ["Processes (count: ",
+             integer_to_list(proplists:get_value(process_count, Data)), ")\n",
+            pad("", Cols, "="), "\n",
+            "Run Queue: ",
+             to_io(proplists:get_value(run_queue, Data),
+                   (Cols div 2) - 12, " "),
+            "Reductions: ",
+             to_io(proplists:get_value(reductions, Data),
+                   (Cols div 2) - 13, " "),
+             "\n", pad("", Cols, "-"), "\n\n"],
+    Misc = ["Misc", "\n",
+             pad("", Cols, "="), "\n",
+            "Error Logger Queue Length: ",
+            integer_to_list(proplists:get_value(error_logger_queue_len, Data)),
+            "\n",
+            "Bytes in: ",
+             to_io(proplists:get_value(bytes_in, Data),
+                   (Cols div 2) - 12, " "),
+            "Bytes out: ",
+             to_io(proplists:get_value(bytes_out, Data),
+                   (Cols div 2) - 13, " "),
+             "\n", pad("", Cols, "-"), "\n\n"],
+    kill_lines([Mem, Procs, Misc], Rows);
+format(#state{type=procs}, Cols, Rows, Data) ->
+    %% fixed size for pids, ?KEYPCT% for the key, the rest for details,
+    %% with a floor size of ?MINLEN for the key
+    PidLen = ?PIDLEN,
+    Free = Cols - PidLen,
+    KeyLen = max(?MINLEN, trunc(Free*?KEYPCT)),
+    DetailsLen = Free-KeyLen,
+    Lines = lists:map(fun({Pid, Key, Details}) ->
+        [to_io(Pid, PidLen, " "),
+         to_io(Key, KeyLen, " "),
+         to_io(Details, DetailsLen),
+         "\n"]
+    end, Data),
+    [titles(procs, {PidLen, KeyLen, DetailsLen})
+     | lists:sublist(Lines, Rows-3)];
+format(#state{type=inet}, Cols, Rows, Data) ->
+    %% fixed size for pids, ?KEYPCT% for the key, the rest for details,
+    %% with a floor size of ?MINLEN for the key
+    PortLen = ?PORTLEN,
+    Free = Cols - PortLen,
+    KeyLen = max(?MINLEN, trunc(Free*?KEYPCT)),
+    DetailsLen = Free-KeyLen,
+    Lines = lists:map(fun({Port, Key, Details}) ->
+        [to_io(Port, PortLen, " "),
+         to_io(Key, KeyLen, " "),
+         to_io(Details, DetailsLen),
+         "\n"]
+    end, Data),
+    [titles(inet, {PortLen, KeyLen, DetailsLen})
+     | lists:sublist(Lines, Rows-3)].
+
+to_io(Term, Len) ->
+    Text = if is_pid(Term); is_port(Term) -> % make local
+                  re:replace(io_lib:format("~p",[Term]), "<[0-9]+", "<0");
+              true ->
+                  io_lib:format("~p",[Term])
+           end,
+    lists:sublist(
+      re:replace(re:replace(Text, ",", ", ", [global]),
+                 "\\s+",
+                 " ",
+                 [global, {return, list}]),
+      Len).
+
+to_io(Term, Len, Pad) ->
+    pad(to_io(Term, Len), Len, Pad).
+
+titles(procs, {Pid, Key, Details}) ->
+    [pad("Pid", Pid, " "),
+     to_io(key(), Key, " "),
+     pad("Details", Details, " "),
+     "\n",
+     pad("", Pid+Key+Details, "=")];
+titles(inet, {Port, Key, Details}) ->
+    [pad("Ports", Port, " "),
+     to_io(key(), Key, " "),
+     pad("Details", Details, " "),
+     "\n",
+     pad("", Port+Key+Details, "=")].
+
+pad(Text, Len, Pad) ->
+    TextLen = iolist_size(Text),
+    if TextLen =:= Len -> Text;
+       TextLen < Len -> [Text, lists:duplicate(Len-TextLen, Pad)]
+    end.
+
+kill_lines(IoList, Len) ->
+    Bin = iolist_to_binary(IoList),
+    {Pos,_} = lists:last(lists:sublist(binary:matches(Bin,<<"\n">>), Len)),
+    binary:part(Bin, 0, Pos).
+
