@@ -33,6 +33,7 @@
 %%%     <dd>This category provides tools to interact with pieces of OTP
 %%%         more easily. At this point, the only function included is
 %%%         {@link get_state/1}, which works as a wrapper around
+%%%         {@link get_state/2}, which works as a wrapper around
 %%%         `sys:get_state/1' in R16B01, and provides the required
 %%%         functionality for older versions of Erlang.</dd>
 %%%
@@ -80,7 +81,7 @@
          proc_count/2, proc_window/3,
          bin_leak/1,
          node_stats_print/2, node_stats_list/2, node_stats/4]).
--export([get_state/1]).
+-export([get_state/1, get_state/2]).
 -export([remote_load/1, remote_load/2,
          source/1]).
 -export([tcp/0, udp/0, sctp/0, files/0, port_types/0,
@@ -374,17 +375,22 @@ node_stats(N, Interval, FoldFun, Init) ->
 
 %%% OTP & Manipulations %%%
 
-%% @doc Fetch the internal state of an OTP process.
-%% Calls `sys:get_state/1' directly in R16B01+, and fetches
-%% it dynamically on older versions of OTP.
+
+%% @doc Shorthand call to `recon:get_state(PidTerm, 5000)'
 -spec get_state(pid_term()) -> term().
-get_state(PidTerm) ->
+get_state(PidTerm) -> get_state(PidTerm, 5000).
+
+%% @doc Fetch the internal state of an OTP process.
+%% Calls `sys:get_state/2' directly in R16B01+, and fetches
+%% it dynamically on older versions of OTP.
+-spec get_state(pid_term(), Ms::non_neg_integer() | 'infinity') -> term().
+get_state(PidTerm, Timeout) ->
     Proc = recon_lib:term_to_pid(PidTerm),
     try
-        sys:get_state(Proc)
+        sys:get_state(Proc, Timeout)
     catch
         error:undef ->
-            case sys:get_status(Proc) of
+            case sys:get_status(Proc, Timeout) of
                 {status,_Pid,{module,gen_server},Data} ->
                     {data, Props} = lists:last(lists:nth(5, Data)),
                     proplists:get_value("State", Props);
