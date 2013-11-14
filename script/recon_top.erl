@@ -3,6 +3,7 @@
 -export([main/1]).
 -mode(compile).
 
+-define(PING_TIMEOUT, timer:seconds(10)).
 -define(PIDLEN, 15).
 -define(PORTLEN, 18).
 -define(MINLEN, 15).
@@ -17,6 +18,7 @@ main(Args) ->
         parse_args(Args),
         default_args(),
         connect(),
+        ping(),
         run(type()),
         init:stop(0)
     catch
@@ -28,6 +30,8 @@ main(Args) ->
             io:format("Type not supported (procs|inet|stats).~n");
         failed_connect ->
             io:format("Could not connect to remote node.~n");
+        ping_timeout ->
+            io:format("Recon not loaded on remote node.~n");
         {remote_exit,R} ->
             io:format("Remote process died for reason ~p.~n",[R]);
         {failed_dist,R} ->
@@ -188,6 +192,16 @@ connect() ->
     case net_kernel:hidden_connect(remote()) of
         true -> ok;
         false -> throw(failed_connect)
+    end.
+
+
+ping() ->
+    Ref = make_ref(),
+    io:format("Confirming recon presence... "),
+    rpc:call(remote(), recon_escript, ping, [self(), Ref]),
+    receive
+        Ref -> io:format("ok~n")
+    after ?PING_TIMEOUT -> throw(ping_timeout)
     end.
 
 run(stats) ->

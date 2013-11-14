@@ -1,7 +1,10 @@
 %%% @private Code used for escripts communicating with a recon
 %%% node. Not to be used for any other reason.
 -module(recon_escript).
--export([stats/3, procs/5, inet/5]).
+-export([ping/2, stats/3, procs/5, inet/5]).
+
+ping(To, Ref) ->
+    To ! Ref.
 
 stats(Interval, To, Ref) when is_pid(To) ->
     link(To),
