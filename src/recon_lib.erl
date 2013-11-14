@@ -78,7 +78,19 @@ proc_attrs(AttrName) ->
 
 %% @doc Returns the attributes of a given process. This form of attributes
 %% is standard for most comparison functions for processes in recon.
+%%
+%% A special attribute is `binary_memory', which will reduce the memory used
+%% by the process for binary data on the global heap.
 -spec proc_attrs(term(), pid()) -> {ok, recon:proc_attrs()} | {error, term()}.
+proc_attrs(binary_memory, Pid) ->
+    case process_info(Pid, [binary, registered_name,
+                            current_function, initial_call]) of
+        [{_, Bins}, {registered_name,Name}, Init, Cur] ->
+            MemTot = lists:foldl(fun({_,Mem,_}, Tot) -> Mem+Tot end, 0, Bins),
+            {ok, {Pid, MemTot, [Name || is_atom(Name)]++[Init, Cur]}};
+        undefined ->
+            {error, undefined}
+    end;
 proc_attrs(AttrName, Pid) ->
     case process_info(Pid, [AttrName, registered_name,
                             current_function, initial_call]) of
