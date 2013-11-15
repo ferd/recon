@@ -4,11 +4,12 @@
 %%% conformance and obvious changes more than anything.
 -module(recon_SUITE).
 -include_lib("common_test/include/ct.hrl").
+-include_lib("eunit/include/eunit.hrl").
 -compile(export_all).
 
 all() -> [{group,info}, proc_count, proc_window, bin_leak,
           node_stats_list, get_state, source, tcp, udp, files, port_types,
-          inet_count, inet_window].
+          inet_count, inet_window, binary_memory].
 
 groups() -> [{info, [], [info3, info4, info1, info2,
                          port_info1, port_info2]}].
@@ -223,6 +224,33 @@ port_info2(Config) ->
     %% Not testing the whole set, but heeeh. Good enough.
     {io, [{input,_},{output,_}]} = recon:port_info(TCP, io),
     {io, [{input,_},{output,_}]} = recon:port_info(UDP, io).
+
+%% binary_memory is a created attribute that counts the amount
+%% of memory held by refc binaries, usable in info/2-4 and
+%% in proc_count/proc_window.
+binary_memory(_Config) ->
+    %% we just don't want them to crash like it happens with
+    %% non-existing attributes.
+    ?assertError(_, recon:proc_count(fake_attribute, 10)),
+    ?assertError(_, recon:proc_window(fake_attribute, 10, 100)),
+    recon:proc_count(binary_memory, 10),
+    recon:proc_window(binary_memory, 10, 100),
+    %% And now for info, it should work in lists, which can contain
+    %% duplicates, or in single element calls.
+    %% Note: we allocate the binary before spawning the process but
+    %%       use it in a closure to avoid race conditions on allocation for
+    %%       the test.
+    Bin = <<1:999999>>,
+    Pid1 = spawn_link(fun() -> timer:sleep(100000) end),
+    Pid2 = spawn_link(fun() -> timer:sleep(100000), Bin end),
+    {binary_memory, 0} = recon:info(Pid1, binary_memory),
+    {binary_memory, N} = recon:info(Pid2, binary_memory),
+    true = N > 0,
+    Res1 = recon:info(Pid1, [binary, binary_memory, binary]),
+    Res2 = recon:info(Pid2, [binary_memory, binary, binary_memory]),
+    %% we expect everything to look as a single call to process_info/2
+    [{binary,X}, {binary_memory,_}, {binary,X}] = Res1,
+    [{binary_memory,Y}, {binary,_}, {binary_memory,Y}] = Res2.
 
 %%%%%%%%%%%%%%%
 %%% HELPERS %%%

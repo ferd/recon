@@ -12,6 +12,8 @@
          triple_to_pid/3, term_to_pid/1,
          term_to_port/1,
          time_map/5, time_fold/6]).
+%% private exports
+-export([binary_memory/1]).
 
 -type diff() :: [recon:proc_attrs() | recon:inet_attrs()].
 
@@ -86,8 +88,7 @@ proc_attrs(binary_memory, Pid) ->
     case process_info(Pid, [binary, registered_name,
                             current_function, initial_call]) of
         [{_, Bins}, {registered_name,Name}, Init, Cur] ->
-            MemTot = lists:foldl(fun({_,Mem,_}, Tot) -> Mem+Tot end, 0, Bins),
-            {ok, {Pid, MemTot, [Name || is_atom(Name)]++[Init, Cur]}};
+            {ok, {Pid, binary_memory(Bins), [Name || is_atom(Name)]++[Init, Cur]}};
         undefined ->
             {error, undefined}
     end;
@@ -206,3 +207,7 @@ time_fold(N, Interval, Fun, State, FoldFun, Init) ->
     Acc = FoldFun(Res,Init),
     time_fold(N-1,Interval,Fun,NewState,FoldFun,Acc).
 
+%% @private crush binaries from process_info into their amount of place
+%% taken in memory.
+binary_memory(Bins) ->
+    lists:foldl(fun({_,Mem,_}, Tot) -> Mem+Tot end, 0, Bins).

@@ -209,15 +209,43 @@ info(PidTerm, memory_used) ->
 info(PidTerm, work) ->
     info_type(PidTerm, work, [reductions]);
 info(PidTerm, Keys) ->
-    process_info(recon_lib:term_to_pid(PidTerm), Keys).
+    proc_info(recon_lib:term_to_pid(PidTerm), Keys).
 
 %% @private makes access to `info_type()' calls simpler.
 -spec info_type(pid_term(), info_type(), [info_key()]) ->
     {info_type(), [{info_key(), term()}]}.
 info_type(PidTerm, Type, Keys) ->
     Pid = recon_lib:term_to_pid(PidTerm),
-    {Type, erlang:process_info(Pid, Keys)}.
+    {Type, proc_info(Pid, Keys)}.
 
+%% @private wrapper around `erlang:process_info/2' that allows special
+%% attribute handling for items like `binary_memory'.
+proc_info(Pid, binary_memory) ->
+    {binary, Bins} = erlang:process_info(Pid, binary),
+    {binary_memory, recon_lib:binary_memory(Bins)};
+proc_info(Pid, Term) when is_atom(Term) ->
+    erlang:process_info(Pid, Term);
+proc_info(Pid, List) when is_list(List) ->
+    case lists:member(binary_memory, List) of
+        false ->
+            erlang:process_info(Pid, List);
+        true ->
+            Res = erlang:process_info(Pid, replace(binary_memory, binary, List)),
+            proc_fake(List, Res)
+    end.
+
+%% @private Replace keys around
+replace(_, _, []) -> [];
+replace(H, Val, [H|T]) -> [Val | replace(H, Val, T)];
+replace(R, Val, [H|T]) -> [H | replace(R, Val, T)].
+
+proc_fake([], []) ->
+    [];
+proc_fake([binary_memory|T1], [{binary,Bins}|T2]) ->
+    [{binary_memory, recon_lib:binary_memory(Bins)}
+     | proc_fake(T1,T2)];
+proc_fake([_|T1], [H|T2]) ->
+    [H | proc_fake(T1,T2)].
 
 %% @doc Fetches a given attribute from all processes and returns
 %% the biggest `Num' consumers.
