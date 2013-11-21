@@ -32,7 +32,7 @@ all stable changes of the first version of Recon.
     - Allow `sbcs_to_mbcs/0` to take the arguments `current` and `max`.
     - Added unit conversion function `set_unit/1`, which allows to get the
       `recon_alloc` results in bytes (default), kilobytes, megabytes, and
-      kilobytes, to help with readability.
+      gigabytes, to help with readability.
   - Updated the internal rebar version, if anybody were to use it.
   - `recon:port_info/1` no longer includes the `parallelism` option by default
     within the `meta` category as this would hurt backwards compatibility on
