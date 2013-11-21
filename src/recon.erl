@@ -193,6 +193,9 @@ info(PidTerm) ->
 %% Although the type signature doesn't show it in generated documentation,
 %% a list of arguments or individual arguments accepted by
 %% `erlang:process_info/2' and return them as that function would.
+%%
+%% A fake attribute `binary_memory' is also available to return the
+%% amount of memory used by refc binaries for a process.
 -spec info(pid_term(), info_type()) -> {info_type(), [{info_key(), term()}]}
     ;     (pid_term(), [atom()]) -> [{atom(), term()}]
     ;     (pid_term(), atom()) -> {atom(), term()}.

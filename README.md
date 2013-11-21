@@ -14,6 +14,39 @@ It is recommended that you use tags if you do not want bleeding edge and develop
 Changelog
 ---------
 
+Branches are organized by version. `master` contains the bleeding edge, `2.x`
+contains all stable changes up to the latest release of v2, and `1.x` contains
+all stable changes of the first version of Recon.
+
+*2.x*
+
+- 2.0.0:
+  - Test suite added
+  - Major rewrite of `recon_alloc`, thanks to Lukas Larsson. Things that changed include:
+    - `average_sizes/0` is renamed `average_block_sizes/1` and now takes
+      the keywords `current` and `max`.
+    - Documentation updates.
+    - `memory/1` has new options in `allocated_types` and `allocated_instances`.
+    - `memory/2` has been added, which allows to choose between `current` and
+      `max` values. `memory(Term)` is made equivalent to `memory(Term, current)`.
+    - Allow `sbcs_to_mbcs/0` to take the arguments `current` and `max`.
+    - Added unit conversion function `set_unit/1`, which allows to get the
+      `recon_alloc` results in bytes (default), kilobytes, megabytes, and
+      kilobytes, to help with readability.
+  - Updated the internal rebar version, if anybody were to use it.
+  - `recon:port_info/1` no longer includes the `parallelism` option by default
+    within the `meta` category as this would hurt backwards compatibility on
+    some installations.
+  - `recon:get_state/2` is added in order to specify timeouts.
+    `recon:get_state/1` keeps its 5000 milliseconds timeout.
+  - Addition of a fake attribute called `binary_memory`, which is callable in
+    `recon:info/2,4`, `recon:proc_count/2`, and `recon:proc_window/3`. This
+    attribute allows to fetch the amount of memory used by refc binaries for
+    a process, and to sort by that value for counts and windows.
+
+
+*1.x*
+
 - 1.2.0:
   - add `recon_alloc:snapshot*` functions, which allow memory allocation
     snapshots to be taken, saved on disk, reloaded, and analyzed on-demand.
