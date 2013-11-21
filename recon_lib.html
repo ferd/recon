@@ -19,9 +19,14 @@
     </header>
     <article>
     <h2>Module recon_lib</h2>
-<ul class="index"><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>Regroups useful functionality used by recon when dealing with data
+   from the node.
 
+<p><strong>Authors:</strong> Fred Hebert (<a href="mailto:mononcqc@ferd.ca"><code>mononcqc@ferd.ca</code></a>) [<em>web site:</em> <code><a href="http://ferd.ca/" target="_top">http://ferd.ca/</a></code>].</p>
 
+<h3><a name="description">Description</a></h3>Regroups useful functionality used by recon when dealing with data
+   from the node. The functions in this module allow quick runtime access
+   to fancier behaviour than what would be done using recon module itself.
 <h3><a name="types">Data Types</a></h3>
 
 <h4 class="typedecl"><a name="type-diff">diff()</a></h4>
@@ -99,8 +104,11 @@
 <h4 class="function"><a name="proc_attrs-2">proc_attrs/2</a></h4>
 <div class="spec">
 <p><code>proc_attrs(AttrName::term(), Pid::pid()) -&gt; {ok, <a href="recon.html#type-proc_attrs">recon:proc_attrs()</a>} | {error, term()}</code><br></p>
-</div><p>Returns the attributes of a given process. This form of attributes
-  is standard for most comparison functions for processes in recon.</p>
+</div><p><p>Returns the attributes of a given process. This form of attributes  
+is standard for most comparison functions for processes in recon.</p>
+ 
+  A special attribute is <code>binary_memory</code>, which will reduce the memory used
+  by the process for binary data on the global heap.</p>
 
 <h4 class="function"><a name="sample-2">sample/2</a></h4>
 <div class="spec">

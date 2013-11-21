@@ -24,6 +24,7 @@
    allocators</a>, or particularly, to try to present the allocator data   
 in a way that makes it simpler to discover possible problems.
 
+<p><strong>Authors:</strong> Fred Hebert (<a href="mailto:mononcqc@ferd.ca"><code>mononcqc@ferd.ca</code></a>) [<em>web site:</em> <code><a href="http://ferd.ca/" target="_top">http://ferd.ca/</a></code>], Lukas Larsson (<a href="mailto:lukas@erlang.org"><code>lukas@erlang.org</code></a>).</p>
 
 <h3><a name="description">Description</a></h3><p>Functions to deal with
    <a href="http://www.erlang.org/doc/man/erts_alloc.html">Erlang's memory
@@ -134,7 +135,8 @@ before.</p>
     <dd>Single block carrier threshold</dd>
    </dl>
   
-   All sizes returned by this module are in bytes.
+   By default all sizes returned by this module are in bytes. You can change
+   this by calling <a href="#set_unit-1"><code>set_unit/1</code></a>.
   
 <h3><a name="types">Data Types</a></h3>
 
@@ -160,25 +162,27 @@ before.</p>
 
 <h3><a name="index">Function Index</a></h3>
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#allocators-0">allocators/0</a></td><td>returns a dump of all allocator settings and values.</td></tr>
-<tr><td valign="top"><a href="#average_sizes-0">average_sizes/0</a></td><td>Checks all allocators in <a href="#type-allocator"><code>allocator()</code></a> and returns the average
-  carrier sized being used for <code>mbcs</code> and <code>sbcs</code>.</td></tr>
+<tr><td valign="top"><a href="#average_block_sizes-1">average_block_sizes/1</a></td><td>Checks all allocators in <a href="#type-allocator"><code>allocator()</code></a> and returns the average
+  block sizes being used for <code>mbcs</code> and <code>sbcs</code>.</td></tr>
 <tr><td valign="top"><a href="#cache_hit_rates-0">cache_hit_rates/0</a></td><td>looks at the <code>mseg_alloc</code> allocator (allocator used by all the
   allocators in <a href="#type-allocator"><code>allocator()</code></a>) and returns information relative to  
 the cache hit rates.</td></tr>
 <tr><td valign="top"><a href="#fragmentation-1">fragmentation/1</a></td><td>Compares the block sizes to the carrier sizes, both for
   single block (<code>sbcs</code>) and multiblock (<code>mbcs</code>) carriers.</td></tr>
-<tr><td valign="top"><a href="#memory-1">memory/1</a></td><td>reports one of multiple possible memory values for the entire  
+<tr><td valign="top"><a href="#memory-1">memory/1</a></td><td>Equivalent to <code>memory(Key, current)</code>.</td></tr>
+<tr><td valign="top"><a href="#memory-2">memory/2</a></td><td>reports one of multiple possible memory values for the entire  
 node depending on what is to be reported:.</td></tr>
-<tr><td valign="top"><a href="#sbcs_to_mbcs-0">sbcs_to_mbcs/0</a></td><td>compares the amount of single block carriers (<code>sbcs</code>) vs the
+<tr><td valign="top"><a href="#sbcs_to_mbcs-1">sbcs_to_mbcs/1</a></td><td>compares the amount of single block carriers (<code>sbcs</code>) vs the
   number of multiblock carriers (<code>mbcs</code>) for each individual allocator in
   <a href="#type-allocator"><code>allocator()</code></a>.</td></tr>
+<tr><td valign="top"><a href="#set_unit-1">set_unit/1</a></td><td>set the current unit to be used by recon_alloc.</td></tr>
 <tr><td valign="top"><a href="#snapshot-0">snapshot/0</a></td><td>Take a new snapshot of the current memory allocator statistics.</td></tr>
 <tr><td valign="top"><a href="#snapshot_clear-0">snapshot_clear/0</a></td><td>clear the current snapshot in the process dictionary, if present,
   and return the value it had before being unset.</td></tr>
 <tr><td valign="top"><a href="#snapshot_get-0">snapshot_get/0</a></td><td>returns the current snapshot stored by <a href="#snapshot-0"><code>snapshot/0</code></a>.</td></tr>
 <tr><td valign="top"><a href="#snapshot_load-1">snapshot_load/1</a></td><td>load a snapshot from a given file.</td></tr>
 <tr><td valign="top"><a href="#snapshot_print-0">snapshot_print/0</a></td><td>print a dump of the current snapshot stored by <a href="#snapshot-0"><code>snapshot/0</code></a>
-  Returns <code>undefined</code> if no snapshot has been taken.</td></tr>
+  Prints <code>undefined</code> if no snapshot has been taken.</td></tr>
 <tr><td valign="top"><a href="#snapshot_save-1">snapshot_save/1</a></td><td>save the current snapshot taken by <a href="#snapshot-0"><code>snapshot/0</code></a> to a file.</td></tr>
 </table>
 
@@ -189,16 +193,16 @@ node depending on what is to be reported:.</td></tr>
 <p><code>allocators() -&gt; [<a href="#type-allocdata">allocdata</a>(term())]</code><br></p>
 </div><p>returns a dump of all allocator settings and values</p>
 
-<h4 class="function"><a name="average_sizes-0">average_sizes/0</a></h4>
+<h4 class="function"><a name="average_block_sizes-1">average_block_sizes/1</a></h4>
 <div class="spec">
-<p><code>average_sizes() -&gt; [{<a href="#type-allocator">allocator()</a>, [{Key, Val}]}]</code>
+<p><code>average_block_sizes(Keyword::current | max) -&gt; [{<a href="#type-allocator">allocator()</a>, [{Key, Val}]}]</code>
 <ul class="definitions"><li><code>Key = mbcs | sbcs</code></li><li><code>Val = number()</code></li></ul></p>
 </div><p><p>Checks all allocators in <a href="#type-allocator"><code>allocator()</code></a> and returns the average
-  carrier sized being used for <code>mbcs</code> and <code>sbcs</code>. This value is interesting
-  to use because it will tell us how used most carriers are individually being
-  used for. This can be related to the VM's largest multiblock carrier size
+  block sizes being used for <code>mbcs</code> and <code>sbcs</code>. This value is interesting
+  to use because it will tell us how large most blocks are.
+  This can be related to the VM's largest multiblock carrier size
   (<code>lmbcs</code>) and smallest multiblock carrier size (<code>smbcs</code>) to specify  
-allocation strategies regarding the block sizes to be used.</p>
+allocation strategies regarding the carrier sizes to be used.</p>
  
   <p>This function isn't exceptionally useful unless you know you have some
   specific problem, say with sbcs/mbcs ratios (see <a href="#sbcs_to_mbcs-0"><code>sbcs_to_mbcs/0</code></a>)  
@@ -212,7 +216,7 @@ configured value.</p>
 <h4 class="function"><a name="cache_hit_rates-0">cache_hit_rates/0</a></h4>
 <div class="spec">
 <p><code>cache_hit_rates() -&gt; [{{instance, <a href="#type-instance">instance()</a>}, [{Key, Val}]}]</code>
-<ul class="definitions"><li><code>Key = hit_rate | hits | alloc</code></li><li><code>Val = term()</code></li></ul></p>
+<ul class="definitions"><li><code>Key = hit_rate | hits | calls</code></li><li><code>Val = term()</code></li></ul></p>
 </div><p><p>looks at the <code>mseg_alloc</code> allocator (allocator used by all the
   allocators in <a href="#type-allocator"><code>allocator()</code></a>) and returns information relative to  
 the cache hit rates. Unless memory has expected spiky behaviour, it should  
@@ -257,25 +261,36 @@ that point.</p>
 
 <h4 class="function"><a name="memory-1">memory/1</a></h4>
 <div class="spec">
-<p><code>memory(X1::used | allocated | unused) -&gt; pos_integer()</code><br></p>
+<p><code>memory(Key::used | allocated | unused) -&gt; pos_integer()</code><br></p>
+</div><p>Equivalent to <code>memory(Key, current)</code>.</p>
+
+<h4 class="function"><a name="memory-2">memory/2</a></h4>
+<div class="spec">
+<p><code>memory(X1::used | allocated | unused, Keyword::current | max) -&gt; pos_integer()</code><br></p>
 </div><p><p>reports one of multiple possible memory values for the entire  
 node depending on what is to be reported:</p>
  
   <ul>
-    <li><code>memory(used)</code> reports the memory that is actively used for allocated
+    <li><code>used</code> reports the memory that is actively used for allocated
         Erlang data;</li>
-    <li><code>memory(allocated)</code> reports the memory that is reserved by the VM. It
+    <li><code>allocated</code> reports the memory that is reserved by the VM. It
         includes the memory used, but also the memory yet-to-be-used but still
         given by the OS. This is the amount you want if you're dealing with
-        ulimit and OS-reported values.</li>
-    <li><code>memory(unused)</code> reports the amount of memory reserved by the VM that
+        ulimit and OS-reported values. </li>
+    <li><code>allocated_types</code> report the memory that is reserved by the
+        VM grouped into the different util allocators.</li>
+    <li><code>allocated_instances</code> report the memory that is reserved
+        by the VM grouped into the different schedulers. Note that
+        instance id 0 is the global allocator used to allocate data from
+        non-managed threads, i.e. async and driver threads.</li>
+    <li><code>unused</code> reports the amount of memory reserved by the VM that
         is not being allocated.
-        Equivalent to <code>memory(allocated) - memory(used)</code>.</li>
-    <li><code>memory(usage)</code> returns a percentage (0.0 .. 1.0) of <code>used/allocated</code>
+        Equivalent to <code>allocated - used</code>.</li>
+    <li><code>usage</code> returns a percentage (0.0 .. 1.0) of <code>used/allocated</code>
         memory ratios.</li>
   </ul>
  
-  <p>The memory reported by <code>memory(allocated)</code> should roughly  
+  <p>The memory reported by <code>allocated</code> should roughly  
 match what the OS reports. If this amount is different by a large margin,  
 it may be the sign that someone is allocating memory in C directly, outside  
 of Erlang's own allocator -- a big warning sign.</p>
@@ -284,9 +299,9 @@ of Erlang's own allocator -- a big warning sign.</p>
   memory, in which case exploring which specific allocator is at fault
   is recommended (see <a href="#fragmentation-1"><code>fragmentation/1</code></a>)</p>
 
-<h4 class="function"><a name="sbcs_to_mbcs-0">sbcs_to_mbcs/0</a></h4>
+<h4 class="function"><a name="sbcs_to_mbcs-1">sbcs_to_mbcs/1</a></h4>
 <div class="spec">
-<p><code>sbcs_to_mbcs() -&gt; [<a href="#type-allocdata">allocdata</a>(term())]</code><br></p>
+<p><code>sbcs_to_mbcs(Keyword::max | current) -&gt; [<a href="#type-allocdata">allocdata</a>(term())]</code><br></p>
 </div><p><p>compares the amount of single block carriers (<code>sbcs</code>) vs the
   number of multiblock carriers (<code>mbcs</code>) for each individual allocator in
   <a href="#type-allocator"><code>allocator()</code></a>.</p>
@@ -297,10 +312,10 @@ of Erlang's own allocator -- a big warning sign.</p>
   data is smaller than the <code>sbct</code>, it gets placed into a multiblock carrier.</p>
  
   <p>mbcs are to be prefered to sbcs because they basically represent pre-  
-allocated memory, whereas sbcs will map to one call to sys_alloc (often  
-just malloc) or mmap, which is more expensive than redistributing data  
-that was obtain for multiblock carriers. Moreover, the VM is able to do  
-specific work with mbcs that should help reduce fragmentation in ways  
+allocated memory, whereas sbcs will map to one call to sys_alloc  
+or mseg_alloc, which is more expensive than redistributing  
+data that was obtained for multiblock carriers. Moreover, the VM is able to  
+do specific work with mbcs that should help reduce fragmentation in ways  
 sys_alloc or mmap usually won't.</p>
  
   <p>Ideally, most of the data should fit inside multiblock carriers. If
@@ -311,6 +326,21 @@ to pretty much any practical size.</p>
  
   Given the value returned is a ratio of sbcs/mbcs, the higher the value,
   the worst the condition. The list is sorted accordingly.</p>
+
+<h4 class="function"><a name="set_unit-1">set_unit/1</a></h4>
+<div class="spec">
+<p><code>set_unit(X1::byte | kilobyte | megabyte | gigabyte) -&gt; ok</code><br></p>
+</div><p><p>set the current unit to be used by recon_alloc. This effects all  
+functions that return bytes.</p>
+ 
+  Eg.
+  <pre>     1&gt; recon_alloc:memory(used,current).
+     17548752
+     2&gt; recon_alloc:set_unit(kilobyte).
+     undefined
+     3&gt; recon_alloc:memory(used,current).
+     17576.90625</pre>
+ </p>
 
 <h4 class="function"><a name="snapshot-0">snapshot/0</a></h4>
 <div class="spec">
@@ -366,7 +396,7 @@ the file.</p>
 <div class="spec">
 <p><code>snapshot_print() -&gt; ok</code><br></p>
 </div><p>print a dump of the current snapshot stored by <a href="#snapshot-0"><code>snapshot/0</code></a>
-  Returns <code>undefined</code> if no snapshot has been taken.</p>
+  Prints <code>undefined</code> if no snapshot has been taken.</p>
 
 <h4 class="function"><a name="snapshot_save-1">snapshot_save/1</a></h4>
 <div class="spec">

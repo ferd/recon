@@ -57,6 +57,7 @@ contained in the Recon application.</p>
        <dd>This category provides tools to interact with pieces of OTP
            more easily. At this point, the only function included is
            <a href="#get_state-1"><code>get_state/1</code></a>, which works as a wrapper around
+           <a href="#get_state-2"><code>get_state/2</code></a>, which works as a wrapper around
            <code>sys:get_state/1</code> in R16B01, and provides the required
            functionality for older versions of Erlang.</dd>
   
@@ -149,7 +150,7 @@ contained in the Recon application.</p>
 
 
 <h4 class="typedecl"><a name="type-port_info_meta_key">port_info_meta_key()</a></h4>
-<p><code>port_info_meta_key() = registered_name | id | name | os_pid | parallelism</code></p>
+<p><code>port_info_meta_key() = registered_name | id | name | os_pid</code></p>
 
 
 <h4 class="typedecl"><a name="type-port_info_signals_key">port_info_signals_key()</a></h4>
@@ -178,7 +179,8 @@ contained in the Recon application.</p>
   amount of memory allocated and do the vast majority of their work with refc
   binaries.</td></tr>
 <tr><td valign="top"><a href="#files-0">files/0</a></td><td>returns a list of all file handles open on the node.</td></tr>
-<tr><td valign="top"><a href="#get_state-1">get_state/1</a></td><td>Fetch the internal state of an OTP process.</td></tr>
+<tr><td valign="top"><a href="#get_state-1">get_state/1</a></td><td>Shorthand call to <code>recon:get_state(PidTerm, 5000)</code></td></tr>
+<tr><td valign="top"><a href="#get_state-2">get_state/2</a></td><td>Fetch the internal state of an OTP process.</td></tr>
 <tr><td valign="top"><a href="#inet_count-2">inet_count/2</a></td><td>Fetches a given attribute from all inet ports (TCP, UDP, SCTP)
   and returns the biggest <code>Num</code> consumers.</td></tr>
 <tr><td valign="top"><a href="#inet_window-3">inet_window/3</a></td><td>Fetches a given attribute from all inet ports (TCP, UDP, SCTP)  
@@ -257,8 +259,13 @@ that freed the biggest amount of binaries, potentially highlighting leaks.</p>
 <h4 class="function"><a name="get_state-1">get_state/1</a></h4>
 <div class="spec">
 <p><code>get_state(PidTerm::<a href="#type-pid_term">pid_term()</a>) -&gt; term()</code><br></p>
+</div><p>Shorthand call to <code>recon:get_state(PidTerm, 5000)</code></p>
+
+<h4 class="function"><a name="get_state-2">get_state/2</a></h4>
+<div class="spec">
+<p><code>get_state(PidTerm::<a href="#type-pid_term">pid_term()</a>, Ms::non_neg_integer() | infinity) -&gt; term()</code><br></p>
 </div><p>Fetch the internal state of an OTP process.
-  Calls <code>sys:get_state/1</code> directly in R16B01+, and fetches
+  Calls <code>sys:get_state/2</code> directly in R16B01+, and fetches
   it dynamically on older versions of OTP.</p>
 
 <h4 class="function"><a name="inet_count-2">inet_count/2</a></h4>
@@ -322,9 +329,12 @@ called in production systems.</p>
   <code>Module:whereis_name/1</code> function). Pids can also be passed in as a string
   (<code>"&lt;0.39.0&gt;"</code>) or a triple (<code>{0,39,0}</code>) and will be converted to be used.</p>
  
-  Although the type signature doesn't show it in generated documentation,
+  <p>Although the type signature doesn't show it in generated documentation,
   a list of arguments or individual arguments accepted by
   <code>erlang:process_info/2</code> and return them as that function would.</p>
+ 
+  A fake attribute <code>binary_memory</code> is also available to return the
+  amount of memory used by refc binaries for a process.</p>
 
 <h4 class="function"><a name="info-3">info/3</a></h4>
 <div class="spec">
