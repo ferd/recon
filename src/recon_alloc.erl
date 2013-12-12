@@ -370,7 +370,8 @@ sbcs_to_mbcs(Keyword) ->
 %% @doc returns a dump of all allocator settings and values
 -spec allocators() -> [allocdata(term())].
 allocators() ->
-    {_libc,_Vsn,Allocators,_Opts} = erlang:system_info(allocator),
+    UtilAllocators = erlang:system_info(alloc_util_allocators),
+    Allocators = [sys_alloc,mseg_alloc|UtilAllocators],
     %% versions is deleted in order to allow the use of the orddict api,
     %% and never really having come across a case where it was useful to know.
     [{{A,N},lists:sort(proplists:delete(versions,Props))} ||
@@ -431,7 +432,7 @@ snapshot_save(Filename) ->
 %% @doc load a snapshot from a given file. The format of the data in the
 %% file can be either the same as output by {@link snapshot_save()},
 %% or the output obtained by calling
-%%  `{erlang:memory(),[{A,erlang:system_info({allocator,A})} || A <- element(3,erlang:system_info(allocator))]}.'
+%%  `{erlang:memory(),[{A,erlang:system_info({allocator,A})} || A <- erlang:system_info(alloc_util_allocators)++[sys_alloc,mseg_alloc]]}.'
 %% and storing it in a file.
 %% If the latter option is taken, please remember to add a full stop at the end
 %% of the resulting Erlang term, as this function uses `file:consult/1' to load
