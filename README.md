@@ -20,6 +20,8 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.0.1:
+  - Add support for R16B03 in `recon_alloc`.
 - 2.0.0:
   - Test suite added
   - Major rewrite of `recon_alloc`, thanks to Lukas Larsson. Things that changed include:
