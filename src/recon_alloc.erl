@@ -376,7 +376,9 @@ allocators() ->
     %% and never really having come across a case where it was useful to know.
     [{{A,N},lists:sort(proplists:delete(versions,Props))} ||
         A <- Allocators,
-        {_,N,Props} <- erlang:system_info({allocator,A})].
+        Allocs <- [erlang:system_info({allocator,A})],
+        Allocs =/= false,
+        {_,N,Props} <- Allocs].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Snapshot handling %%%
@@ -410,7 +412,7 @@ snapshot_print() ->
 snapshot_get() ->
     get(recon_alloc_snapshot).
 
-%% @doc save the current snapshot taken by {@link snapshot/0} to a file. 
+%% @doc save the current snapshot taken by {@link snapshot/0} to a file.
 %% If there is no current snapshot, a snaphot of the current allocator
 %% statistics will be written to the file.
 -spec snapshot_save(Filename) -> ok when
@@ -560,7 +562,7 @@ weighed_values({SbcsBlockSize, SbcsCarrierSize},
               {sbcs_carriers_size, SbcsCarrierSize},
               {mbcs_block_size, MbcsBlockSize},
               {mbcs_carriers_size, MbcsCarrierSize}]}.
-              
+
 %% Returns the `BlockSize/CarrierSize' as a 0.0 -> 1.0 percentage,
 %% but also takes 0/0 to be 100% to make working with sorting and
 %% weights simpler.
