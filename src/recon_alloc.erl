@@ -376,8 +376,9 @@ allocators() ->
     %% and never really having come across a case where it was useful to know.
     [{{A,N},lists:sort(proplists:delete(versions,Props))} ||
         A <- Allocators,
-        erlang:system_info({allocator,A}) =/= false,
-        {_,N,Props} <- erlang:system_info({allocator,A})].
+        Allocs <- [erlang:system_info({allocator,A})],
+        Allocs =/= false,
+        {_,N,Props} <- Allocs].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Snapshot handling %%%
