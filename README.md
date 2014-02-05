@@ -20,8 +20,11 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.1.0:
+  - Adding `queue_fun.awk` script to inspect running functions of processes
+    with large mailboxes in a crash dump.
 - 2.0.2:
-  - Precenting crashes in `recon_alloc` when certain expected allocators
+  - Preventing crashes in `recon_alloc` when certain expected allocators
     do not return results (Thanks to Michal Ptaszek)
 - 2.0.1:
   - Add support for R16B03 in `recon_alloc`.
