@@ -66,7 +66,7 @@ in the repository's `script/' directory:
         Awk script to tun on an Erlang Crash dump as
         `awk -v threshold=<queue size> -f queue_fun.awk <crashdump>' and will
         show what function processes with queue sizes larger or equal to
-        `<queue size>` were operating at the time of the crash dump. May help
+        `<queue size>' were operating at the time of the crash dump. May help
         find out if most processes were stuck blocking on a given function
         call while accumulating messages forever.
     </dd>
