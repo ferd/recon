@@ -18,45 +18,87 @@
 %%% all received trace messages until the tracer termination, but will then
 %%% shut down as soon as possible.
 -module(recon_trace).
--export([clear/0, calls/2, calls/4, calls/5]).
+-export([clear/0,
+         calls/2, calls/3,
+         calls/4, calls/5]).
 %% internal exports
 -export([count_tracer/1, rate_tracer/2, formatter/3]).
 
+-type matchspec() :: [{[term()], [term()], [term()]}].
+-type shellfun() :: fun((_) -> term()).
+-type millisecs() :: non_neg_integer().
+-type max_traces() :: non_neg_integer().
+-type max_rate() :: {max_traces(), millisecs()}.
+
+                   %% trace options
+-type options() :: [ {pid, all | existing | new | pid()} % default: all
+                   | {timestamp, formatter | trace}      % default: formatter
+                   | {args, args | arity}                % default: args
+                   %% match pattern options
+                   | {scope, global | local}             % default: global
+                   ].
+
+-type mod()  :: '_' | module().
+-type fn()   :: '_' | atom().
+-type args() :: '_' | 0..255 | matchspec() | shellfun().
+-type mfa() :: {mod(), fn(), args()}.
+-type max()  :: max_traces() | max_rate().
+-type num_matches() :: non_neg_integer().
+
+-spec clear() -> num_matches().
 clear() ->
     erlang:trace(all, false, [all]),
     erlang:trace_pattern({'_','_','_'}, false, [local,meta,call_count,call_time]),
     erlang:trace_pattern({'_','_','_'}, false, []). % unsets global
 
-%% TODO: - handle options
-%%       - allow multiple calls to be traced
-
+-spec calls(mod(), fn(), args(), max()) -> num_matches().
 calls(Mod, Fun, Args, Max) ->
-    calls([{Mod,Fun,Args}], Max).
+    calls([{Mod,Fun,Args}], Max, []).
 
-calls(Mod, Fun, Args, Max, Time) ->
-    calls([{Mod,Fun,Args}], {Max, Time}).
+-spec calls(mod(), fn(), args(), max(), options()) -> num_matches().
+calls(Mod, Fun, Args, Max, Opts) ->
+    calls([{Mod,Fun,Args}], Max, Opts).
 
+-spec calls(mfa(), max()) -> num_matches().
 calls({Mod, Fun, Args}, Max) ->
-    calls([{Mod,Fun,Args}], Max);
-calls(MFAs = [_|_], {Max, Time}) ->
-    Pid = setup(rate_tracer, [Max, Time]),
-    trace_calls(MFAs, Pid);
-calls(MFAs = [_|_], Max) ->
-    Pid = setup(count_tracer, [Max]),
-    trace_calls(MFAs, Pid).
+    calls([{Mod,Fun,Args}], Max, []).
 
-trace_calls(MFAs, Pid) ->
+-spec calls(mfa() | [mfa(),...], max(), options()) -> num_matches().
+calls({Mod, Fun, Args}, Max, Opts) ->
+    calls([{Mod,Fun,Args}], Max,Opts);
+calls(MFAs = [_|_], {Max, Time}, Opts) ->
+    Pid = setup(rate_tracer, [Max, Time]),
+    trace_calls(MFAs, Pid, Opts);
+calls(MFAs = [_|_], Max, Opts) ->
+    Pid = setup(count_tracer, [Max]),
+    trace_calls(MFAs, Pid, Opts).
+
+trace_calls(MFAs, Pid, Opts) ->
+    {PidSpec, TraceOpts, MatchOpts} = validate_opts(Opts),
     Matches = [begin
                 {Arity, Spec} = validate_mfa(Mod, Fun, Args),
-                erlang:trace_pattern({Mod, Fun, Arity}, Spec, [])
+                erlang:trace_pattern({Mod, Fun, Arity}, Spec, MatchOpts)
                end || {Mod, Fun, Args} <- MFAs],
-    erlang:trace(all, true, [call, {tracer, Pid}]),
+    erlang:trace(PidSpec, true, [call, {tracer, Pid} | TraceOpts]),
     lists:sum(Matches).
+
+validate_opts(Opts) ->
+    PidSpec = proplists:get_value(pid, Opts, all),
+    TraceOpts = case proplists:get_value(timestamp, Opts, formatter) of
+                    formatter -> [];
+                    trace -> [timestamp]
+                 end ++
+                 case proplists:get_value(args, Opts, args) of
+                    args -> [];
+                    arity -> [arity]
+                 end,
+    MatchOpts = [proplists:get_value(scope, Opts, global)],
+    {PidSpec, TraceOpts, MatchOpts}.
 
 validate_mfa(Mod, Fun, Args) when is_function(Args) ->
     validate_mfa(Mod, Fun, fun_to_ms(Args));
 validate_mfa(Mod, Fun, Args) ->
-    BannedMods = ['_', io, lists],
+    BannedMods = ['_', ?MODULE, io, lists],
     %% The banned mod check can be bypassed by using
     %% match specs if you really feel like being dumb.
     case {lists:member(Mod, BannedMods), Args} of
@@ -148,7 +190,7 @@ format(TraceMsg) ->
             {" > (non_existent) ~p: ~p", [To, Msg]};
         %% {trace, Pid, call, {M, F, Args}}
         {call, [{M,F,Args}]} ->
-            {"~p:~p(~s)", [M,F,format_args(Args)]};
+            {"~p:~p~s", [M,F,format_args(Args)]};
         %% {trace, Pid, return_to, {M, F, Arity}}
         {return_to, [{M,F,Arity}]} ->
             {"~p:~p/~p", [M,F,Arity]};
@@ -160,7 +202,7 @@ format(TraceMsg) ->
             {"~p:~p/~p ~p ~p", [M,F,Arity, Class, Val]};
         %% {trace, Pid, spawn, Spawned, {M, F, Args}}
         {spawn, [Spawned, {M,F,Args}]}  ->
-            {"spawned ~p as ~p:~p(~s)", [Spawned, M, F, format_args(Args)]};
+            {"spawned ~p as ~p:~p~s", [Spawned, M, F, format_args(Args)]};
         %% {trace, Pid, exit, Reason}
         {exit, [Reason]} ->
             {"EXIT ~p", [Reason]};
@@ -244,8 +286,10 @@ wait_for_death(Pid) ->
             ok
     end.
 
-format_args(Args) ->
-    string:join([io_lib:format("~p", [Arg]) || Arg <- Args], ", ").
+format_args(Arity) when is_integer(Arity) ->
+    "/"++integer_to_list(Arity);
+format_args(Args) when is_list(Args) ->
+    "("++string:join([io_lib:format("~p", [Arg]) || Arg <- Args], ", ")++")".
 
 %% Borrowed from dbg
 fun_to_ms(ShellFun) when is_function(ShellFun) ->
