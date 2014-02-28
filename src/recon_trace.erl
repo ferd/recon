@@ -18,7 +18,7 @@
 %%% all received trace messages until the tracer termination, but will then
 %%% shut down as soon as possible.
 -module(recon_trace).
--export([clear/0, calls/4, calls/5]).
+-export([clear/0, calls/2, calls/4, calls/5]).
 %% internal exports
 -export([count_tracer/1, rate_tracer/2, formatter/3]).
 
@@ -27,32 +27,48 @@ clear() ->
     erlang:trace_pattern({'_','_','_'}, false, [local,meta,call_count,call_time]),
     erlang:trace_pattern({'_','_','_'}, false, []). % unsets global
 
+%% TODO: - handle options
+%%       - allow multiple calls to be traced
+
 calls(Mod, Fun, Args, Max) ->
-    Pid = setup(count_tracer, [Max]),
-    trace_calls(Mod, Fun, Args, Pid).
+    calls([{Mod,Fun,Args}], Max).
 
 calls(Mod, Fun, Args, Max, Time) ->
-    Pid = setup(rate_tracer, [Max, Time]),
-    trace_calls(Mod, Fun, Args, Pid).
+    calls([{Mod,Fun,Args}], {Max, Time}).
 
-trace_calls(Mod, Fun, Args, Pid) when is_function(Args) ->
-    trace_calls(Mod, Fun, fun_to_ms(Args), Pid);
-trace_calls(Mod, Fun, Args, Pid) ->
+calls({Mod, Fun, Args}, Max) ->
+    calls([{Mod,Fun,Args}], Max);
+calls(MFAs = [_|_], {Max, Time}) ->
+    Pid = setup(rate_tracer, [Max, Time]),
+    trace_calls(MFAs, Pid);
+calls(MFAs = [_|_], Max) ->
+    Pid = setup(count_tracer, [Max]),
+    trace_calls(MFAs, Pid).
+
+trace_calls(MFAs, Pid) ->
+    Matches = [begin
+                {Arity, Spec} = validate_mfa(Mod, Fun, Args),
+                erlang:trace_pattern({Mod, Fun, Arity}, Spec, [])
+               end || {Mod, Fun, Args} <- MFAs],
+    erlang:trace(all, true, [call, {tracer, Pid}]),
+    lists:sum(Matches).
+
+validate_mfa(Mod, Fun, Args) when is_function(Args) ->
+    validate_mfa(Mod, Fun, fun_to_ms(Args));
+validate_mfa(Mod, Fun, Args) ->
     BannedMods = ['_', io, lists],
     %% The banned mod check can be bypassed by using
     %% match specs if you really feel like being dumb.
     case {lists:member(Mod, BannedMods), Args} of
-        {true, '_'} -> error(dangerous_combo);
-        {true, []} -> error(dangerous_combo);
+        {true, '_'} -> error({dangerous_combo, {Mod,Fun,Args}});
+        {true, []} -> error({dangerous_combo, {Mod,Fun,Args}});
         _ -> ok
     end,
-    erlang:trace(all, true, [call, {tracer, Pid}]),
-    {Arity, Spec} = case Args of
+    case Args of
         '_' -> {'_', true};
         _ when is_list(Args) -> {'_', Args};
         _ when Args >= 0, Args =< 255 -> {Args, true}
-    end,
-    erlang:trace_pattern({Mod, Fun, Arity}, Spec, []).
+    end.
 
 setup(TracerFun, TracerArgs) ->
     clear(),
@@ -105,10 +121,6 @@ formatter(Tracer, Parent, Ref) ->
     Parent ! {Ref, linked},
     formatter(Tracer, group_leader()).
 
-%% Go full async to avoid accumulating too much data
-%% while waiting over a busy connection or group leader.
-%% This doesn't solve an overflow problem, just moves it
-%% to the leader.
 formatter(Tracer, Leader) ->
     receive
         {'EXIT', Tracer, normal} ->
