@@ -27,11 +27,12 @@
 -type matchspec() :: [{[term()], [term()], [term()]}].
 -type shellfun() :: fun((_) -> term()).
 -type millisecs() :: non_neg_integer().
+-type pidspec() :: all | existing | new | recon:pid_term().
 -type max_traces() :: non_neg_integer().
 -type max_rate() :: {max_traces(), millisecs()}.
 
                    %% trace options
--type options() :: [ {pid, all | existing | new | recon:pid_term()} % default: all
+-type options() :: [ {pid, pidspec() | [pidspec(),...]} % default: all
                    | {timestamp, formatter | trace} % default: formatter
                    | {args, args | arity}           % default: args
                    %% match pattern options
@@ -74,21 +75,17 @@ calls(MFAs = [_|_], Max, Opts) ->
     trace_calls(MFAs, Pid, Opts).
 
 trace_calls(MFAs, Pid, Opts) ->
-    {PidSpec, TraceOpts, MatchOpts} = validate_opts(Opts),
+    {PidSpecs, TraceOpts, MatchOpts} = validate_opts(Opts),
     Matches = [begin
                 {Arity, Spec} = validate_mfa(Mod, Fun, Args),
                 erlang:trace_pattern({Mod, Fun, Arity}, Spec, MatchOpts)
                end || {Mod, Fun, Args} <- MFAs],
-    erlang:trace(PidSpec, true, [call, {tracer, Pid} | TraceOpts]),
+    [erlang:trace(PidSpec, true, [call, {tracer, Pid} | TraceOpts])
+     || PidSpec <- PidSpecs],
     lists:sum(Matches).
 
 validate_opts(Opts) ->
-    PidSpec = case proplists:get_value(pid, Opts, all) of
-                all -> all;
-                existing -> existing;
-                new -> new;
-                PidTerm -> recon_lib:term_to_pid(PidTerm)
-    end,
+    PidSpecs = validate_pid_specs(proplists:get_value(pid, Opts, all)),
     TraceOpts = case proplists:get_value(timestamp, Opts, formatter) of
                     formatter -> [];
                     trace -> [timestamp]
@@ -98,7 +95,27 @@ validate_opts(Opts) ->
                     arity -> [arity]
                  end,
     MatchOpts = [proplists:get_value(scope, Opts, global)],
-    {PidSpec, TraceOpts, MatchOpts}.
+    {PidSpecs, TraceOpts, MatchOpts}.
+
+%% Support the regular specs, but also allow `recon:pid_term()' and lists
+%% of further pid specs.
+-spec validate_pid_specs(pidspec() | [pidspec(),...]) ->
+    [all | new | existing | pid(), ...].
+validate_pid_specs(all) -> [all];
+validate_pid_specs(existing) -> [existing];
+validate_pid_specs(new) -> [new];
+validate_pid_specs([Spec]) -> validate_pid_specs(Spec);
+validate_pid_specs(PidTerm = [Spec|Rest]) ->
+    %% can be "<a.b.c>" or [pidspec()]
+    try
+        [recon_lib:term_to_pid(PidTerm)]
+    catch
+        error:function_clause ->
+            validate_pid_specs(Spec) ++ validate_pid_specs(Rest)
+    end;
+validate_pid_specs(PidTerm) ->
+    %% has to be `recon:pid_term()'.
+    [recon_lib:term_to_pid(PidTerm)].
 
 validate_mfa(Mod, Fun, Args) when is_function(Args) ->
     validate_mfa(Mod, Fun, fun_to_ms(Args));
