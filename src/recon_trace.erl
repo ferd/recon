@@ -1,27 +1,81 @@
+%%% @author Fred Hebert <mononcqc@ferd.ca>
+%%%  [http://ferd.ca/]
 %%% @doc
 %%% `recon_trace' is a module that handles tracing in a safe manner for single
-%%% Erlang nodes.
-%%% Functionality includes:
-%%% - Nicer to use interface
-%%% - Protection against dumb decisions (matching all calls being traced,
-%%%   adding rate or trace limits)
-%%% - Nicer formatting
+%%% Erlang nodes, currently for function calls only. Functionality includes:
 %%%
-%%% The advantages are given by taking the following structure for tracing:
+%%% <ul>
+%%%     <li>Nicer to use interface (arguably) than `dbg' or trace BIFs.</li>
+%%%     <li>Protection against dumb decisions (matching all calls on a node
+%%%         being traced, for example)</li>
+%%%     <li>Adding safe guards in terms of absolute trace count or
+%%%         rate-limitting</li>
+%%%     <li>Nicer formatting than default traces</li>
+%%% </ul>
 %%%
+%%% == Tracing Erlang Code ==
+%%%
+%%% The Erlang Trace BIFs allow to trace any Erlang code at all. They work in
+%%% two parts: pid specifications, and trace patterns.
+%%%
+%%% Pid specifications let you decide which processes to target. They can be
+%%% specific pids, `all' pids, `existing' pids, or `new' pids (those not
+%%% spawned at the time of the function call).
+%%%
+%%% The trace patterns represent functions. Functions can be specified in two
+%%% parts: specifying the modules, functions, and arguments, and then with
+%%% Erlang match specifications to add constraints to arguments (see
+%%% {@link calls/3} for details).
+%%%
+%%% What defines whether you get traced or not is the intersection of both:
+%%%
+%%% <pre>
+%%%         _,--------,_      _,--------,_
+%%%      ,-'            `-,,-'            `-,
+%%%   ,-'              ,-'  '-,              `-,
+%%%  |   Matching    -'        '-   Matching    |
+%%%  |     Pids     |  Getting   |    Trace     |
+%%%  |              |   Traced   |  Patterns    |
+%%%  |               -,        ,-               |
+%%%   '-,              '-,  ,-'              ,-'
+%%%      '-,_          _,-''-,_          _,-'
+%%%          '--------'        '--------' 
+%%% </pre>
+%%%
+%%% If either the pid specification excludes a process or a trace pattern
+%%% excludes a given call, no trace will be received.
+%%%
+%%% == Structure ==
+%%%
+%%% This library is production-safe due to taking the following structure for
+%%% tracing:
+%%%
+%%% <pre>
 %%% [IO/Group leader] <---------------------,
 %%%   |                                     |
 %%% [shell] ---> [tracer process] ----> [formatter]
+%%% </pre>
+%%%
+%%% The tracer process receives trace messages from the node, and enforces
+%%% limits in absolute terms or trace rates, before forwarding the messages
+%%% to the formatter. This is done so the tracer can do as little work as
+%%% possible and never block while building up a large mailbox.
 %%%
 %%% The tracer process is linked to the shell, and the formatter to the
 %%% tracer process. The formatter also traps exits to be able to handle
 %%% all received trace messages until the tracer termination, but will then
 %%% shut down as soon as possible.
+%%%
+%%% In case the operator is tracing from a remote shell which gets
+%%% disconnected, the links between the shell and the tracer should make it
+%%% so tracing is automatically turned off once you disconnect.
+%%% @end
 -module(recon_trace).
--export([clear/0,
-         calls/2, calls/3,
-         calls/4, calls/5]).
-%% internal exports
+
+%% API
+-export([clear/0, calls/2, calls/3]).
+
+%% Internal exports
 -export([count_tracer/1, rate_tracer/2, formatter/3]).
 
 -type matchspec() :: [{[term()], [term()], [term()]}].
@@ -46,24 +100,113 @@
 -type max()  :: max_traces() | max_rate().
 -type num_matches() :: non_neg_integer().
 
--spec clear() -> num_matches().
+-export_type([mod/0, fn/0, args/0, mfa/0, num_matches/0, options/0,
+              max_traces/0, max_rate/0]).
+
+%%%%%%%%%%%%%%
+%%% PUBLIC %%%
+%%%%%%%%%%%%%%
+
+%% @doc Stops all tracing at once.
+-spec clear() -> ok.
 clear() ->
     erlang:trace(all, false, [all]),
     erlang:trace_pattern({'_','_','_'}, false, [local,meta,call_count,call_time]),
-    erlang:trace_pattern({'_','_','_'}, false, []). % unsets global
+    erlang:trace_pattern({'_','_','_'}, false, []), % unsets global
+    maybe_kill(recon_trace_tracer),
+    maybe_kill(recon_trace_formatter),
+    ok.
 
--spec calls(mod(), fn(), args(), max()) -> num_matches().
-calls(Mod, Fun, Args, Max) ->
-    calls([{Mod,Fun,Args}], Max, []).
-
--spec calls(mod(), fn(), args(), max(), options()) -> num_matches().
-calls(Mod, Fun, Args, Max, Opts) ->
-    calls([{Mod,Fun,Args}], Max, Opts).
-
+%% @doc Equivalent to `calls({Mod, Fun, Args}, Max, [])'.
 -spec calls(mfa(), max()) -> num_matches().
 calls({Mod, Fun, Args}, Max) ->
     calls([{Mod,Fun,Args}], Max, []).
 
+%% @doc Allows to set trace patterns and pid specifications to trace
+%% function calls.
+%%
+%% The basic calls take the trace patterns as tuples of the form
+%% `{Module, Function, Args}' where:
+%%
+%% <ul>
+%%  <li>`Module' is any atom representing a module</li>
+%%  <li>`Function' is any atom representing a function, or the wildcard
+%%      <code>'_'</code></li>
+%%  <li>`Args' is either the arity of a function (`0..255'), a wildcard
+%%      pattern (<code>'_'</code>), a
+%%      (<a href="http://learnyousomeerlang.com/ets#you-have-been-selected">match specification</a>),
+%%      or a function from a shell session that can be transformed into
+%%      a match specification</li>
+%% </ul>
+%%
+%% There is also an argument specifying either a maximal count (a number)
+%% of trace messages to be received, or a maximal frequency (`{Num, Millisecs}').
+%%
+%% Here are examples of things to trace:
+%% 
+%% <ul>
+%%  <li>All calls from the `queue' module, with 10 calls printed at most:
+%%      ``recon_trace:calls({queue, '_', '_'}, 10)''</li>
+%%  <li>All calls to `lists:seq(A,B)', with 100 calls printed at most:
+%%      `recon_trace:calls({lists, seq, 2}, 100)'</li>
+%%  <li>All calls to `lists:seq(A,B)', with 100 calls per second at most:
+%%      `recon_trace:calls({lists, seq, 2}, {100, 1000})'</li>
+%%  <li>All calls to `lists:seq(A,B,2)' (all sequences increasing by two)
+%%      with 100 calls at most:
+%%      `recon_trace:calls({lists, seq, fun([_,_,2]) -> ok end}, 100)' or
+%%      ``recon_trace:calls({lists, seq, [{['_','_',2],[],[]}]}, 100)''</li>
+%%  <li>All calls to `iolist_to_binary/1' made with a binary as an argument
+%%      already (kind of useless conversion!):
+%%      `recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)'
+%%      or ``recon_trace:calls({erlang, iolist_to_binary, [{['$1'], [{is_binary,'$1'}],[]}]}, 10)''</li>
+%%  <li>Calls to the queue module only in a given process `Pid', at a rate
+%%      of 50 per second at most:
+%%      ``recon_trace:calls({queue, '_', '_'}, {50,1000}, [{pid, Pid}])''</li>
+%%  <li>Print the traces with the function arity instead of literal arguments:
+%%      `recon_trace:calls(MFA, Max, [{args, arity}])'</li>
+%%  <li>Matching the `filter/2' functions of both `dict' and `lists' modules,
+%%      across new processes only:
+%%      `recon_trace:calls([{dict,filter,2},{lists,filter,2}], 10, [{pid, new]})'</li>
+%%  <li>Tracing the handle_call functions af a given module for all new processes,
+%%      and those of an existing one registered with `gproc':
+%%      `recon_trace:calls({Mod,handle_call,3}, {10,100}, [{pid, [{via, gproc, Name}, new]}'</li>
+%%  <li>Show the result of a given function call:
+%%      `recon_trace:calls({Mod,Fun,fun(_) -> return_trace() end}, Max, Opts)'</li>
+%%      or
+%%      ``recon_trace:calls({Mod,Fun,[{'_', [], [{return_trace}]}]}, Max, Opts)''
+%%      the important bit being the `return_trace()' call or the
+%%      `{return_trace}' match spec value.</li>
+%% </ul>
+%%
+%% There's a few more combination possible, with multiple trace patterns per call, and more
+%% options:
+%%
+%% <ul>
+%%  <li>`{pid, PidSpec}': which processes to trace. Valid options is any of
+%%      `all', `new', `existing', or a process descriptor (`{A,B,C}',
+%%      `"<A.B.C>"', an atom representing a name, `{global, Name}',
+%%      `{via, Registrar, Name}', or a pid). It's also possible to specify
+%%      more than one by putting them in a list.</li>
+%%  <li>`{timestamp, formatter | trace}': by default, the formatter process
+%%      adds timestamps to messages received. If accurate timestamps are
+%%      required, it's possible to force the usage of timestamps within
+%%      trace messages by adding the option `{timestamp, trace}'.</li>
+%%  <li>`{args, arity | args}': whether to print arity in function calls
+%%      or their (by default) literal representation.</li>
+%%  <li>`{scope, global | local}': by default, only 'global' (fully qualified
+%%      function calls) are traced, not calls made internally. To force tracing
+%%      of local calls, pass in `{scope, local}'. This is useful whenever
+%%      you want to track the changes of code in a process that isn't called
+%%      with `Module:Fun(Args)', but just `Fun(Args)'.</li>
+%% </ul>
+%%
+%% Also note that putting extremely large `Max' values (i.e. `99999999' or
+%% `{10000,1}') will probably negate most of the safe-guarding this library
+%% does and be dangerous to your node. Similarly, tracing extremely large
+%% amounts of function calls (all of them, or all of `io' for example)
+%% can be risky if more trace messages are generated than any process on
+%% the node could ever handle, despite the precautions taken by this library.
+%% @end
 -spec calls(mfa() | [mfa(),...], max(), options()) -> num_matches().
 calls({Mod, Fun, Args}, Max, Opts) ->
     calls([{Mod,Fun,Args}], Max,Opts);
@@ -74,6 +217,79 @@ calls(MFAs = [_|_], Max, Opts) ->
     Pid = setup(count_tracer, [Max]),
     trace_calls(MFAs, Pid, Opts).
 
+%%%%%%%%%%%%%%%%%%%%%%%
+%%% PRIVATE EXPORTS %%%
+%%%%%%%%%%%%%%%%%%%%%%%
+%% Stops when N trace messages have been received
+count_tracer(0) ->
+    exit(normal);
+count_tracer(N) ->
+    receive
+        Msg ->
+            recon_trace_formatter ! Msg,
+            count_tracer(N-1)
+    end.
+
+%% Stops whenever the trace message rates goes higher than
+%% `Max' messages in `Time' milliseconds. Note that if the rate
+%% proposed is higher than what the IO system of the formatter
+%% can handle, this can still put a node at risk.
+%%
+%% It is recommended to try stricter rates to begin with.
+rate_tracer(Max, Time) -> rate_tracer(Max, Time, 0, os:timestamp()).
+
+rate_tracer(Max, Time, Count, Start) ->
+    receive
+        Msg ->
+            recon_trace_formatter ! Msg,
+            Now = os:timestamp(),
+            Delay = timer:now_diff(Now, Start) div 1000,
+            if Delay > Time -> rate_tracer(Max, Time, 0, Now)
+             ; Max > Count -> rate_tracer(Max, Time, Count+1, Start)
+             ; Max =:= Count -> exit(normal)
+            end
+    end.
+
+%% Formats traces to be output
+formatter(Tracer, Parent, Ref) ->
+    process_flag(trap_exit, true),
+    link(Tracer),
+    Parent ! {Ref, linked},
+    formatter(Tracer, group_leader()).
+
+formatter(Tracer, Leader) ->
+    receive
+        {'EXIT', Tracer, normal} ->
+            io:format("Recon tracer rate limit tripped.~n"),
+            exit(normal);
+        {'EXIT', Tracer, Reason} ->
+            exit(Reason);
+        TraceMsg ->
+            io:format(Leader, format(TraceMsg), []),
+            formatter(Tracer, Leader)
+    end.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%%% SETUP FUNCTIONS %%%
+%%%%%%%%%%%%%%%%%%%%%%%
+
+%% starts the tracer and formatter processes, and
+%% cleans them up before each call.
+setup(TracerFun, TracerArgs) ->
+    clear(),
+    Ref = make_ref(),
+    Tracer = spawn_link(?MODULE, TracerFun, TracerArgs),
+    register(recon_trace_tracer, Tracer),
+    Format = spawn(?MODULE, formatter, [Tracer, self(), Ref]),
+    register(recon_trace_formatter, Format),
+    receive
+        {Ref, linked} -> Tracer
+    after 5000 ->
+        error(setup_failed)
+    end.
+
+%% Sets the traces in action
 trace_calls(MFAs, Pid, Opts) ->
     {PidSpecs, TraceOpts, MatchOpts} = validate_opts(Opts),
     Matches = [begin
@@ -83,6 +299,11 @@ trace_calls(MFAs, Pid, Opts) ->
     [erlang:trace(PidSpec, true, [call, {tracer, Pid} | TraceOpts])
      || PidSpec <- PidSpecs],
     lists:sum(Matches).
+
+
+%%%%%%%%%%%%%%%%%%
+%%% VALIDATION %%%
+%%%%%%%%%%%%%%%%%%
 
 validate_opts(Opts) ->
     PidSpecs = validate_pid_specs(proplists:get_value(pid, Opts, all)),
@@ -134,70 +355,10 @@ validate_mfa(Mod, Fun, Args) ->
         _ when Args >= 0, Args =< 255 -> {Args, true}
     end.
 
-setup(TracerFun, TracerArgs) ->
-    clear(),
-    maybe_kill(recon_trace_tracer),
-    maybe_kill(recon_trace_formatter),
-    Ref = make_ref(),
-    Tracer = spawn_link(?MODULE, TracerFun, TracerArgs),
-    register(recon_trace_tracer, Tracer),
-    Format = spawn(?MODULE, formatter, [Tracer, self(), Ref]),
-    register(recon_trace_formatter, Format),
-    receive
-        {Ref, linked} -> Tracer
-    after 5000 ->
-        error(setup_failed)
-    end.
-
-%% Stops when N trace messages have been received
-count_tracer(0) ->
-    exit(normal);
-count_tracer(N) ->
-    receive
-        Msg ->
-            recon_trace_formatter ! Msg,
-            count_tracer(N-1)
-    end.
-
-%% Stops whenever the trace message rates goes higher than
-%% `Max' messages in `Time' milliseconds. Note that if the rate
-%% proposed is higher than what the IO system of the formatter
-%% can handle, this can still put a node at risk.
-%%
-%% It is recommended to try stricter rates to begin with.
-rate_tracer(Max, Time) -> rate_tracer(Max, Time, 0, os:timestamp()).
-
-rate_tracer(Max, Time, Count, Start) ->
-    receive
-        Msg ->
-            recon_trace_formatter ! Msg,
-            Now = os:timestamp(),
-            Delay = timer:now_diff(Now, Start) div 1000,
-            if Delay > Time -> rate_tracer(Max, Time, 0, Now)
-             ; Max > Count -> rate_tracer(Max, Time, Count+1, Start)
-             ; Max =:= Count -> exit(normal)
-            end
-    end.
-
-formatter(Tracer, Parent, Ref) ->
-    process_flag(trap_exit, true),
-    link(Tracer),
-    Parent ! {Ref, linked},
-    formatter(Tracer, group_leader()).
-
-formatter(Tracer, Leader) ->
-    receive
-        {'EXIT', Tracer, normal} ->
-            io:format("Recon tracer rate limit tripped.~n"),
-            exit(normal);
-        {'EXIT', Tracer, Reason} ->
-            exit(Reason);
-        TraceMsg ->
-            io:format(Leader, format(TraceMsg), []),
-            formatter(Tracer, Leader)
-    end.
-
-
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TRACE FORMATTING %%%
+%%%%%%%%%%%%%%%%%%%%%%%%
+%% Thanks Geoff Cant for the foundations for this.
 format(TraceMsg) ->
     {Type, Pid, {Hour,Min,Sec}, TraceInfo} = extract_info(TraceMsg),
     {FormatStr, FormatArgs} = case {Type, TraceInfo} of
@@ -289,6 +450,16 @@ to_hms(Stamp = {_, _, Micro}) ->
 to_hms(_) ->
     {0,0,0}.
 
+format_args(Arity) when is_integer(Arity) ->
+    "/"++integer_to_list(Arity);
+format_args(Args) when is_list(Args) ->
+    "("++string:join([io_lib:format("~p", [Arg]) || Arg <- Args], ", ")++")".
+
+
+%%%%%%%%%%%%%%%
+%%% HELPERS %%%
+%%%%%%%%%%%%%%%
+
 maybe_kill(Name) ->
     case whereis(Name) of
         undefined ->
@@ -307,11 +478,6 @@ wait_for_death(Pid) ->
         false ->
             ok
     end.
-
-format_args(Arity) when is_integer(Arity) ->
-    "/"++integer_to_list(Arity);
-format_args(Args) when is_list(Args) ->
-    "("++string:join([io_lib:format("~p", [Arg]) || Arg <- Args], ", ")++")".
 
 %% Borrowed from dbg
 fun_to_ms(ShellFun) when is_function(ShellFun) ->
