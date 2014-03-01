@@ -31,11 +31,11 @@
 -type max_rate() :: {max_traces(), millisecs()}.
 
                    %% trace options
--type options() :: [ {pid, all | existing | new | pid()} % default: all
-                   | {timestamp, formatter | trace}      % default: formatter
-                   | {args, args | arity}                % default: args
+-type options() :: [ {pid, all | existing | new | recon:pid_term()} % default: all
+                   | {timestamp, formatter | trace} % default: formatter
+                   | {args, args | arity}           % default: args
                    %% match pattern options
-                   | {scope, global | local}             % default: global
+                   | {scope, global | local}        % default: global
                    ].
 
 -type mod()  :: '_' | module().
@@ -83,7 +83,12 @@ trace_calls(MFAs, Pid, Opts) ->
     lists:sum(Matches).
 
 validate_opts(Opts) ->
-    PidSpec = proplists:get_value(pid, Opts, all),
+    PidSpec = case proplists:get_value(pid, Opts, all) of
+                all -> all;
+                existing -> existing;
+                new -> new;
+                PidTerm -> recon_lib:term_to_pid(PidTerm)
+    end,
     TraceOpts = case proplists:get_value(timestamp, Opts, formatter) of
                     formatter -> [];
                     trace -> [timestamp]
