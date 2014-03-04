@@ -433,7 +433,7 @@ get_state(PidTerm, Timeout) ->
 
 %%% Code & Stuff %%%
 
-%% @doc Equivalent to `remote_load(nodes(), Mod)'.
+%% @equiv remote_load(nodes(), Mod)
 -spec remote_load(module()) -> term().
 remote_load(Mod) -> remote_load(nodes(), Mod).
 

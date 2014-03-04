@@ -21,6 +21,8 @@ all stable changes of the first version of Recon.
 *2.x*
 
 - 2.1.0:
+  - Adding `recon_trace` script to allow safe tracing of function calls
+    on production nodes.
   - Adding `queue_fun.awk` script to inspect running functions of processes
     with large mailboxes in a crash dump.
 - 2.0.2:
