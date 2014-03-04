@@ -13,13 +13,13 @@
         <h1>Recon</h1>
         <nav>
           <ul>
-<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a>
+<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a><li><a href="recon_trace.html">recon_trace</a>
           </ul>
         </nav>
     </header>
     <article>
     <h2>Recon Application</h2>
-<p>Copyright © 2012-2013 Fred Hebert (BSD 3-Clause License)
+<p>Copyright © 2012-2014 Fred Hebert (BSD 3-Clause License)
 </p>
 <p><strong>Authors:</strong> Fred Hebert (<a href="mailto:mononcqc@ferd.ca"><code>mononcqc@ferd.ca</code></a>) [<em>web site:</em> <code><a href="http://ferd.ca/" target="_top">http://ferd.ca/</a></code>].</p>
 <p>Recon is a library to be dropped into any other Erlang project,
@@ -41,6 +41,13 @@ nodes.</p>
         calls with distributed Erlang nodes.
     </dd>
 
+    <dt><a href="recon_alloc.html"><code>recon_alloc</code></a></dt>
+    <dd>
+        Regroups functions to deal with Erlang's memory allocators, or
+        particularly, to try to present the allocator data in a way that
+        makes it simpler to discover the presence of possible problems.
+    </dd>
+
     <dt><a href="recon_lib.html"><code>recon_lib</code></a></dt>
     <dd>
         Regroups useful functionality used by <a href="recon.html"><code>recon</code></a> when dealing
@@ -48,11 +55,10 @@ nodes.</p>
         if you were looking to extend Recon's functionality
     </dd>
 
-    <dt><a href="recon_alloc.html"><code>recon_alloc</code></a></dt>
+    <dt><a href="recon_trace.html"><code>recon_trace</code></a></dt>
     <dd>
-        Regroups functions to deal with Erlang's memory allocators, or
-        particularly, to try to present the allocator data in a way that
-        makes it simpler to discover the presence of possible problems.
+        Provides production-safe tracing facilities, to dig into the
+        execution of programs and function calls as they are running.
     </dd>
 </dl>
 
@@ -78,6 +84,16 @@ in the repository's <code>script/</code> directory:</p>
         <code>./erl_crashdump_analyzer.sh &lt;crashdump&gt;</code> and will extract generic
         information that can be useful in determining the most common causes
         of node failure.
+    </dd>
+
+    <dt><code>queue_fun.awk</code></dt>
+    <dd>
+        Awk script to tun on an Erlang Crash dump as
+        <code>awk -v threshold=&lt;queue size&gt; -f queue_fun.awk &lt;crashdump&gt;</code> and will
+        show what function processes with queue sizes larger or equal to
+        <code>&lt;queue size&gt;</code> were operating at the time of the crash dump. May help
+        find out if most processes were stuck blocking on a given function
+        call while accumulating messages forever.
     </dd>
 </dl>
 

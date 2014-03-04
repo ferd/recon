@@ -13,7 +13,7 @@
         <h1>Recon</h1>
         <nav>
           <ul>
-<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a>
+<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a><li><a href="recon_trace.html">recon_trace</a>
           </ul>
         </nav>
     </header>
@@ -369,7 +369,7 @@ functions that return bytes.</p>
 </div><p><p>load a snapshot from a given file. The format of the data in the
   file can be either the same as output by <a href="#type-snapshot_save"><code>snapshot_save()</code></a>,
   or the output obtained by calling
-   <code>{erlang:memory(),[{A,erlang:system_info({allocator,A})} || A &lt;- element(3,erlang:system_info(allocator))]}.</code>
+   <code>{erlang:memory(),[{A,erlang:system_info({allocator,A})} || A &lt;- erlang:system_info(alloc_util_allocators)++[sys_alloc,mseg_alloc]]}.</code>
   and storing it in a file.
   If the latter option is taken, please remember to add a full stop at the end
   of the resulting Erlang term, as this function uses <code>file:consult/1</code> to load  

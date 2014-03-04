@@ -13,7 +13,7 @@
         <h1>Recon</h1>
         <nav>
           <ul>
-<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a>
+<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a><li><a href="recon_trace.html">recon_trace</a>
           </ul>
         </nav>
     </header>
@@ -221,7 +221,8 @@ called in production systems.</td></tr>
   the biggest <code>Num</code> consumers.</td></tr>
 <tr><td valign="top"><a href="#proc_window-3">proc_window/3</a></td><td>Fetches a given attribute from all processes and returns  
 the biggest entries, over a sliding time window.</td></tr>
-<tr><td valign="top"><a href="#remote_load-1">remote_load/1</a></td><td>Equivalent to <code>remote_load(nodes(), Mod)</code>.</td></tr>
+<tr><td valign="top"><a href="#remote_load-1">remote_load/1</a></td><td>Equivalent to <a href="#remote_load-2"><code>remote_load(nodes(), Mod)</code></a>.
+</td></tr>
 <tr><td valign="top"><a href="#remote_load-2">remote_load/2</a></td><td>Loads one or more modules remotely, in a diskless manner.</td></tr>
 <tr><td valign="top"><a href="#rpc-1">rpc/1</a></td><td>Shorthand for <code>rpc([node()|nodes()], Fun)</code>.</td></tr>
 <tr><td valign="top"><a href="#rpc-2">rpc/2</a></td><td>Shorthand for <code>rpc(Nodes, Fun, infinity)</code>.</td></tr>
@@ -475,7 +476,8 @@ data (say reductions) will look like bottlenecks when they're not one.</p>
 <h4 class="function"><a name="remote_load-1">remote_load/1</a></h4>
 <div class="spec">
 <p><code>remote_load(Mod::module()) -&gt; term()</code><br></p>
-</div><p>Equivalent to <code>remote_load(nodes(), Mod)</code>.</p>
+</div><p>Equivalent to <a href="#remote_load-2"><code>remote_load(nodes(), Mod)</code></a>.</p>
+
 
 <h4 class="function"><a name="remote_load-2">remote_load/2</a></h4>
 <div class="spec">
