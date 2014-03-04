@@ -29,7 +29,7 @@
 %%%
 %%% What defines whether you get traced or not is the intersection of both:
 %%%
-%%% <pre>
+%%% ```
 %%%         _,--------,_      _,--------,_
 %%%      ,-'            `-,,-'            `-,
 %%%   ,-'              ,-'  '-,              `-,
@@ -40,21 +40,104 @@
 %%%   '-,              '-,  ,-'              ,-'
 %%%      '-,_          _,-''-,_          _,-'
 %%%          '--------'        '--------' 
-%%% </pre>
+%%% '''
 %%%
 %%% If either the pid specification excludes a process or a trace pattern
 %%% excludes a given call, no trace will be received.
+%%%
+%%% == Example Session ==
+%%%
+%%% First let's trace the `queue:new' functions in any process:
+%%%
+%%% ```
+%%% 1> recon_trace:calls({queue, new, '_'}, 1).
+%%% 1
+%%% 13:14:34.086078 <0.44.0> queue:new()
+%%% Recon tracer rate limit tripped.
+%%% '''
+%%%
+%%% The limit was set to `1' trace message at most, and `recon' let us
+%%% know when that limit was reached.
+%%%
+%%% Let's instead look for all the `queue:in/2' calls, to see what it is
+%%% we're inserting in queues:
+%%%
+%%% ```
+%%% 2> recon_trace:calls({queue, in, 2}, 1).
+%%% 1
+%%% 13:14:55.365157 <0.44.0> queue:in(a, {[],[]})
+%%% Recon tracer rate limit tripped.
+%%% '''
+%%%
+%%% In order to see the content we want, we should change the trace patterns
+%%% to use a `fun' that matches on all arguments in a list (`_') and returns
+%%% `return_trace()'. This last part will generate a second trace for each
+%%% call that includes the return value:
+%%%
+%%% ```
+%%% 3> recon_trace:calls({queue, in, fun(_) -> return_trace() end}, 3).
+%%% 1
+%%%
+%%% 13:15:27.655132 <0.44.0> queue:in(a, {[],[]})
+%%%
+%%% 13:15:27.655467 <0.44.0> queue:in/2 --> {[a],[]}
+%%%
+%%% 13:15:27.757921 <0.44.0> queue:in(a, {[],[]})
+%%% Recon tracer rate limit tripped.
+%%% '''
+%%%
+%%% Matching on argument lists can be done in a more complex manner:
+%%%
+%%% ```
+%%% 4> recon_trace:calls(
+%%% 4>   {queue, '_', fun([A,_]) when is_list(A); is_integer(A) andalso A > 1 -> return_trace() end},
+%%% 4>   {10,100}
+%%% 4> ).
+%%% 32
+%%%
+%%% 13:24:21.324309 <0.38.0> queue:in(3, {[],[]})
+%%%
+%%% 13:24:21.371473 <0.38.0> queue:in/2 --> {[3],[]}
+%%%
+%%% 13:25:14.694865 <0.53.0> queue:split(4, {[10,9,8,7],[1,2,3,4,5,6]})
+%%%
+%%% 13:25:14.695194 <0.53.0> queue:split/2 --> {{[4,3,2],[1]},{[10,9,8,7],[5,6]}}
+%%%
+%%% 5> recon_trace:clear().
+%%% ok
+%%% '''
+%%%
+%%% Note that in the pattern above, no specific function (<code>'_'</code>) was
+%%% matched against. Instead, the `fun' used restricted functions to those
+%%% having two arguments, the first of which is either a list or an integer
+%%% greater than `3'.
+%%%
+%%% The limit was also set using `{10,100}' instead of an integer, making the
+%%% rate-limitting at 10 messages per 100 milliseconds, instead of an absolute
+%%% value.
+%%%
+%%% Any tracing can be manually interrupted by calling `recon_trace:clear()',
+%%% or killing the shell process.
+%%%
+%%% Be aware that extremely broad patterns with lax rate-limitting (or very
+%%% high absolute limits) may impact your node's stability in ways
+%%% `recon_trace' cannot easily help you with.
+%%%
+%%% In doubt, start with the most restrictive tracing possible, with low
+%%% limits, and progressively increase your scope.
+%%%
+%%% See {@link calls/3} for more details and tracing possibilities.
 %%%
 %%% == Structure ==
 %%%
 %%% This library is production-safe due to taking the following structure for
 %%% tracing:
 %%%
-%%% <pre>
+%%% ```
 %%% [IO/Group leader] <---------------------,
 %%%   |                                     |
 %%% [shell] ---> [tracer process] ----> [formatter]
-%%% </pre>
+%%% '''
 %%%
 %%% The tracer process receives trace messages from the node, and enforces
 %%% limits in absolute terms or trace rates, before forwarding the messages
@@ -117,7 +200,7 @@ clear() ->
     maybe_kill(recon_trace_formatter),
     ok.
 
-%% @doc Equivalent to `calls({Mod, Fun, Args}, Max, [])'.
+%% @equiv calls({Mod, Fun, Args}, Max, [])
 -spec calls(mfa(), max()) -> num_matches().
 calls({Mod, Fun, Args}, Max) ->
     calls([{Mod,Fun,Args}], Max, []).
@@ -134,7 +217,7 @@ calls({Mod, Fun, Args}, Max) ->
 %%      <code>'_'</code></li>
 %%  <li>`Args' is either the arity of a function (`0..255'), a wildcard
 %%      pattern (<code>'_'</code>), a
-%%      (<a href="http://learnyousomeerlang.com/ets#you-have-been-selected">match specification</a>),
+%%      <a href="http://learnyousomeerlang.com/ets#you-have-been-selected">match specification</a>,
 %%      or a function from a shell session that can be transformed into
 %%      a match specification</li>
 %% </ul>
@@ -153,12 +236,10 @@ calls({Mod, Fun, Args}, Max) ->
 %%      `recon_trace:calls({lists, seq, 2}, {100, 1000})'</li>
 %%  <li>All calls to `lists:seq(A,B,2)' (all sequences increasing by two)
 %%      with 100 calls at most:
-%%      `recon_trace:calls({lists, seq, fun([_,_,2]) -> ok end}, 100)' or
-%%      ``recon_trace:calls({lists, seq, [{['_','_',2],[],[]}]}, 100)''</li>
+%%      `recon_trace:calls({lists, seq, fun([_,_,2]) -> ok end}, 100)'</li>
 %%  <li>All calls to `iolist_to_binary/1' made with a binary as an argument
 %%      already (kind of useless conversion!):
-%%      `recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)'
-%%      or ``recon_trace:calls({erlang, iolist_to_binary, [{['$1'], [{is_binary,'$1'}],[]}]}, 10)''</li>
+%%      `recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)'</li>
 %%  <li>Calls to the queue module only in a given process `Pid', at a rate
 %%      of 50 per second at most:
 %%      ``recon_trace:calls({queue, '_', '_'}, {50,1000}, [{pid, Pid}])''</li>
@@ -167,13 +248,13 @@ calls({Mod, Fun, Args}, Max) ->
 %%  <li>Matching the `filter/2' functions of both `dict' and `lists' modules,
 %%      across new processes only:
 %%      `recon_trace:calls([{dict,filter,2},{lists,filter,2}], 10, [{pid, new]})'</li>
-%%  <li>Tracing the handle_call functions af a given module for all new processes,
+%%  <li>Tracing the `handle_call/3' functions of a given module for all new processes,
 %%      and those of an existing one registered with `gproc':
 %%      `recon_trace:calls({Mod,handle_call,3}, {10,100}, [{pid, [{via, gproc, Name}, new]}'</li>
 %%  <li>Show the result of a given function call:
-%%      `recon_trace:calls({Mod,Fun,fun(_) -> return_trace() end}, Max, Opts)'</li>
+%%      `recon_trace:calls({Mod,Fun,fun(_) -> return_trace() end}, Max, Opts)'
 %%      or
-%%      ``recon_trace:calls({Mod,Fun,[{'_', [], [{return_trace}]}]}, Max, Opts)''
+%%      ``recon_trace:calls({Mod,Fun,[{'_', [], [{return_trace}]}]}, Max, Opts)'',
 %%      the important bit being the `return_trace()' call or the
 %%      `{return_trace}' match spec value.</li>
 %% </ul>
@@ -220,7 +301,7 @@ calls(MFAs = [_|_], Max, Opts) ->
 %%%%%%%%%%%%%%%%%%%%%%%
 %%% PRIVATE EXPORTS %%%
 %%%%%%%%%%%%%%%%%%%%%%%
-%% Stops when N trace messages have been received
+%% @private Stops when N trace messages have been received
 count_tracer(0) ->
     exit(normal);
 count_tracer(N) ->
@@ -230,7 +311,7 @@ count_tracer(N) ->
             count_tracer(N-1)
     end.
 
-%% Stops whenever the trace message rates goes higher than
+%% @private Stops whenever the trace message rates goes higher than
 %% `Max' messages in `Time' milliseconds. Note that if the rate
 %% proposed is higher than what the IO system of the formatter
 %% can handle, this can still put a node at risk.
@@ -250,7 +331,7 @@ rate_tracer(Max, Time, Count, Start) ->
             end
     end.
 
-%% Formats traces to be output
+%% @private Formats traces to be output
 formatter(Tracer, Parent, Ref) ->
     process_flag(trap_exit, true),
     link(Tracer),
