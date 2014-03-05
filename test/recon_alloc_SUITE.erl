@@ -36,7 +36,6 @@ memory(_Config) ->
     true = Used =< recon_alloc:memory(used, max),
     true = Alloc =< recon_alloc:memory(allocated, max),
     true = Unused =< recon_alloc:memory(unused, max),
-    true = Usage =< recon_alloc:memory(usage, max),
     true = Types =< recon_alloc:memory(allocated_types, max),
     true = Instances =< recon_alloc:memory(allocated_instances, max),
     %% Key presences in allocateds
