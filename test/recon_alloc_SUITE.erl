@@ -131,7 +131,7 @@ snapshots(Config) ->
       File,
       io_lib:format("~p.~n", [{erlang:memory(),
                                 [{A,erlang:system_info({allocator,A})}
-                                 || A <- element(3,erlang:system_info(allocator))]}
+                                 || A <- erlang:system_info(alloc_util_allocators)++[sys_alloc,mseg_alloc]]}
                              ])),
     _ = recon_alloc:snapshot_clear(),
     undefined = recon_alloc:snapshot_load(File),
