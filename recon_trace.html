@@ -191,10 +191,6 @@ shut down as soon as possible.</p>
 <p><code>max_traces() = non_neg_integer()</code></p>
 
 
-<h4 class="typedecl"><a name="type-mfa">mfa()</a></h4>
-<p><code>mfa() = {<a href="#type-mod">mod()</a>, <a href="#type-fn">fn()</a>, <a href="#type-args">args()</a>}</code></p>
-
-
 <h4 class="typedecl"><a name="type-millisecs">millisecs()</a></h4>
 <p><code>millisecs() = non_neg_integer()</code></p>
 
@@ -219,6 +215,10 @@ shut down as soon as possible.</p>
 <p><code>shellfun() = fun((term()) -&gt; term())</code></p>
 
 
+<h4 class="typedecl"><a name="type-tspec">tspec()</a></h4>
+<p><code>tspec() = {<a href="#type-mod">mod()</a>, <a href="#type-fn">fn()</a>, <a href="#type-args">args()</a>}</code></p>
+
+
 <h3><a name="index">Function Index</a></h3>
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#calls-2">calls/2</a></td><td>Equivalent to <a href="#calls-3"><code>calls({Mod, Fun, Args}, Max, [])</code></a>.
 </td></tr>
@@ -231,13 +231,13 @@ function calls.</td></tr>
 
 <h4 class="function"><a name="calls-2">calls/2</a></h4>
 <div class="spec">
-<p><code>calls(X1::mfa(), Max::<a href="#type-max">max()</a>) -&gt; <a href="#type-num_matches">num_matches()</a></code><br></p>
+<p><code>calls(X1::<a href="#type-tspec">tspec()</a>, Max::<a href="#type-max">max()</a>) -&gt; <a href="#type-num_matches">num_matches()</a></code><br></p>
 </div><p>Equivalent to <a href="#calls-3"><code>calls({Mod, Fun, Args}, Max, [])</code></a>.</p>
 
 
 <h4 class="function"><a name="calls-3">calls/3</a></h4>
 <div class="spec">
-<p><code>calls(MFAs::mfa() | [mfa(), ...], Max::<a href="#type-max">max()</a>, Opts::<a href="#type-options">options()</a>) -&gt; <a href="#type-num_matches">num_matches()</a></code><br></p>
+<p><code>calls(TSpecs::<a href="#type-tspec">tspec()</a> | [<a href="#type-tspec">tspec()</a>, ...], Max::<a href="#type-max">max()</a>, Opts::<a href="#type-options">options()</a>) -&gt; <a href="#type-num_matches">num_matches()</a></code><br></p>
 </div><p><p>Allows to set trace patterns and pid specifications to trace  
 function calls.</p>
  
@@ -277,7 +277,7 @@ function calls.</p>
        of 50 per second at most:
        <code>recon_trace:calls({queue, '_', '_'}, {50,1000}, [{pid, Pid}])</code></li>
    <li>Print the traces with the function arity instead of literal arguments:
-       <code>recon_trace:calls(MFA, Max, [{args, arity}])</code></li>
+       <code>recon_trace:calls(TSpec, Max, [{args, arity}])</code></li>
    <li>Matching the <code>filter/2</code> functions of both <code>dict</code> and <code>lists</code> modules,
        across new processes only:
        <code>recon_trace:calls([{dict,filter,2},{lists,filter,2}], 10, [{pid, new]})</code></li>
