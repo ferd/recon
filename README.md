@@ -20,6 +20,10 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.1.1:
+  - Renaming `recon_trace:mfa()` type to `recon_trace:tspec()` to avoid
+    issues in older Erlang versions regarding redefining an existing type
+    (Thanks Roberto Aloi)
 - 2.1.0:
   - Adding `recon_trace` script to allow safe tracing of function calls
     on production nodes.
