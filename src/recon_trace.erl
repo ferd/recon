@@ -161,29 +161,29 @@
 %% Internal exports
 -export([count_tracer/1, rate_tracer/2, formatter/3]).
 
--type matchspec() :: [{[term()], [term()], [term()]}].
--type shellfun() :: fun((_) -> term()).
--type millisecs() :: non_neg_integer().
--type pidspec() :: all | existing | new | recon:pid_term().
--type max_traces() :: non_neg_integer().
--type max_rate() :: {max_traces(), millisecs()}.
+-type matchspec()   :: [{[term()], [term()], [term()]}].
+-type shellfun()    :: fun((_) -> term()).
+-type millisecs()   :: non_neg_integer().
+-type pidspec()     :: all | existing | new | recon:pid_term().
+-type max_traces()  :: non_neg_integer().
+-type max_rate()    :: {max_traces(), millisecs()}.
 
                    %% trace options
--type options() :: [ {pid, pidspec() | [pidspec(),...]} % default: all
-                   | {timestamp, formatter | trace} % default: formatter
-                   | {args, args | arity}           % default: args
+-type options()     :: [ {pid, pidspec() | [pidspec(),...]} % default: all
+                         | {timestamp, formatter | trace}   % default: formatter
+                         | {args, args | arity}             % default: args
                    %% match pattern options
-                   | {scope, global | local}        % default: global
-                   ].
+                         | {scope, global | local}          % default: global
+                       ].
 
--type mod()  :: '_' | module().
--type fn()   :: '_' | atom().
--type args() :: '_' | 0..255 | matchspec() | shellfun().
--type mfa() :: {mod(), fn(), args()}.
--type max()  :: max_traces() | max_rate().
+-type mod()         :: '_' | module().
+-type fn()          :: '_' | atom().
+-type args()        :: '_' | 0..255 | matchspec() | shellfun().
+-type tspec()       :: {mod(), fn(), args()}.
+-type max()         :: max_traces() | max_rate().
 -type num_matches() :: non_neg_integer().
 
--export_type([mod/0, fn/0, args/0, mfa/0, num_matches/0, options/0,
+-export_type([mod/0, fn/0, args/0, tspec/0, num_matches/0, options/0,
               max_traces/0, max_rate/0]).
 
 %%%%%%%%%%%%%%
@@ -201,7 +201,7 @@ clear() ->
     ok.
 
 %% @equiv calls({Mod, Fun, Args}, Max, [])
--spec calls(mfa(), max()) -> num_matches().
+-spec calls(tspec(), max()) -> num_matches().
 calls({Mod, Fun, Args}, Max) ->
     calls([{Mod,Fun,Args}], Max, []).
 
@@ -244,7 +244,7 @@ calls({Mod, Fun, Args}, Max) ->
 %%      of 50 per second at most:
 %%      ``recon_trace:calls({queue, '_', '_'}, {50,1000}, [{pid, Pid}])''</li>
 %%  <li>Print the traces with the function arity instead of literal arguments:
-%%      `recon_trace:calls(MFA, Max, [{args, arity}])'</li>
+%%      `recon_trace:calls(TSpec, Max, [{args, arity}])'</li>
 %%  <li>Matching the `filter/2' functions of both `dict' and `lists' modules,
 %%      across new processes only:
 %%      `recon_trace:calls([{dict,filter,2},{lists,filter,2}], 10, [{pid, new]})'</li>
@@ -288,15 +288,15 @@ calls({Mod, Fun, Args}, Max) ->
 %% can be risky if more trace messages are generated than any process on
 %% the node could ever handle, despite the precautions taken by this library.
 %% @end
--spec calls(mfa() | [mfa(),...], max(), options()) -> num_matches().
+-spec calls(tspec() | [tspec(),...], max(), options()) -> num_matches().
 calls({Mod, Fun, Args}, Max, Opts) ->
     calls([{Mod,Fun,Args}], Max,Opts);
-calls(MFAs = [_|_], {Max, Time}, Opts) ->
+calls(TSpecs = [_|_], {Max, Time}, Opts) ->
     Pid = setup(rate_tracer, [Max, Time]),
-    trace_calls(MFAs, Pid, Opts);
-calls(MFAs = [_|_], Max, Opts) ->
+    trace_calls(TSpecs, Pid, Opts);
+calls(TSpecs = [_|_], Max, Opts) ->
     Pid = setup(count_tracer, [Max]),
-    trace_calls(MFAs, Pid, Opts).
+    trace_calls(TSpecs, Pid, Opts).
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%% PRIVATE EXPORTS %%%
@@ -371,12 +371,12 @@ setup(TracerFun, TracerArgs) ->
     end.
 
 %% Sets the traces in action
-trace_calls(MFAs, Pid, Opts) ->
+trace_calls(TSpecs, Pid, Opts) ->
     {PidSpecs, TraceOpts, MatchOpts} = validate_opts(Opts),
     Matches = [begin
-                {Arity, Spec} = validate_mfa(Mod, Fun, Args),
+                {Arity, Spec} = validate_tspec(Mod, Fun, Args),
                 erlang:trace_pattern({Mod, Fun, Arity}, Spec, MatchOpts)
-               end || {Mod, Fun, Args} <- MFAs],
+               end || {Mod, Fun, Args} <- TSpecs],
     [erlang:trace(PidSpec, true, [call, {tracer, Pid} | TraceOpts])
      || PidSpec <- PidSpecs],
     lists:sum(Matches).
@@ -419,9 +419,9 @@ validate_pid_specs(PidTerm) ->
     %% has to be `recon:pid_term()'.
     [recon_lib:term_to_pid(PidTerm)].
 
-validate_mfa(Mod, Fun, Args) when is_function(Args) ->
-    validate_mfa(Mod, Fun, fun_to_ms(Args));
-validate_mfa(Mod, Fun, Args) ->
+validate_tspec(Mod, Fun, Args) when is_function(Args) ->
+    validate_tspec(Mod, Fun, fun_to_ms(Args));
+validate_tspec(Mod, Fun, Args) ->
     BannedMods = ['_', ?MODULE, io, lists],
     %% The banned mod check can be bypassed by using
     %% match specs if you really feel like being dumb.
