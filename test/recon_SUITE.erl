@@ -110,7 +110,7 @@ proc_count(_Config) ->
     Res = recon:proc_count(memory, 10),
     true = proc_attrs(Res),
     %% greatest to smallest
-    true = lists:usort(fun({_,V1,_},{_,V2,_}) -> V1 >= V2 end,
+    true = lists:usort(fun({P1,V1,_},{P2,V2,_}) -> {V1,P1} >= {V2,P2} end,
                        Res) =:= Res,
     10 = length(Res),
     15 = length(recon:proc_count(reductions, 15)).
