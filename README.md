@@ -16,6 +16,8 @@ Current Status
 
 [![Build Status](https://travis-ci.org/ferd/recon.png)](https://travis-ci.org/ferd/recon)
 
+Versions supported: R15B02 and up
+
 Changelog
 ---------
 
@@ -25,6 +27,10 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.1.2:
+  - Fixing tests for R15B02 and up
+  - Fixing a backwards compatibility for R15B03 on `recon_alloc` operations
+    with dumps on disk
 - 2.1.1:
   - Renaming `recon_trace:mfa()` type to `recon_trace:tspec()` to avoid
     issues in older Erlang versions regarding redefining an existing type
