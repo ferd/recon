@@ -465,11 +465,11 @@ snapshot_load(Filename) ->
             %% We handle someone using
             %% {erlang:memory(),
             %%  [{A,erlang:system_info({allocator,A})} ||
-            %%     A <- element(3,erlang:system_info(allocator))]}.
+            %%     A <- erlang:system_info(alloc_util_allocators)++[sys_alloc,mseg_alloc]]}
             %% to dump data.
             {M,[{Alloc,_D}|_] = Allocs} when is_atom(Alloc) ->
                 {M,[{{A,N},lists:sort(proplists:delete(versions,Props))} ||
-                       {A,Instances} <- Allocs,
+                       {A,Instances = [_|_]} <- Allocs,
                        {_, N, Props} <- Instances]};
             %% We assume someone used recon_alloc:snapshot() to store this one
             {M,Allocs} ->
