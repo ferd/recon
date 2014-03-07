@@ -11,6 +11,11 @@ Documentation for the library can be obtained at http://ferd.github.io/recon/
 
 It is recommended that you use tags if you do not want bleeding edge and development content for this library.
 
+Current Status
+--------------
+
+[![Build Status](https://travis-ci.org/ferd/recon.png)](https://travis-ci.org/ferd/recon)
+
 Changelog
 ---------
 
