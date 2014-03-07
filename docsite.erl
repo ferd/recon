@@ -16,7 +16,7 @@ main() -> main([]).
 
 main(_) ->
     ok = filelib:ensure_dir(?SITEPATH), % output directory
-    "==> recon (doc)\n"++_ = os:cmd("./rebar doc"), % build docs
+    "==> recon (doc)\n" = os:cmd("./rebar doc"), % build docs
     Overview = ?DOCPATH "overview-summary.html",
     Modules = filelib:wildcard(filename:join(?DOCPATH, "recon*.html")),
     [Pre,Post] = base(["index.html" | Modules]),
