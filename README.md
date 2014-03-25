@@ -27,6 +27,9 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.2.0 Upcoming (master branch, still in development):
+  - Adding scheduler info metrics to get a more accurate picture than what
+    top and CPU gives.
 - 2.1.2:
   - Fixing tests for R15B02 and up
   - Fixing a backwards compatibility for R15B03 on `recon_alloc` operations

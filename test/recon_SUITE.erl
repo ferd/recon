@@ -9,7 +9,7 @@
 
 all() -> [{group,info}, proc_count, proc_window, bin_leak,
           node_stats_list, get_state, source, tcp, udp, files, port_types,
-          inet_count, inet_window, binary_memory].
+          inet_count, inet_window, binary_memory, scheduler_usage].
 
 groups() -> [{info, [], [info3, info4, info1, info2,
                          port_info1, port_info2]}].
@@ -142,12 +142,13 @@ node_stats_list(_Config) ->
                        {memory_procs,_},
                        {memory_atoms,_},
                        {memory_bin,_},
-                       {memory_ets,_}],
+                       {memory_ets,_}|_],
                       [{bytes_in,_},
                        {bytes_out,_},
                        {gc_count,_},
                        {gc_words_reclaimed,_},
-                       {reductions,_}]} <- Res]).
+                       {reductions,_},
+                       {scheduler_usage,[_|_]}|_]} <- Res]).
 
 get_state(_Config) ->
     Res = recon:get_state(kernel_sup),
@@ -251,6 +252,17 @@ binary_memory(_Config) ->
     %% we expect everything to look as a single call to process_info/2
     [{binary,X}, {binary_memory,_}, {binary,X}] = Res1,
     [{binary_memory,Y}, {binary,_}, {binary_memory,Y}] = Res2.
+
+%% Just check that we get many schedulers and that the usage values are all
+%% between 0 and 1 inclusively. We don't care for edge cases like a
+%% scheduler disappearing halfway through a run.
+scheduler_usage(_Config) ->
+    List = recon:scheduler_usage(100),
+    ?assertEqual(length(List), length(
+                 [1 || {Id,Rate} <- List,
+                       is_integer(Id), Id > 0,
+                       Rate >= 0, Rate =< 1])
+    ). 
 
 %%%%%%%%%%%%%%%
 %%% HELPERS %%%

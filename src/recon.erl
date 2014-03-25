@@ -27,7 +27,8 @@
 %%%         {@link node_stats_print/2}, which displays them,
 %%%         {@link node_stats_list/2}, which returns them in a list, and
 %%%         {@link node_stats/4}, which provides a fold-like interface
-%%%         for stats gathering.</dd>
+%%%         for stats gathering. For CPU usage specifically, see
+%%%         {@link scheduler_usage/1}.</dd>
 %%%
 %%%     <dt>2. OTP tools</dt>
 %%%     <dd>This category provides tools to interact with pieces of OTP
@@ -80,7 +81,8 @@
 -export([info/1, info/2, info/3, info/4,
          proc_count/2, proc_window/3,
          bin_leak/1,
-         node_stats_print/2, node_stats_list/2, node_stats/4]).
+         node_stats_print/2, node_stats_list/2, node_stats/4,
+         scheduler_usage/1]).
 -export([get_state/1, get_state/2]).
 -export([remote_load/1, remote_load/2,
          source/1]).
@@ -132,7 +134,6 @@
 -type port_info_key() :: port_info_meta_key() | port_info_signals_key()
                        | port_info_io_key() | port_info_memory_key()
                        | port_info_specific_key().
-
 
 -export_type([proc_attrs/0, inet_attrs/0, pid_term/0, port_term/0]).
 -export_type([info_type/0, info_key/0,
@@ -336,6 +337,39 @@ bin_leak(N) ->
 node_stats_print(N, Interval) ->
     node_stats(N, Interval, fun(X, _) -> io:format("~p~n",[X]) end, ok).
 
+%% @doc Because Erlang CPU usage as reported from `top' isn't the most
+%% reliable value (due to schedulers doing idle spinning to avoid going
+%% to sleep and impacting latency), a metric exists that is based on
+%% scheduler wall time.
+%%
+%% For any time interval, Scheduler wall time can be used as a measure
+%% of how 'busy' a scheduler is. A scheduler is busy when:
+%%
+%% <ul>
+%%    <li>executing process code</li>
+%%    <li>executing driver code</li>
+%%    <li>executing NIF code</li>
+%%    <li>executing BIFs</li>
+%%    <li>garbage collecting</li>
+%%    <li>doing memory management</li>
+%% </ul>
+%%
+%% A scheduler isn't busy when doing anything else.
+-spec scheduler_usage(Millisecs) -> [{SchedulerId, Usage}] when
+    Millisecs :: non_neg_integer(),
+    SchedulerId :: pos_integer(),
+    Usage :: number().
+scheduler_usage(Interval) when is_integer(Interval) ->
+    %% We start and stop the scheduler_wall_time system flag if
+    %% it wasn't in place already. Usually setting the flag should
+    %% have a CPU impact (making it higher) only when under low usage.
+    FormerFlag = erlang:system_flag(scheduler_wall_time, true),
+    First = erlang:statistics(scheduler_wall_time),
+    timer:sleep(Interval),
+    Last = erlang:statistics(scheduler_wall_time),
+    erlang:system_flag(scheduler_wall_time, FormerFlag),
+    recon_lib:scheduler_usage_diff(First, Last).
+
 %% @doc Shorthand for `node_stats(N, Interval, fun(X,Acc) -> [X|Acc] end, [])'
 %% with the results reversed to be in the right temporal order.
 -spec node_stats_list(Repeat, Interval) -> [Stats] when
@@ -368,8 +402,10 @@ node_stats_list(N, Interval) ->
       Stats :: {[Absolutes::{atom(),term()}],
                 [Increments::{atom(),term()}]}.
 node_stats(N, Interval, FoldFun, Init) ->
+    %% Turn on scheduler wall time if it wasn't there already
+    FormerFlag = erlang:system_flag(scheduler_wall_time, true),
     %% Stats is an ugly fun, but it does its thing.
-    Stats = fun({{OldIn,OldOut},{OldGCs,OldWords,_}}) ->
+    Stats = fun({{OldIn,OldOut},{OldGCs,OldWords,_}, SchedWall}) ->
         %% Absolutes
         ProcC = erlang:system_info(process_count),
         RunQ = erlang:statistics(run_queue),
@@ -389,6 +425,8 @@ node_stats(N, Interval, FoldFun, Init) ->
         GCCount = GCs-OldGCs,
         GCWords = Words-OldWords,
         {_, Reds} = erlang:statistics(reductions),
+        SchedWallNew = erlang:statistics(scheduler_wall_time),
+        SchedUsage = recon_lib:scheduler_usage_diff(SchedWall, SchedWallNew),
          %% Stats Results
         {{[{process_count,ProcC}, {run_queue,RunQ},
            {error_logger_queue_len,LogQ}, {memory_total,Tot},
@@ -396,13 +434,20 @@ node_stats(N, Interval, FoldFun, Init) ->
            {memory_bin,Bin}, {memory_ets,Ets}],
           [{bytes_in,BytesIn}, {bytes_out,BytesOut},
            {gc_count,GCCount}, {gc_words_reclaimed,GCWords},
-           {reductions,Reds}]},
+           {reductions,Reds}, {scheduler_usage, SchedUsage}]},
          %% New State
-         {{In,Out}, GC}}
+         {{In,Out}, GC, SchedWallNew}}
     end,
     {{input,In},{output,Out}} = erlang:statistics(io),
     Gc = erlang:statistics(garbage_collection),
-    recon_lib:time_fold(N, Interval, Stats, {{In,Out}, Gc}, FoldFun, Init).
+    SchedWall = erlang:statistics(scheduler_wall_time), 
+    Result = recon_lib:time_fold(
+            N, Interval, Stats,
+            {{In,Out}, Gc, SchedWall},
+            FoldFun, Init),
+    %% Set scheduler wall time back to what it was
+    erlang:system_flag(scheduler_wall_time, FormerFlag),
+    Result.
 
 %%% OTP & Manipulations %%%
 

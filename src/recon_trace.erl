@@ -110,7 +110,7 @@
 %%% Note that in the pattern above, no specific function (<code>'_'</code>) was
 %%% matched against. Instead, the `fun' used restricted functions to those
 %%% having two arguments, the first of which is either a list or an integer
-%%% greater than `3'.
+%%% greater than `1'.
 %%%
 %%% The limit was also set using `{10,100}' instead of an integer, making the
 %%% rate-limitting at 10 messages per 100 milliseconds, instead of an absolute

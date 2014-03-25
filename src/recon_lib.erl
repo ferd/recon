@@ -11,7 +11,8 @@
          inet_attrs/1, inet_attrs/2,
          triple_to_pid/3, term_to_pid/1,
          term_to_port/1,
-         time_map/5, time_fold/6]).
+         time_map/5, time_fold/6,
+         scheduler_usage_diff/2]).
 %% private exports
 -export([binary_memory/1]).
 
@@ -206,6 +207,20 @@ time_fold(N, Interval, Fun, State, FoldFun, Init) ->
     timer:sleep(Interval),
     Acc = FoldFun(Res,Init),
     time_fold(N-1,Interval,Fun,NewState,FoldFun,Acc).
+
+%% @doc Diffs two runs of erlang:statistics(scheduler_wall_time) and
+%% returns usage metrics in terms of cores and 0..1 percentages.
+-spec scheduler_usage_diff(SchedTime, SchedTime) -> [{SchedulerId, Usage}] when
+    SchedTime :: [{SchedulerId, ActiveTime, TotalTime}],
+    SchedulerId :: pos_integer(),
+    Usage :: number(),
+    ActiveTime :: non_neg_integer(),
+    TotalTime :: non_neg_integer().
+scheduler_usage_diff(First, Last) ->
+    lists:map(
+        fun({{I, A0, T0}, {I, A1, T1}}) -> {I, (A1 - A0)/(T1 - T0)} end,
+        lists:zip(lists:sort(First), lists:sort(Last))
+    ).
 
 %% @private crush binaries from process_info into their amount of place
 %% taken in memory.
