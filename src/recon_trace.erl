@@ -201,9 +201,11 @@ clear() ->
     ok.
 
 %% @equiv calls({Mod, Fun, Args}, Max, [])
--spec calls(tspec(), max()) -> num_matches().
+-spec calls(tspec() | [tspec(),...], max()) -> num_matches().
 calls({Mod, Fun, Args}, Max) ->
-    calls([{Mod,Fun,Args}], Max, []).
+    calls([{Mod,Fun,Args}], Max, []);
+calls(TSpecs = [_|_], Max) ->
+    calls(TSpecs, Max, []).
 
 %% @doc Allows to set trace patterns and pid specifications to trace
 %% function calls.
