@@ -200,20 +200,20 @@ memory(Key) -> memory(Key, current).
                     [{allocator(),pos_integer()}].
 memory(used,Keyword) ->
     lists:sum(lists:map(fun({_,Prop}) ->
-                                block_size(Prop,Keyword)
+                                container_size(Prop,Keyword,blocks_size)
                         end,util_alloc()));
 memory(allocated,Keyword) ->
     lists:sum(lists:map(fun({_,Prop}) ->
-                                carrier_size(Prop,Keyword)
+                                container_size(Prop,Keyword,carriers_size)
                         end,util_alloc()));
 memory(allocated_types,Keyword) ->
     lists:foldl(fun({{Alloc,_N},Props},Acc) ->
-                        CZ = carrier_size(Props,Keyword),
+                        CZ = container_size(Props,Keyword,carriers_size),
                         orddict:update_counter(Alloc,CZ,Acc)
                 end,orddict:new(),util_alloc());
 memory(allocated_instances,Keyword) ->
     lists:foldl(fun({{_Alloc,N},Props},Acc) ->
-                        CZ = carrier_size(Props,Keyword),
+                        CZ = container_size(Props,Keyword,carriers_size),
                         orddict:update_counter(N,CZ,Acc)
                 end,orddict:new(),util_alloc());
 memory(unused,Keyword) ->
@@ -238,14 +238,11 @@ memory(usage,Keyword) ->
 %% carriers.
 -spec fragmentation(current | max) -> [allocdata([{atom(), term()}])].
 fragmentation(Keyword) ->
-    Pos = key2pos(Keyword),
     WeighedData = [begin
-      LS = proplists:get_value(sbcs, Props),
-      BlockSbcs = element(Pos, lists:keyfind(blocks_size,1,LS)),
-      CarSbcs = element(Pos, lists:keyfind(carriers_size,1,LS)),
-      LM = proplists:get_value(mbcs,Props),
-      BlockMbcs = element(Pos, lists:keyfind(blocks_size,1,LM)),
-      CarMbcs = element(Pos, lists:keyfind(carriers_size,1,LM)),
+      BlockSbcs = container_value(Props, Keyword, sbcs, blocks_size),
+      CarSbcs = container_value(Props, Keyword, sbcs, carriers_size),
+      BlockMbcs = container_value(Props, Keyword, mbcs, blocks_size),
+      CarMbcs = container_value(Props, Keyword, mbcs, carriers_size),
       {Weight, Vals} = weighed_values({BlockSbcs,CarSbcs},
                                       {BlockMbcs,CarMbcs}),
       {Weight, {Allocator,N}, Vals}
@@ -308,14 +305,11 @@ cache_hit_rates() ->
     Key :: mbcs | sbcs,
     Val :: number().
 average_block_sizes(Keyword) ->
-    Pos = key2pos(Keyword),
     Dict = lists:foldl(fun({{Instance,_},Props},Dict0) ->
-      LS = proplists:get_value(sbcs, Props),
-      CarSbcs = element(Pos, lists:keyfind(blocks,1,LS)),
-      SizeSbcs = element(Pos, lists:keyfind(blocks_size,1,LS)),
-      LM = proplists:get_value(mbcs,Props),
-      CarMbcs = element(Pos, lists:keyfind(blocks,1,LM)),
-      SizeMbcs = element(Pos, lists:keyfind(blocks_size,1,LM)),
+      CarSbcs = container_value(Props, Keyword, sbcs, blocks),
+      SizeSbcs = container_value(Props, Keyword, sbcs, blocks_size),
+      CarMbcs = container_value(Props, Keyword, mbcs, blocks),
+      SizeMbcs = container_value(Props, Keyword, mbcs, blocks_size),
       Dict1 = dict:update_counter({Instance,sbcs,count},CarSbcs,Dict0),
       Dict2 = dict:update_counter({Instance,sbcs,size},SizeSbcs,Dict1),
       Dict3 = dict:update_counter({Instance,mbcs,count},CarMbcs,Dict2),
@@ -352,12 +346,9 @@ average_block_sizes(Keyword) ->
 %% the worst the condition. The list is sorted accordingly.
 -spec sbcs_to_mbcs(max | current) -> [allocdata(term())].
 sbcs_to_mbcs(Keyword) ->
-    Pos = key2pos(Keyword),
     WeightedList = [begin
-      LS = proplists:get_value(sbcs, Props),
-      LM = proplists:get_value(mbcs,Props),
-      Sbcs = element(Pos, lists:keyfind(blocks,1,LS)),
-      Mbcs = element(Pos, lists:keyfind(blocks,1,LM)),
+      Sbcs = container_value(Props, Keyword, sbcs, blocks),
+      Mbcs = container_value(Props, Keyword, mbcs, blocks),
       Ratio = case {Sbcs, Mbcs} of
         {0,0} -> 0;
         {_,0} -> infinity; % that is bad!
@@ -526,7 +517,10 @@ conv_alloc([{{mseg_alloc,_I} = AI,Props}|R], Factor) ->
                              Props),
     [{AI,NewProps}|conv_alloc(R,Factor)];
 conv_alloc([{AI,Props}|R], Factor) ->
-    FactorFun = fun({T,Curr,Last,Max}) when
+    FactorFun = fun({T,Curr}) when
+                          T =:= blocks_size; T =:= carriers_size ->
+                        {T,Curr/Factor};
+                    ({T,Curr,Last,Max}) when
                           T =:= blocks_size; T =:= carriers_size;
                           T =:= mseg_alloc_carriers_size;
                           T =:= sys_alloc_carriers_size ->
@@ -537,8 +531,15 @@ conv_alloc([{AI,Props}|R], Factor) ->
     NewMbcsProp = [FactorFun(Prop) || Prop <- orddict:fetch(mbcs,Props)],
     NewSbcsProp = [FactorFun(Prop) || Prop <- orddict:fetch(sbcs,Props)],
     NewProps = orddict:store(sbcs,NewSbcsProp,
-                             orddict:store(mbcs,NewMbcsProp,Props)),
-    [{AI,NewProps}|conv_alloc(R,Factor)];
+                  orddict:store(mbcs,NewMbcsProp,Props)),
+    case orddict:find(mbcs_pool,Props) of
+        error ->
+            [{AI,NewProps}|conv_alloc(R,Factor)];
+        {ok,MbcsPoolProps} ->
+            NewMbcsPoolProp = [FactorFun(Prop) || Prop <- MbcsPoolProps],
+            NewPoolProps = orddict:store(mbcs_pool,NewMbcsPoolProp,NewProps),
+            [{AI,NewPoolProps}|conv_alloc(R,Factor)]
+    end;
 conv_alloc([],_Factor) ->
     [].
 
@@ -586,22 +587,31 @@ average_group([{Instance,Type1,N},{Instance,Type2,M} | Rest]) ->
     [{Instance,[{Type1,N},{Type2,M}]} | average_group(Rest)].
 
 %% Get the total carrier size
-carrier_size(Props, Keyword) ->
-    Pos = key2pos(Keyword),
-    SbcsProps = proplists:get_value(sbcs, Props),
-    MbcsProps = proplists:get_value(mbcs, Props),
-    Sbcs = element(Pos,lists:keyfind(carriers_size, 1, SbcsProps)),
-    Mbcs = element(Pos,lists:keyfind(carriers_size, 1, MbcsProps)),
+container_size(Props, Keyword, Container) ->
+    Sbcs = container_value(Props, Keyword, sbcs, Container),
+    Mbcs = container_value(Props, Keyword, mbcs, Container),
     Sbcs+Mbcs.
 
-%% Get the total block size
-block_size(Props, Keyword) ->
-    Pos = key2pos(Keyword),
-    SbcsProps = proplists:get_value(sbcs, Props),
-    MbcsProps = proplists:get_value(mbcs, Props),
-    Sbcs = element(Pos,lists:keyfind(blocks_size, 1, SbcsProps)),
-    Mbcs = element(Pos,lists:keyfind(blocks_size, 1, MbcsProps)),
-    Sbcs+Mbcs.
+container_value(Props, Keyword, Type, Container)
+  when is_atom(Keyword) ->
+    container_value(Props, key2pos(Keyword), Type, Container);
+container_value(Props, Pos, mbcs = Type, Container)
+  when Pos == ?CURRENT_POS,
+       ((Container =:= blocks) or (Container =:= blocks_size)
+        or (Container =:= carriers) or (Container =:= carriers_size))->
+    %% We include the mbcs pool into the value for mbcs
+    Pool = case proplists:get_value(mbcs_pool, Props) of
+               PoolProps when PoolProps =/= undefined ->
+                   %% Mbcs Pool stats only exist pool is enabled
+                   element(Pos,lists:keyfind(Container, 1, PoolProps));
+               _ -> 0
+           end,
+    TypeProps = proplists:get_value(Type, Props),
+    Pool + element(Pos,lists:keyfind(Container, 1, TypeProps));
+container_value(Props, Pos, Type, Container)
+  when Type =:= sbcs; Type =:= mbcs ->
+    TypeProps = proplists:get_value(Type, Props),
+    element(Pos,lists:keyfind(Container, 1, TypeProps)).
 
 %% Create a new snapshot
 snapshot_int() ->
