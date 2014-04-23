@@ -32,6 +32,8 @@ all stable changes of the first version of Recon.
     top and CPU gives.
   - Broadening `recon_trace:calls/2` interface to allow multiple match specs,
     which was currently only allowed for `calls/3`.
+  - Support for `mbcs_pool` data in `erts_alloc`, and some internal refactoring,
+    thanks to Lukas Larsson.
 - 2.1.2:
   - Fixing tests for R15B02 and up
   - Fixing a backwards compatibility for R15B03 on `recon_alloc` operations
