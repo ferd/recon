@@ -189,7 +189,11 @@ memory(Key) -> memory(Key, current).
 %% The memory reported by `allocated' should roughly
 %% match what the OS reports. If this amount is different by a large margin,
 %% it may be the sign that someone is allocating memory in C directly, outside
-%% of Erlang's own allocator -- a big warning sign.
+%% of Erlang's own allocator -- a big warning sign. There are currently
+%% three sources of memory alloction that is not counted towards this value:
+%% The cached segments in the mseg allocator, any memory allocated as a
+%% super carrier and lastly small pieces of memory allocated during startup
+%% before the memory allocators are initialized.
 %%
 %% Also note that low memory usages can be the sign of fragmentation in
 %% memory, in which case exploring which specific allocator is at fault
@@ -599,10 +603,15 @@ container_value(Props, Pos, mbcs = Type, Container)
   when Pos == ?CURRENT_POS,
        ((Container =:= blocks) or (Container =:= blocks_size)
         or (Container =:= carriers) or (Container =:= carriers_size))->
-    %% We include the mbcs pool into the value for mbcs
+    %% We include the mbcs_pool into the value for mbcs
+    %% The mbcs_pool contains carriers that have been abandoned
+    %% by the specific allocator instance and can therefore be
+    %% grabbed by another instance of the same type.
+    %% The pool was added in R16B02 and enabled by default in 17.0
+    %% See erts/emulator/internal_docs/CarrierMigration.md in
+    %% Erlang/OTP repo for more details.
     Pool = case proplists:get_value(mbcs_pool, Props) of
                PoolProps when PoolProps =/= undefined ->
-                   %% Mbcs Pool stats only exist pool is enabled
                    element(Pos,lists:keyfind(Container, 1, PoolProps));
                _ -> 0
            end,
