@@ -27,7 +27,7 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
-- 2.2.0 Upcoming (master branch, still in development):
+- 2.2.0:
   - Adding scheduler info metrics to get a more accurate picture than what
     top and CPU gives.
   - Broadening `recon_trace:calls/2` interface to allow multiple match specs,
