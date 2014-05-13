@@ -293,7 +293,11 @@ node depending on what is to be reported:</p>
   <p>The memory reported by <code>allocated</code> should roughly  
 match what the OS reports. If this amount is different by a large margin,  
 it may be the sign that someone is allocating memory in C directly, outside  
-of Erlang's own allocator -- a big warning sign.</p>
+of Erlang's own allocator -- a big warning sign. There are currently  
+three sources of memory alloction that are not counted towards this value:  
+The cached segments in the mseg allocator, any memory allocated as a  
+super carrier, and small pieces of memory allocated during startup  
+before the memory allocators are initialized.</p>
  
   Also note that low memory usages can be the sign of fragmentation in
   memory, in which case exploring which specific allocator is at fault

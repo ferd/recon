@@ -49,6 +49,8 @@
 <tr><td valign="top"><a href="#proc_attrs-2">proc_attrs/2</a></td><td>Returns the attributes of a given process.</td></tr>
 <tr><td valign="top"><a href="#sample-2">sample/2</a></td><td>Runs a fun once, waits <code>Ms</code>, runs the fun again,
   and returns both results.</td></tr>
+<tr><td valign="top"><a href="#scheduler_usage_diff-2">scheduler_usage_diff/2</a></td><td>Diffs two runs of erlang:statistics(scheduler_wall_time) and
+  returns usage metrics in terms of cores and 0..1 percentages.</td></tr>
 <tr><td valign="top"><a href="#sliding_window-2">sliding_window/2</a></td><td>Compare two samples and return a list based on some key.</td></tr>
 <tr><td valign="top"><a href="#term_to_pid-1">term_to_pid/1</a></td><td>Transforms a given term to a pid.</td></tr>
 <tr><td valign="top"><a href="#term_to_port-1">term_to_port/1</a></td><td>Transforms a given term to a port.</td></tr>
@@ -115,6 +117,13 @@ is standard for most comparison functions for processes in recon.</p>
 <p><code>sample(Ms::non_neg_integer(), Fun::fun(() -&gt; term())) -&gt; {First::term(), Second::term()}</code><br></p>
 </div><p>Runs a fun once, waits <code>Ms</code>, runs the fun again,
   and returns both results.</p>
+
+<h4 class="function"><a name="scheduler_usage_diff-2">scheduler_usage_diff/2</a></h4>
+<div class="spec">
+<p><code>scheduler_usage_diff(SchedTime, SchedTime) -&gt; [{SchedulerId, Usage}]</code>
+<ul class="definitions"><li><code>SchedTime = [{SchedulerId, ActiveTime, TotalTime}]</code></li><li><code>SchedulerId = pos_integer()</code></li><li><code>Usage = number()</code></li><li><code>ActiveTime = non_neg_integer()</code></li><li><code>TotalTime = non_neg_integer()</code></li></ul></p>
+</div><p>Diffs two runs of erlang:statistics(scheduler_wall_time) and
+  returns usage metrics in terms of cores and 0..1 percentages.</p>
 
 <h4 class="function"><a name="sliding_window-2">sliding_window/2</a></h4>
 <div class="spec">

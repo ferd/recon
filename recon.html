@@ -51,7 +51,8 @@ contained in the Recon application.</p>
            <a href="#node_stats_print-2"><code>node_stats_print/2</code></a>, which displays them,
            <a href="#node_stats_list-2"><code>node_stats_list/2</code></a>, which returns them in a list, and
            <a href="#node_stats-4"><code>node_stats/4</code></a>, which provides a fold-like interface
-           for stats gathering.</dd>
+           for stats gathering. For CPU usage specifically, see
+           <a href="#scheduler_usage-1"><code>scheduler_usage/1</code></a>.</dd>
   
        <dt>2. OTP tools</dt>
        <dd>This category provides tools to interact with pieces of OTP
@@ -227,6 +228,10 @@ the biggest entries, over a sliding time window.</td></tr>
 <tr><td valign="top"><a href="#rpc-1">rpc/1</a></td><td>Shorthand for <code>rpc([node()|nodes()], Fun)</code>.</td></tr>
 <tr><td valign="top"><a href="#rpc-2">rpc/2</a></td><td>Shorthand for <code>rpc(Nodes, Fun, infinity)</code>.</td></tr>
 <tr><td valign="top"><a href="#rpc-3">rpc/3</a></td><td>Runs an arbitrary fun (of arity 0) over one or more nodes.</td></tr>
+<tr><td valign="top"><a href="#scheduler_usage-1">scheduler_usage/1</a></td><td>Because Erlang CPU usage as reported from <code>top</code> isn't the most  
+reliable value (due to schedulers doing idle spinning to avoid going  
+to sleep and impacting latency), a metric exists that is based on  
+scheduler wall time.</td></tr>
 <tr><td valign="top"><a href="#sctp-0">sctp/0</a></td><td>returns a list of all SCTP ports (the data type) open on the node.</td></tr>
 <tr><td valign="top"><a href="#source-1">source/1</a></td><td>Obtain the source code of a module compiled with <code>debug_info</code>.</td></tr>
 <tr><td valign="top"><a href="#tcp-0">tcp/0</a></td><td>returns a list of all TCP ports (the data type) open on the node.</td></tr>
@@ -500,6 +505,29 @@ data (say reductions) will look like bottlenecks when they're not one.</p>
 <div class="spec">
 <p><code>rpc(Nodes::node() | [node(), ...], Fun::fun(() -&gt; term()), Timeout::timeout()) -&gt; {[Success::term()], [Fail::term()]}</code><br></p>
 </div><p>Runs an arbitrary fun (of arity 0) over one or more nodes.</p>
+
+<h4 class="function"><a name="scheduler_usage-1">scheduler_usage/1</a></h4>
+<div class="spec">
+<p><code>scheduler_usage(Millisecs) -&gt; [{SchedulerId, Usage}]</code>
+<ul class="definitions"><li><code>Millisecs = non_neg_integer()</code></li><li><code>SchedulerId = pos_integer()</code></li><li><code>Usage = number()</code></li></ul></p>
+</div><p><p>Because Erlang CPU usage as reported from <code>top</code> isn't the most  
+reliable value (due to schedulers doing idle spinning to avoid going  
+to sleep and impacting latency), a metric exists that is based on  
+scheduler wall time.</p>
+ 
+  <p>For any time interval, Scheduler wall time can be used as a measure  
+of how 'busy' a scheduler is. A scheduler is busy when:</p>
+ 
+  <ul>
+     <li>executing process code</li>
+     <li>executing driver code</li>
+     <li>executing NIF code</li>
+     <li>executing BIFs</li>
+     <li>garbage collecting</li>
+     <li>doing memory management</li>
+  </ul>
+ 
+  A scheduler isn't busy when doing anything else.</p>
 
 <h4 class="function"><a name="sctp-0">sctp/0</a></h4>
 <div class="spec">
