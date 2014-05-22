@@ -526,7 +526,7 @@ files() -> recon_lib:port_list(name, "efile").
 
 %% @doc Shows a list of all different ports on the node with their respective
 %% types.
--spec port_types() -> [{pos_integer(),Type::string()}].
+-spec port_types() -> [{Type::string(), Count::pos_integer()}].
 port_types() ->
     lists:usort(
         %% sorts by biggest count, smallest type

@@ -5,7 +5,7 @@ Recon wants to be a set of tools usable in production to diagnose Erlang problem
 
 To build the library:
 
-    rebar compile
+    ./rebar compile
 
 Documentation for the library can be obtained at http://ferd.github.io/recon/
 
@@ -27,6 +27,9 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.2.1 Upcoming (master branch, still in development):
+  - Fixing type specs for `recon:port_types/0` and `recon_lib:count/1`,
+    thanks to @lucafavatella
 - 2.2.0:
   - Adding scheduler info metrics to get a more accurate picture than what
     top and CPU gives.
