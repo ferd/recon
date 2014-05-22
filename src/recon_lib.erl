@@ -48,7 +48,7 @@ sample(Delay, Fun) ->
 %% @doc Takes a list of terms, and counts how often each of
 %% them appears in the list. The list returned is in no
 %% particular order.
--spec count([term()]) -> [{Count::integer(), term()}].
+-spec count([term()]) -> [{term(), Count::integer()}].
 count(Terms) ->
     Dict = lists:foldl(
         fun(Val, Acc) ->  dict:update_counter(Val, 1, Acc) end,

@@ -5,7 +5,7 @@ Recon wants to be a set of tools usable in production to diagnose Erlang problem
 
 To build the library:
 
-    rebar compile
+    ./rebar compile
 
 Documentation for the library can be obtained at http://ferd.github.io/recon/
 
