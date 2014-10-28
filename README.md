@@ -27,9 +27,10 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
-- 2.2.1 Upcoming (master branch, still in development):
+- 2.2.1
   - Fixing type specs for `recon:port_types/0` and `recon_lib:count/1`,
     thanks to @lucafavatella
+  - Minor documentation fixes.
 - 2.2.0:
   - Adding scheduler info metrics to get a more accurate picture than what
     top and CPU gives.
