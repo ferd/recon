@@ -280,7 +280,7 @@ function calls.</p>
        <code>recon_trace:calls(TSpec, Max, [{args, arity}])</code></li>
    <li>Matching the <code>filter/2</code> functions of both <code>dict</code> and <code>lists</code> modules,
        across new processes only:
-       <code>recon_trace:calls([{dict,filter,2},{lists,filter,2}], 10, [{pid, new]})</code></li>
+       <code>recon_trace:calls([{dict,filter,2},{lists,filter,2}], 10, [{pid, new}])</code></li>
    <li>Tracing the <code>handle_call/3</code> functions of a given module for all new processes,
        and those of an existing one registered with <code>gproc</code>:
        <code>recon_trace:calls({Mod,handle_call,3}, {10,100}, [{pid, [{via, gproc, Name}, new]}</code></li>
