@@ -91,7 +91,7 @@
 %%%    </ol>
 %%%
 %%%    See <a href="http://www.erlang.org/doc/man/erts_alloc.html">the official
-%%%    documantation on erts_alloc</a> for more details.
+%%%    documentation on erts_alloc</a> for more details.
 %%%  </dd>
 %%%
 %%%  <dt>mbcs</dt>
