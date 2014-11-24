@@ -439,7 +439,7 @@ snapshot_save(Filename) ->
 %%
 %%```On target machine:
 %%     1> recon_alloc:snapshot().
-%%     unefined
+%%     undefined
 %%     2> recon_alloc:memory(used).
 %%     18411064
 %%     3> recon_alloc:snapshot_save("recon_snapshot.terms").
