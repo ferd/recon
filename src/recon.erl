@@ -251,8 +251,8 @@ proc_fake([binary_memory|T1], [{binary,Bins}|T2]) ->
 proc_fake([_|T1], [H|T2]) ->
     [H | proc_fake(T1,T2)].
 
-%% @doc Fetches a given attribute from all processes and returns
-%% the biggest `Num' consumers.
+%% @doc Fetches a given attribute from all processes (except the
+%% caller) and returns the biggest `Num' consumers.
 %% @todo Implement this function so it only stores `Num' entries in
 %% memory at any given time, instead of as many as there are
 %% processes.
@@ -265,8 +265,8 @@ proc_count(AttrName, Num) ->
         recon_lib:proc_attrs(AttrName)
     ), Num).
 
-%% @doc Fetches a given attribute from all processes and returns
-%% the biggest entries, over a sliding time window.
+%% @doc Fetches a given attribute from all processes (except the
+%% caller) and returns the biggest entries, over a sliding time window.
 %%
 %% This function is particularly useful when processes on the node
 %% are mostly short-lived, usually too short to inspect through other
