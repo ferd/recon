@@ -31,6 +31,7 @@ all stable changes of the first version of Recon.
   - Doc made clearer around semantics of `recon:proc_count` and
     `recon:proc_window`.
   - Fix doc typos
+  - Fix potential race condition on waiting for death of tracing process
 - 2.2.1
   - Fixing type specs for `recon:port_types/0` and `recon_lib:count/1`,
     thanks to @lucafavatella

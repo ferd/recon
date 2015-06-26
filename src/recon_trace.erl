@@ -550,14 +550,14 @@ maybe_kill(Name) ->
         Pid ->
             unlink(Pid),
             exit(Pid, kill),
-            wait_for_death(Pid)
+            wait_for_death(Pid, Name)
     end.
 
-wait_for_death(Pid) ->
-    case is_process_alive(Pid) of
+wait_for_death(Pid, Name) ->
+    case is_process_alive(Pid) orelse whereis(Name) =:= Pid of
         true ->
             timer:sleep(10),
-            wait_for_death(Pid);
+            wait_for_death(Pid, Name);
         false ->
             ok
     end.
