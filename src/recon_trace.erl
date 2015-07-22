@@ -156,13 +156,16 @@
 -module(recon_trace).
 
 %% API
--export([clear/0, calls/2, calls/3]).
+-export([clear/0, calls/2, calls/3, calls/4]).
+
+-export([format/1]).
 
 %% Internal exports
--export([count_tracer/1, rate_tracer/2, formatter/3]).
+-export([count_tracer/1, rate_tracer/2, formatter/4]).
 
 -type matchspec()   :: [{[term()], [term()], [term()]}].
 -type shellfun()    :: fun((_) -> term()).
+-type formatterfun()    :: fun((_) -> string()).
 -type millisecs()   :: non_neg_integer().
 -type pidspec()     :: all | existing | new | recon:pid_term().
 -type max_traces()  :: non_neg_integer().
@@ -206,6 +209,12 @@ calls({Mod, Fun, Args}, Max) ->
     calls([{Mod,Fun,Args}], Max, []);
 calls(TSpecs = [_|_], Max) ->
     calls(TSpecs, Max, []).
+
+%% @equiv calls(Spec, Tracer, Opts, fun recon_trace:format/1)
+-spec calls(tspec() | [tspec(),...], max(), options()) -> num_matches().
+calls(Spec, Tracer, Opts) ->
+    calls(Spec, Tracer, Opts, fun format/1).
+
 
 %% @doc Allows to set trace patterns and pid specifications to trace
 %% function calls.
@@ -290,14 +299,16 @@ calls(TSpecs = [_|_], Max) ->
 %% can be risky if more trace messages are generated than any process on
 %% the node could ever handle, despite the precautions taken by this library.
 %% @end
--spec calls(tspec() | [tspec(),...], max(), options()) -> num_matches().
-calls({Mod, Fun, Args}, Max, Opts) ->
-    calls([{Mod,Fun,Args}], Max,Opts);
-calls(TSpecs = [_|_], {Max, Time}, Opts) ->
-    Pid = setup(rate_tracer, [Max, Time]),
+-spec calls(tspec() | [tspec(),...], max(), options(), formatterfun()) ->
+    num_matches().
+
+calls({Mod, Fun, Args}, Max, Opts, FormatterFun) ->
+    calls([{Mod,Fun,Args}], Max, Opts, FormatterFun);
+calls(TSpecs = [_|_], {Max, Time}, Opts, FormatterFun) ->
+    Pid = setup(rate_tracer, [Max, Time], FormatterFun),
     trace_calls(TSpecs, Pid, Opts);
-calls(TSpecs = [_|_], Max, Opts) ->
-    Pid = setup(count_tracer, [Max]),
+calls(TSpecs = [_|_], Max, Opts, FormatterFun) ->
+    Pid = setup(count_tracer, [Max], FormatterFun),
     trace_calls(TSpecs, Pid, Opts).
 
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -334,13 +345,13 @@ rate_tracer(Max, Time, Count, Start) ->
     end.
 
 %% @private Formats traces to be output
-formatter(Tracer, Parent, Ref) ->
+formatter(Tracer, Parent, Ref, FormatterFun) ->
     process_flag(trap_exit, true),
     link(Tracer),
     Parent ! {Ref, linked},
-    formatter(Tracer, group_leader()).
+    formatter(Tracer, group_leader(), FormatterFun).
 
-formatter(Tracer, Leader) ->
+formatter(Tracer, Leader, FormatterFun) ->
     receive
         {'EXIT', Tracer, normal} ->
             io:format("Recon tracer rate limit tripped.~n"),
@@ -348,8 +359,8 @@ formatter(Tracer, Leader) ->
         {'EXIT', Tracer, Reason} ->
             exit(Reason);
         TraceMsg ->
-            io:format(Leader, format(TraceMsg), []),
-            formatter(Tracer, Leader)
+            io:format(Leader, FormatterFun(TraceMsg), []),
+            formatter(Tracer, Leader, FormatterFun)
     end.
 
 
@@ -359,12 +370,12 @@ formatter(Tracer, Leader) ->
 
 %% starts the tracer and formatter processes, and
 %% cleans them up before each call.
-setup(TracerFun, TracerArgs) ->
+setup(TracerFun, TracerArgs, FormatterFun) ->
     clear(),
     Ref = make_ref(),
     Tracer = spawn_link(?MODULE, TracerFun, TracerArgs),
     register(recon_trace_tracer, Tracer),
-    Format = spawn(?MODULE, formatter, [Tracer, self(), Ref]),
+    Format = spawn(?MODULE, formatter, [Tracer, self(), Ref, FormatterFun]),
     register(recon_trace_formatter, Format),
     receive
         {Ref, linked} -> Tracer
