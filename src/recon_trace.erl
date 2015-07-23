@@ -165,7 +165,7 @@
 
 -type matchspec()   :: [{[term()], [term()], [term()]}].
 -type shellfun()    :: fun((_) -> term()).
--type formatterfun()    :: fun((_) -> string()).
+-type formatterfun() :: fun((_) -> iolist()).
 -type millisecs()   :: non_neg_integer().
 -type pidspec()     :: all | existing | new | recon:pid_term().
 -type max_traces()  :: non_neg_integer().
