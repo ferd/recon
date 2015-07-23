@@ -163,28 +163,28 @@
 %% Internal exports
 -export([count_tracer/1, rate_tracer/2, formatter/4]).
 
--type matchspec()   :: [{[term()], [term()], [term()]}].
--type shellfun()    :: fun((_) -> term()).
+-type matchspec()    :: [{[term()], [term()], [term()]}].
+-type shellfun()     :: fun((_) -> term()).
 -type formatterfun() :: fun((_) -> iolist()).
--type millisecs()   :: non_neg_integer().
--type pidspec()     :: all | existing | new | recon:pid_term().
--type max_traces()  :: non_neg_integer().
--type max_rate()    :: {max_traces(), millisecs()}.
+-type millisecs()    :: non_neg_integer().
+-type pidspec()      :: all | existing | new | recon:pid_term().
+-type max_traces()   :: non_neg_integer().
+-type max_rate()     :: {max_traces(), millisecs()}.
 
                    %% trace options
--type options()     :: [ {pid, pidspec() | [pidspec(),...]} % default: all
-                         | {timestamp, formatter | trace}   % default: formatter
-                         | {args, args | arity}             % default: args
+-type options()      :: [ {pid, pidspec() | [pidspec(),...]} % default: all
+                          | {timestamp, formatter | trace}   % default: formatter
+                          | {args, args | arity}             % default: args
                    %% match pattern options
-                         | {scope, global | local}          % default: global
-                       ].
+                          | {scope, global | local}          % default: global
+                        ].
 
--type mod()         :: '_' | module().
--type fn()          :: '_' | atom().
--type args()        :: '_' | 0..255 | matchspec() | shellfun().
--type tspec()       :: {mod(), fn(), args()}.
--type max()         :: max_traces() | max_rate().
--type num_matches() :: non_neg_integer().
+-type mod()          :: '_' | module().
+-type fn()           :: '_' | atom().
+-type args()         :: '_' | 0..255 | matchspec() | shellfun().
+-type tspec()        :: {mod(), fn(), args()}.
+-type max()          :: max_traces() | max_rate().
+-type num_matches()  :: non_neg_integer().
 
 -export_type([mod/0, fn/0, args/0, tspec/0, num_matches/0, options/0,
               max_traces/0, max_rate/0]).
