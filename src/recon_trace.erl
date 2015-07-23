@@ -39,7 +39,7 @@
 %%%  |               -,        ,-               |
 %%%   '-,              '-,  ,-'              ,-'
 %%%      '-,_          _,-''-,_          _,-'
-%%%          '--------'        '--------' 
+%%%          '--------'        '--------'
 %%% '''
 %%%
 %%% If either the pid specification excludes a process or a trace pattern
@@ -237,7 +237,7 @@ calls(Spec, Tracer, Opts) ->
 %% of trace messages to be received, or a maximal frequency (`{Num, Millisecs}').
 %%
 %% Here are examples of things to trace:
-%% 
+%%
 %% <ul>
 %%  <li>All calls from the `queue' module, with 10 calls printed at most:
 %%      ``recon_trace:calls({queue, '_', '_'}, 10)''</li>
@@ -588,4 +588,4 @@ fun_to_ms(ShellFun) when is_function(ShellFun) ->
             end;
         false ->
             exit(shell_funs_only)
-    end. 
+    end.
