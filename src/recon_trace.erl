@@ -152,6 +152,20 @@
 %%% In case the operator is tracing from a remote shell which gets
 %%% disconnected, the links between the shell and the tracer should make it
 %%% so tracing is automatically turned off once you disconnect.
+%%%
+%%% If sending output to the Group Leader is not desired, you may specify
+%%% a different pid() via the option `output' in the {@link calls/3} function.
+%%% For instance to write the traces to a file you can do something like
+%%%
+%%% 1> {ok, Dev} = file:open("/tmp/trace",[write]).
+%%% 2> recon_trace:calls({queue, in, fun(_) -> return_trace() end}, 3, [{output, Dev}]).
+%%% 1
+%%% 3>
+%%% Recon tracer rate limit tripped.
+%%% 4> file:close(Dev).
+%%%
+%%% The only output still sent to the Group Leader is the rate limit being
+%%% tripped, and any errors.
 %%% @end
 -module(recon_trace).
 
@@ -161,7 +175,7 @@
 -export([format/1]).
 
 %% Internal exports
--export([count_tracer/1, rate_tracer/2, formatter/4]).
+-export([count_tracer/1, rate_tracer/2, formatter/5]).
 
 -type matchspec()    :: [{[term()], [term()], [term()]}].
 -type shellfun()     :: fun((_) -> term()).
@@ -177,6 +191,7 @@
                           | {args, args | arity}             % default: args
                    %% match pattern options
                           | {scope, global | local}          % default: global
+                          | {output, pid()}                  % default: group_leader()
                         ].
 
 -type mod()          :: '_' | module().
@@ -305,10 +320,12 @@ calls(Spec, Max, Opts) ->
 calls({Mod, Fun, Args}, Max, Opts, FormatterFun) ->
     calls([{Mod,Fun,Args}], Max, Opts, FormatterFun);
 calls(TSpecs = [_|_], {Max, Time}, Opts, FormatterFun) ->
-    Pid = setup(rate_tracer, [Max, Time], FormatterFun),
+    OutputTo = validate_output_to (Opts),
+    Pid = setup(rate_tracer, [Max, Time], FormatterFun, OutputTo),
     trace_calls(TSpecs, Pid, Opts);
 calls(TSpecs = [_|_], Max, Opts, FormatterFun) ->
-    Pid = setup(count_tracer, [Max], FormatterFun),
+    OutputTo = validate_output_to (Opts),
+    Pid = setup(count_tracer, [Max], FormatterFun, OutputTo),
     trace_calls(TSpecs, Pid, Opts).
 
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -345,11 +362,11 @@ rate_tracer(Max, Time, Count, Start) ->
     end.
 
 %% @private Formats traces to be output
-formatter(Tracer, Parent, Ref, FormatterFun) ->
+formatter(Tracer, Parent, Ref, FormatterFun, OutputTo) ->
     process_flag(trap_exit, true),
     link(Tracer),
     Parent ! {Ref, linked},
-    formatter(Tracer, group_leader(), FormatterFun).
+    formatter(Tracer, OutputTo, FormatterFun).
 
 formatter(Tracer, Leader, FormatterFun) ->
     receive
@@ -370,12 +387,12 @@ formatter(Tracer, Leader, FormatterFun) ->
 
 %% starts the tracer and formatter processes, and
 %% cleans them up before each call.
-setup(TracerFun, TracerArgs, FormatterFun) ->
+setup(TracerFun, TracerArgs, FormatterFun, OutputTo) ->
     clear(),
     Ref = make_ref(),
     Tracer = spawn_link(?MODULE, TracerFun, TracerArgs),
     register(recon_trace_tracer, Tracer),
-    Format = spawn(?MODULE, formatter, [Tracer, self(), Ref, FormatterFun]),
+    Format = spawn(?MODULE, formatter, [Tracer, self(), Ref, FormatterFun, OutputTo]),
     register(recon_trace_formatter, Format),
     receive
         {Ref, linked} -> Tracer
@@ -448,6 +465,13 @@ validate_tspec(Mod, Fun, Args) ->
         _ when is_list(Args) -> {'_', Args};
         _ when Args >= 0, Args =< 255 -> {Args, true}
     end.
+
+validate_output_to(Opts) ->
+  OutputTo = proplists:get_value(output, Opts, undefined),
+  case OutputTo of
+    P when is_pid(OutputTo) -> P;
+    _ -> group_leader()
+  end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%% TRACE FORMATTING %%%
