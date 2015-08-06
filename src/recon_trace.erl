@@ -210,10 +210,10 @@ calls({Mod, Fun, Args}, Max) ->
 calls(TSpecs = [_|_], Max) ->
     calls(TSpecs, Max, []).
 
-%% @equiv calls(Spec, Tracer, Opts, fun recon_trace:format/1)
+%% @equiv calls(Spec, Max, Opts, fun recon_trace:format/1)
 -spec calls(tspec() | [tspec(),...], max(), options()) -> num_matches().
-calls(Spec, Tracer, Opts) ->
-    calls(Spec, Tracer, Opts, fun format/1).
+calls(Spec, Max, Opts) ->
+    calls(Spec, Max, Opts, fun format/1).
 
 
 %% @doc Allows to set trace patterns and pid specifications to trace
