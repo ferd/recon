@@ -320,12 +320,10 @@ calls(Spec, Max, Opts) ->
 calls({Mod, Fun, Args}, Max, Opts, FormatterFun) ->
     calls([{Mod,Fun,Args}], Max, Opts, FormatterFun);
 calls(TSpecs = [_|_], {Max, Time}, Opts, FormatterFun) ->
-    OutputTo = validate_output_to (Opts),
-    Pid = setup(rate_tracer, [Max, Time], FormatterFun, OutputTo),
+    Pid = setup(rate_tracer, [Max, Time], FormatterFun, validate_io_server(Opts)),
     trace_calls(TSpecs, Pid, Opts);
 calls(TSpecs = [_|_], Max, Opts, FormatterFun) ->
-    OutputTo = validate_output_to (Opts),
-    Pid = setup(count_tracer, [Max], FormatterFun, OutputTo),
+    Pid = setup(count_tracer, [Max], FormatterFun, validate_io_server(Opts)),
     trace_calls(TSpecs, Pid, Opts).
 
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -362,11 +360,11 @@ rate_tracer(Max, Time, Count, Start) ->
     end.
 
 %% @private Formats traces to be output
-formatter(Tracer, Parent, Ref, FormatterFun, OutputTo) ->
+formatter(Tracer, Parent, Ref, FormatterFun, IOServer) ->
     process_flag(trap_exit, true),
     link(Tracer),
     Parent ! {Ref, linked},
-    formatter(Tracer, OutputTo, FormatterFun).
+    formatter(Tracer, IOServer, FormatterFun).
 
 formatter(Tracer, Leader, FormatterFun) ->
     receive
@@ -466,12 +464,8 @@ validate_tspec(Mod, Fun, Args) ->
         _ when Args >= 0, Args =< 255 -> {Args, true}
     end.
 
-validate_output_to(Opts) ->
-  OutputTo = proplists:get_value(output, Opts, undefined),
-  case OutputTo of
-    P when is_pid(OutputTo) -> P;
-    _ -> group_leader()
-  end.
+validate_io_server(Opts) ->
+  proplists:get_value(io_server, Opts, group_leader()).
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%% TRACE FORMATTING %%%
