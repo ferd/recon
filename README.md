@@ -27,13 +27,14 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
-- 2.2.2 (current master)
+- 2.3.0 (current master)
   - Doc made clearer around semantics of `recon:proc_count` and
     `recon:proc_window`.
   - Fix doc typos
   - Fix potential race condition on waiting for death of tracing process
   - Add an option which allows sending tracing output somewhere other than
-    group_leader().
+    group_leader() (thanks @djnym)
+  - Add ability to pass custom formatter function when tracing (thanks @iilyak)
 - 2.2.1
   - Fixing type specs for `recon:port_types/0` and `recon_lib:count/1`,
     thanks to @lucafavatella

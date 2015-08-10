@@ -171,7 +171,7 @@
 -module(recon_trace).
 
 %% API
--export([clear/0, calls/2, calls/3, calls/4]).
+-export([clear/0, calls/2, calls/3]).
 
 -export([format/1]).
 
@@ -188,11 +188,12 @@
 
                    %% trace options
 -type options()      :: [ {pid, pidspec() | [pidspec(),...]} % default: all
-                          | {timestamp, formatter | trace}   % default: formatter
-                          | {args, args | arity}             % default: args
+                        | {timestamp, formatter | trace}     % default: formatter
+                        | {args, args | arity}               % default: args
+                        | {io_server, pid()}                 % default: group_leader()
+                        | {formatter, formatterfun()}        % default: internal formatter
                    %% match pattern options
-                          | {scope, global | local}          % default: global
-                          | {io_server, pid()}               % default: group_leader()
+                        | {scope, global | local}            % default: global
                         ].
 
 -type mod()          :: '_' | module().
@@ -225,12 +226,6 @@ calls({Mod, Fun, Args}, Max) ->
     calls([{Mod,Fun,Args}], Max, []);
 calls(TSpecs = [_|_], Max) ->
     calls(TSpecs, Max, []).
-
-%% @equiv calls(Spec, Max, Opts, fun recon_trace:format/1)
--spec calls(tspec() | [tspec(),...], max(), options()) -> num_matches().
-calls(Spec, Max, Opts) ->
-    calls(Spec, Max, Opts, fun format/1).
-
 
 %% @doc Allows to set trace patterns and pid specifications to trace
 %% function calls.
@@ -306,6 +301,11 @@ calls(Spec, Max, Opts) ->
 %%      of local calls, pass in `{scope, local}'. This is useful whenever
 %%      you want to track the changes of code in a process that isn't called
 %%      with `Module:Fun(Args)', but just `Fun(Args)'.</li>
+%%  <li>`{formatter, fun(Term) -> io_data() end}': override the default
+%%       formatting functionality provided by recon.</li>
+%%  <li>`{io_server, pid() | atom()}': by default, recon logs to the current
+%%      group leader, usually the shell. This option allows to redirect
+%%      trace output to a different IO server (such as a file handle).</li>
 %% </ul>
 %%
 %% Also note that putting extremely large `Max' values (i.e. `99999999' or
@@ -315,16 +315,17 @@ calls(Spec, Max, Opts) ->
 %% can be risky if more trace messages are generated than any process on
 %% the node could ever handle, despite the precautions taken by this library.
 %% @end
--spec calls(tspec() | [tspec(),...], max(), options(), formatterfun()) ->
-    num_matches().
+-spec calls(tspec() | [tspec(),...], max(), options()) -> num_matches().
 
-calls({Mod, Fun, Args}, Max, Opts, FormatterFun) ->
-    calls([{Mod,Fun,Args}], Max, Opts, FormatterFun);
-calls(TSpecs = [_|_], {Max, Time}, Opts, FormatterFun) ->
-    Pid = setup(rate_tracer, [Max, Time], FormatterFun, validate_io_server(Opts)),
+calls({Mod, Fun, Args}, Max, Opts) ->
+    calls([{Mod,Fun,Args}], Max, Opts);
+calls(TSpecs = [_|_], {Max, Time}, Opts) ->
+    Pid = setup(rate_tracer, [Max, Time],
+                validate_formatter(Opts), validate_io_server(Opts)),
     trace_calls(TSpecs, Pid, Opts);
-calls(TSpecs = [_|_], Max, Opts, FormatterFun) ->
-    Pid = setup(count_tracer, [Max], FormatterFun, validate_io_server(Opts)),
+calls(TSpecs = [_|_], Max, Opts) ->
+    Pid = setup(count_tracer, [Max],
+                validate_formatter(Opts), validate_io_server(Opts)),
     trace_calls(TSpecs, Pid, Opts).
 
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -465,8 +466,14 @@ validate_tspec(Mod, Fun, Args) ->
         _ when Args >= 0, Args =< 255 -> {Args, true}
     end.
 
+validate_formatter(Opts) ->
+    case proplists:get_value(formatter, Opts) of
+        F when is_function(F, 1) -> F;
+        _ -> fun format/1
+    end.
+
 validate_io_server(Opts) ->
-  proplists:get_value(io_server, Opts, group_leader()).
+    proplists:get_value(io_server, Opts, group_leader()).
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%% TRACE FORMATTING %%%
