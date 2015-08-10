@@ -154,18 +154,19 @@
 %%% so tracing is automatically turned off once you disconnect.
 %%%
 %%% If sending output to the Group Leader is not desired, you may specify
-%%% a different pid() via the option `output' in the {@link calls/3} function.
+%%% a different pid() via the option `io_server' in the {@link calls/3} function.
 %%% For instance to write the traces to a file you can do something like
 %%%
 %%% 1> {ok, Dev} = file:open("/tmp/trace",[write]).
-%%% 2> recon_trace:calls({queue, in, fun(_) -> return_trace() end}, 3, [{output, Dev}]).
+%%% 2> recon_trace:calls({queue, in, fun(_) -> return_trace() end}, 3, [{io_server, Dev}]).
 %%% 1
 %%% 3>
 %%% Recon tracer rate limit tripped.
 %%% 4> file:close(Dev).
 %%%
 %%% The only output still sent to the Group Leader is the rate limit being
-%%% tripped, and any errors.
+%%% tripped, and any errors. The rest will be sent to the other IO
+%%% server (see [http://erlang.org/doc/apps/stdlib/io_protocol.html]).
 %%% @end
 -module(recon_trace).
 
@@ -191,7 +192,7 @@
                           | {args, args | arity}             % default: args
                    %% match pattern options
                           | {scope, global | local}          % default: global
-                          | {output, pid()}                  % default: group_leader()
+                          | {io_server, pid()}               % default: group_leader()
                         ].
 
 -type mod()          :: '_' | module().
@@ -366,7 +367,7 @@ formatter(Tracer, Parent, Ref, FormatterFun, IOServer) ->
     Parent ! {Ref, linked},
     formatter(Tracer, IOServer, FormatterFun).
 
-formatter(Tracer, Leader, FormatterFun) ->
+formatter(Tracer, IOServer, FormatterFun) ->
     receive
         {'EXIT', Tracer, normal} ->
             io:format("Recon tracer rate limit tripped.~n"),
@@ -374,8 +375,8 @@ formatter(Tracer, Leader, FormatterFun) ->
         {'EXIT', Tracer, Reason} ->
             exit(Reason);
         TraceMsg ->
-            io:format(Leader, FormatterFun(TraceMsg), []),
-            formatter(Tracer, Leader, FormatterFun)
+            io:format(IOServer, FormatterFun(TraceMsg), []),
+            formatter(Tracer, IOServer, FormatterFun)
     end.
 
 
@@ -385,12 +386,12 @@ formatter(Tracer, Leader, FormatterFun) ->
 
 %% starts the tracer and formatter processes, and
 %% cleans them up before each call.
-setup(TracerFun, TracerArgs, FormatterFun, OutputTo) ->
+setup(TracerFun, TracerArgs, FormatterFun, IOServer) ->
     clear(),
     Ref = make_ref(),
     Tracer = spawn_link(?MODULE, TracerFun, TracerArgs),
     register(recon_trace_tracer, Tracer),
-    Format = spawn(?MODULE, formatter, [Tracer, self(), Ref, FormatterFun, OutputTo]),
+    Format = spawn(?MODULE, formatter, [Tracer, self(), Ref, FormatterFun, IOServer]),
     register(recon_trace_formatter, Format),
     receive
         {Ref, linked} -> Tracer

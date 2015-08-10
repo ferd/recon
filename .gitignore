@@ -14,3 +14,5 @@ erl_crash.dump
 /doc/stylesheet.css
 /site/*.html
 .rebar/
+_build/
+
