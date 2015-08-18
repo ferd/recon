@@ -55,7 +55,7 @@
 %%%         list all the Erlang ports of a given type. The latter function
 %%%         prints counts of all individual types.</dd>
 %%%     <dd>Port state information can be useful to figure out why certain
-%%%         parts of the system misbehave. Functions such as 
+%%%         parts of the system misbehave. Functions such as
 %%%         {@link port_info/1} and {@link port_info/2} are wrappers to provide
 %%%         more similar or more details than `erlang:port_info/1-2', and, for
 %%%         inet ports, statistics and options for each socket.</dd>
@@ -260,10 +260,11 @@ proc_fake([_|T1], [H|T2]) ->
       AttributeName :: atom(),
       Num :: non_neg_integer().
 proc_count(AttrName, Num) ->
-    lists:sublist(lists:usort(
-        fun({_,A,_},{_,B,_}) -> A > B end,
-        recon_lib:proc_attrs(AttrName)
-    ), Num).
+    recon_lib:translate_initial_calls(
+      lists:sublist(lists:usort(
+                      fun({_,A,_},{_,B,_}) -> A > B end,
+                      recon_lib:proc_attrs(AttrName)
+                     ), Num)).
 
 %% @doc Fetches a given attribute from all processes (except the
 %% caller) and returns the biggest entries, over a sliding time window.
@@ -297,10 +298,11 @@ proc_count(AttrName, Num) ->
 proc_window(AttrName, Num, Time) ->
     Sample = fun() -> recon_lib:proc_attrs(AttrName) end,
     {First,Last} = recon_lib:sample(Time, Sample),
-    lists:sublist(lists:usort(
-        fun({_,A,_},{_,B,_}) -> A > B end,
-        recon_lib:sliding_window(First, Last)
-    ), Num).
+    recon_lib:translate_initial_calls(
+      lists:sublist(lists:usort(
+                      fun({_,A,_},{_,B,_}) -> A > B end,
+                      recon_lib:sliding_window(First, Last)
+                     ), Num)).
 
 %% @doc Refc binaries can be leaking when barely-busy processes route them
 %% around and do little else, or when extremely busy processes reach a stable
@@ -312,7 +314,7 @@ proc_window(AttrName, Num, Time) ->
 %% of the node, garbage collects them, and compares the resulting number of
 %% references in each of them. The function then returns the `N' processes
 %% that freed the biggest amount of binaries, potentially highlighting leaks.
-%% 
+%%
 %% See <a href="http://www.erlang.org/doc/efficiency_guide/binaryhandling.html#id65722">The efficiency guide</a>
 %% for more details on refc binaries
 -spec bin_leak(pos_integer()) -> [proc_attrs()].
@@ -440,7 +442,7 @@ node_stats(N, Interval, FoldFun, Init) ->
     end,
     {{input,In},{output,Out}} = erlang:statistics(io),
     Gc = erlang:statistics(garbage_collection),
-    SchedWall = erlang:statistics(scheduler_wall_time), 
+    SchedWall = erlang:statistics(scheduler_wall_time),
     Result = recon_lib:time_fold(
             N, Interval, Stats,
             {{In,Out}, Gc, SchedWall},
@@ -592,7 +594,7 @@ inet_window(Attr, Num, Time) when is_atom(Attr) ->
 %% so far). For example, TCP ports will include information about the
 %% remote peer, transfer statistics, and socket options being used.
 %%
-%% The information-specific and the basic port info are sorted and 
+%% The information-specific and the basic port info are sorted and
 %% categorized in broader categories ({@link port_info_type()}).
 -spec port_info(port_term()) -> [{port_info_type(),
                                   [{port_info_key(), term()}]},...].
@@ -714,4 +716,3 @@ named_rpc(Nodes=[_|_], Fun, Timeout) when is_function(Fun,0) ->
     rpc:multicall(Nodes, erlang, apply, [fun() -> {node(),Fun()} end,[]], Timeout);
 named_rpc(Node, Fun, Timeout) when is_atom(Node) ->
     named_rpc([Node], Fun, Timeout).
-

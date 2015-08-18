@@ -12,7 +12,8 @@
          triple_to_pid/3, term_to_pid/1,
          term_to_port/1,
          time_map/5, time_fold/6,
-         scheduler_usage_diff/2]).
+         scheduler_usage_diff/2,
+         translate_initial_calls/1]).
 %% private exports
 -export([binary_memory/1]).
 
@@ -221,6 +222,28 @@ scheduler_usage_diff(First, Last) ->
         fun({{I, A0, T0}, {I, A1, T1}}) -> {I, (A1 - A0)/(T1 - T0)} end,
         lists:zip(lists:sort(First), lists:sort(Last))
     ).
+
+-spec translate_initial_calls([ProcAttrs]) -> [ProcAttrs] when
+      ProcAttrs :: recon:proc_attrs().
+translate_initial_calls(ProcsAttrs) ->
+    lists:map(
+      fun({Pid, Attr, Info}) ->
+              case lists:keyfind(initial_call, 1, Info) of
+                  {initial_call, {proc_lib, _, _}} ->
+                      case proc_lib:initial_call(Pid) of
+                          false ->
+                              {Pid, Attr, Info};
+                          {M, F, A} ->
+                              Arity = length(A),
+                              NewInfo = [{translated_initial_call,
+                                          {M, F, Arity}} |
+                                         Info],
+                              {Pid, Attr, NewInfo}
+                      end;
+                  _ ->
+                      {Pid, Attr, Info}
+              end
+      end, ProcsAttrs).
 
 %% @private crush binaries from process_info into their amount of place
 %% taken in memory.
