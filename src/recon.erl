@@ -647,12 +647,17 @@ port_info(PortTerm, specific) ->
             end ++
             case inet:getopts(Port, [active, broadcast, buffer, delay_send,
                                      dontroute, exit_on_close, header,
-                                     high_watermark, ipv6_v6only, keepalive,
+                                     high_watermark, keepalive,
                                      linger, low_watermark, mode, nodelay,
                                      packet, packet_size, priority,
                                      read_packets, recbuf, reuseaddr,
                                      send_timeout, sndbuf]) of
-                {ok, Opts} -> [{options, Opts}];
+                {ok, Opts} -> 
+                              case otp_release() =< 15 of
+                                 true -> [{options, Opts}];
+                                 false -> {ok, IpV6Only} = inet:getopts(Port,[ipv6_v6only]),
+                                         [{options, Opts ++ IpV6Only}]
+                              end;
                 {error, _} -> []
             end;
         {_,"efile"} ->
@@ -714,4 +719,9 @@ named_rpc(Nodes=[_|_], Fun, Timeout) when is_function(Fun,0) ->
     rpc:multicall(Nodes, erlang, apply, [fun() -> {node(),Fun()} end,[]], Timeout);
 named_rpc(Node, Fun, Timeout) when is_atom(Node) ->
     named_rpc([Node], Fun, Timeout).
+
+%% @doc Return current running verison of otp release.
+-spec otp_release() -> pos_integer().
+otp_release() ->
+    erlang:list_to_integer(erlang:system_info(otp_release)).
 
