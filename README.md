@@ -14,7 +14,7 @@ It is recommended that you use tags if you do not want bleeding edge and develop
 Current Status
 --------------
 
-[![Build Status](https://travis-ci.org/ferd/recon.png)](https://travis-ci.org/ferd/recon)
+[![Build Status](https://travis-ci.org/linearregression/recon.svg)](https://travis-ci.org/linearregression/recon)
 
 Versions supported: R15B02 and up
 
