@@ -653,7 +653,9 @@ port_info(PortTerm, specific) ->
                                      read_packets, recbuf, reuseaddr,
                                      send_timeout, sndbuf]) of
                 {ok, Opts} -> 
-                              case otp_release() =< 15 of
+                              {OtpMaj, OtpMin} =otp_release(),  
+                              % ipv6_v6only supports start R16                             
+                              case {OtpMaj, OtpMin} =< {15, 3} of
                                  true -> [{options, Opts}];
                                  false -> {ok, IpV6Only} = inet:getopts(Port,[ipv6_v6only]),
                                          [{options, Opts ++ IpV6Only}]
@@ -723,8 +725,8 @@ named_rpc(Node, Fun, Timeout) when is_atom(Node) ->
 %% @doc Return current Major Version of running OTP.
 -spec otp_release() -> pos_integer().
 otp_release() ->
-    {OtpMaj, _} = version_tuple(),
-    OtpMaj.
+    {OtpMaj, OtpMin} = version_tuple(),
+    {OtpMaj, OtpMin}.
 
 %% @doc Get otp release as Version tuple {Major, Minor}.
 version_tuple() ->
