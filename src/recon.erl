@@ -720,17 +720,23 @@ named_rpc(Nodes=[_|_], Fun, Timeout) when is_function(Fun,0) ->
 named_rpc(Node, Fun, Timeout) when is_atom(Node) ->
     named_rpc([Node], Fun, Timeout).
 
-%% @doc Return current running verison of otp release.
+%% @doc Return current Major Version of running OTP.
 -spec otp_release() -> pos_integer().
 otp_release() ->
-    Rel = erlang:system_info(otp_release),
-    io_lib:write_string_as_latin1(Rel),
-    erlang:list_to_integer(get_vsn_string(Rel)).
+    {OtpMaj, _} = version_tuple(),
+    OtpMaj.
 
-%% @doc Get the 2 digit version string system_info report format of otp release version
-%% This is just a hack to test out and need to change.
-get_vsn_string(Vsn)->
-    string:left(Vsn,2). 
+%% @doc Get otp release as Version tuple {Major, Minor}.
+version_tuple() ->
+    OtpRelease = erlang:system_info(otp_release),
+    case re:run(OtpRelease, "R?(\\d+)B?-?(\\d+)?", [{capture, all, list}]) of
+        {match, [_Full, Maj, Min]} ->
+            {list_to_integer(Maj), list_to_integer(Min)};
+        {match, [_Full, Maj]} ->
+            {list_to_integer(Maj), 0};
+        nomatch ->
+            {error, undefined}
+    end. 
 
 
 
