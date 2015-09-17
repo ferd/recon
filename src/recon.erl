@@ -723,5 +723,13 @@ named_rpc(Node, Fun, Timeout) when is_atom(Node) ->
 %% @doc Return current running verison of otp release.
 -spec otp_release() -> pos_integer().
 otp_release() ->
-    erlang:list_to_integer(erlang:system_info(otp_release)).
+    Rel = erlang:system_info(otp_release),
+    erlang:list_to_integer(get_vsn_string(Rel)).
+
+%% @doc Get the 2 digit version string system_info report format of otp release version
+%% This is just a hack to test out and need to change.
+get_vsn_string(Vsn)->
+    string:left(Vsn,2). 
+
+
 
