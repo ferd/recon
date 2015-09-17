@@ -724,6 +724,7 @@ named_rpc(Node, Fun, Timeout) when is_atom(Node) ->
 -spec otp_release() -> pos_integer().
 otp_release() ->
     Rel = erlang:system_info(otp_release),
+    io_lib:write_string_as_latin1(Rel),
     erlang:list_to_integer(get_vsn_string(Rel)).
 
 %% @doc Get the 2 digit version string system_info report format of otp release version
