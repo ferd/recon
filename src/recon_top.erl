@@ -13,7 +13,7 @@
 
 -spec top(pid()) -> stop.
 top(Pid) ->
-  Input = io:get_line("input q => quit; r => reduction; b => binary memory; m => memory; h => total heap size > "),
+  Input = io:get_line("input q => quit; r => reduction; b => binary memory; m => memory; h => heap size(total) > "),
   case  Input of
     "q\n" -> erlang:send(Pid, stop);
     "r\n" -> erlang:send(Pid, reductions), top(Pid);
@@ -197,8 +197,8 @@ draw_scheduler_usage(MemSum) ->
   [begin
      Percent1 = proplists:get_value(Seq, SchedulerUsage),
      Percent2 = proplists:get_value(Seq + HalfSchedulerNum, SchedulerUsage),
-     CPU1 = float_to_list(trunc(Percent1*100*1000)/1000, [{decimals, 2}]) ++ "%",
-     CPU2 = float_to_list(trunc(Percent2*100*1000)/1000, [{decimals, 2}]) ++ "%",
+     CPU1 = to_list(Percent1) ++ "%",
+     CPU2 = to_list(Percent2) ++ "%",
      CPUSeq1 = lists:flatten(io_lib:format("~2..0w", [Seq])),
      CPUSeq2 = lists:flatten(io_lib:format("~2..0w", [Seq + HalfSchedulerNum])),
      Process1 = lists:duplicate(trunc(Percent1 * 52), "|"),
@@ -226,7 +226,10 @@ display_name_or_pid(IsName, _Pid)when is_atom(IsName) -> atom_to_list(IsName);
 display_name_or_pid(_IsName, Pid) -> erlang:pid_to_list(Pid).
 
 to_megabyte_list(M) ->
-  float_to_list(trunc(M/(1024*1024)*1000)/1000, [{decimals, 4}]) ++ "M".
+  Val = trunc(M/(1024*1024)*1000),
+  Integer = Val div 1000,
+  Decmial = Val - Integer * 1000,
+  lists:flatten(io_lib:format("~w.~4..0wM",[Integer, Decmial])).
 
 to_list(Atom) when is_atom(Atom) -> atom_to_list(Atom);
 to_list(Integer) when is_integer(Integer) -> integer_to_list(Integer);
@@ -235,6 +238,11 @@ to_list({Module, Fun, Arg}) ->
   atom_to_list(Module) ++ ":" ++
     atom_to_list(Fun) ++ "/" ++
     integer_to_list(Arg);
+to_list(Float) when is_float(Float)->
+  Val = trunc(Float*10000),
+  Integer = Val div 100,
+  Decmial = Val - Integer * 100,
+  lists:flatten(io_lib:format("~w.~2..0w",[Integer, Decmial]));
 to_list(Val) -> Val.
 
 uptime(UpTime) ->
