@@ -91,6 +91,7 @@
          port_info/1, port_info/2]).
 -export([rpc/1, rpc/2, rpc/3,
          named_rpc/1, named_rpc/2, named_rpc/3]).
+-export([top/0, top/1]).
 
 %%%%%%%%%%%%%
 %%% TYPES %%%
@@ -714,4 +715,11 @@ named_rpc(Nodes=[_|_], Fun, Timeout) when is_function(Fun,0) ->
     rpc:multicall(Nodes, erlang, apply, [fun() -> {node(),Fun()} end,[]], Timeout);
 named_rpc(Node, Fun, Timeout) when is_atom(Node) ->
     named_rpc([Node], Fun, Timeout).
+
+-spec top() -> stop.
+top() -> top(2000).
+-spec top(pos_integer()) -> stop.
+top(ReflushTime) ->
+  Pid = spawn_link(fun() -> recon_top:loop(ReflushTime) end),
+  recon_top:top(Pid).
 
