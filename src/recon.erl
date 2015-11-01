@@ -716,10 +716,12 @@ named_rpc(Nodes=[_|_], Fun, Timeout) when is_function(Fun,0) ->
 named_rpc(Node, Fun, Timeout) when is_atom(Node) ->
     named_rpc([Node], Fun, Timeout).
 
+%% @doc a top tool in erlang shell the reflushtime is Milliseconds
+-define(TOP_MIN_REFLUSH_INTERAL, 2000).
 -spec top() -> stop.
-top() -> top(2000).
+top() -> top(?TOP_MIN_REFLUSH_INTERAL).
 -spec top(pos_integer()) -> stop.
-top(ReflushTime) ->
-  Pid = spawn_link(fun() -> recon_top:loop(ReflushTime) end),
+top(ReflushMillSecond)when ReflushMillSecond >= ?TOP_MIN_REFLUSH_INTERAL ->
+  Pid = spawn_link(fun() -> recon_top:loop(ReflushMillSecond) end),
   recon_top:top(Pid).
 
