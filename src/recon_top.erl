@@ -7,8 +7,8 @@
 -define(DEFAULT_RANK_NUM, 20). %%fill full in 13.3 inch screen(24 core)
 -define(CPU_ALARM_THRESHOLD, 0.8).
 
--define(STABLE_SYSTEM_ITEM, [system_version, process_limit, process_count,
-  port_limit, port_count, ets_limit, logical_processors]).
+-define(STABLE_SYSTEM_ITEM, [system_version, process_limit, smp_support,
+  port_limit, ets_limit, logical_processors, multi_scheduling]).
 -define(CHANGE_SYSTEM_ITEM, [used, allocated, unused]).
 
 -spec top(pid()) -> stop.
@@ -69,22 +69,21 @@ loop(Interal, Type, UpTime, StableInfo, LastTimeRef, Status) ->
 
 %Erlang/OTP 18 [erts-7.1] [source] [64-bit] [smp:4:4] [async-threads:10] [hipe] [kernel-poll:false] [dtrace] Uptime:0 Days 12:0:35
 %System Limit    | Limit           | System Count       | Count                | Memory Info          | Megabyte|                |
-%Process Limit   | 262144          | Process Count      | 26                   | Use Mem              | 13.0731M                 |
-%Port Limit      | 4               | Port Count         | 65536                | Allocted Mem         | 21.0444M                 |
+%Process Limit   | 262144          | Smp Support        | true                 | Use Mem              | 13.0731M                 |
+%Port Limit      | 4               | Multi Scheduling   | enabled              | Allocted Mem         | 21.0444M                 |
 %Ets Limit       | 2053            | Logical Processors | 4                    | Unuse Mem            | 7.0631M                  |
 draw_system_status(UpTime, StableInfo) ->
-  [Version, ProcLimit, ProcCount, PortCount,
-    PortLimit, EtsLimit, LogicalProc] = StableInfo,
+  [Version, ProcLimit, SmpSupport, PortLimit, EtsLimit, LogicalProc, MultiScheduling] = StableInfo,
   [UseMem, AlloctedMem, UnunsedMem] = get_change_system_info(),
   FirstLine = (Version --"\n") ++ "\e[32;1m Uptime:" ++ uptime(UpTime) ++ "\e[0m",
-  draw_system_info(FirstLine, ProcLimit, ProcCount, PortCount,
-    PortLimit, EtsLimit, LogicalProc, UseMem, AlloctedMem, UnunsedMem).
+  draw_system_info(FirstLine, ProcLimit, SmpSupport, PortLimit,
+    EtsLimit, LogicalProc, MultiScheduling, UseMem, AlloctedMem, UnunsedMem).
 
 %Memory          | Megabyte        | Process State      | Count                | Memory               | Megabyte                 |
 %Total           | 13.0497M        | Reductions         | 55352                | IO Output            | 0.0000M                  |
 %Process         | 3.0852M         | Process Count      | 26                   | IO Input             | 0.0000M                  |
-%Atom            | 0.0180M         | Run Queue          | 0                    | Gc Count             | 0.0000M                  |
-%Ets             | 0.0277M         | Error Log Queue    | 0                    | Gc Words Reclaimed   | 0.0000M                  |
+%Atom            | 0.0180M         | Port Count         | 0                    | Run Queue            | 1                        |
+%Ets             | 0.0277M         | Gc Count           | 0                    | Gc Words Reclaimed   | 1                        |
 %Binary          | 0.0164M                                                                                                       |
 %|01[|||||||||||||||||||                                 36.68%]  |03[|||||||||||||||||||||||||                           49.17%]|
 %|02[|||||||||||||||||||                                 37.51%]  |04[|||||||||||||||||||||||||||||||||||||||||||         83.68%]|
@@ -165,19 +164,20 @@ draw_process_rank(total_heap_size, Num) ->
        [NameOrPid, to_list(HeapSize), InitialCall, to_list(Reductions), to_list(MsgQueueLen), CurFun])
    end|| Pos <- lists:seq(1, Num)].
 
-draw_system_info(FirstLine, ProcLimit, ProcCount, PortCount,
-    PortLimit, EtsLimit, LogicalProc, UseMem, AlloctedMem, UnunsedMem) ->
+draw_system_info(FirstLine, ProcLimit, SmpSupport, PortLimit,
+    EtsLimit, LogicalProc, MultiScheduling, UseMem, AlloctedMem, UnunsedMem) ->
   io:format("~s~n", [FirstLine]),
   io:format("\e[46m~-15.15s | ~-15.15s | ~-18.18s | ~-20.20s | ~-20.20s | ~-25.25s\e[49m|~n",
-    ["System Limit", "Limit", "System Count", "Count", "Memory Info", "Megabyte|"]),
+    ["System Limit", "Limit", "System Switch", "State", "Memory Info", "Megabyte|"]),
   io:format("~-15.15s | ~-15.15s | ~-18.18s | ~-20.20s | ~-20.20s | ~-25.25s|~n",
-    ["Process Limit", ProcLimit, "Process Count", ProcCount, "Use Mem", UseMem]),
+    ["Process Limit", ProcLimit, "Smp Support", SmpSupport, "Use Mem", UseMem]),
   io:format("~-15.15s | ~-15.15s | ~-18.18s | ~-20.20s | ~-20.20s | ~-25.25s|~n",
-    ["Port Limit", PortLimit, "Port Count", PortCount, "Allocted Mem", AlloctedMem]),
+    ["Port Limit", PortLimit, "Multi Scheduling", MultiScheduling, "Allocted Mem", AlloctedMem]),
   io:format("~-15.15s | ~-15.15s | ~-18.18s | ~-20.20s | ~-20.20s | ~-25.25s|~n",
     ["Ets Limit", EtsLimit, "Logical Processors", LogicalProc, "Unuse Mem", UnunsedMem]).
 
 draw_memory_process_info(ProcessSum, MemSum) ->
+  PortCount = integer_to_list(erlang:system_info(port_count)),
   TotalMem = to_megabyte_list(proplists:get_value(memory_total, ProcessSum)),
   ProcMem = to_megabyte_list(proplists:get_value(memory_procs, ProcessSum)),
   AtomMem = to_megabyte_list(proplists:get_value(memory_atoms, ProcessSum)),
@@ -185,11 +185,10 @@ draw_memory_process_info(ProcessSum, MemSum) ->
   EtsMem = to_megabyte_list(proplists:get_value(memory_ets, ProcessSum)),
   ProcessCount = integer_to_list(proplists:get_value(process_count, ProcessSum)),
   Runqueue = integer_to_list(proplists:get_value(run_queue, ProcessSum)),
-  ErrorLogCount = integer_to_list(proplists:get_value(error_logger_queue_len, ProcessSum)),
   BytesIn = to_megabyte_list(proplists:get_value(bytes_in, MemSum)),
   BytesOut = to_megabyte_list(proplists:get_value(bytes_out, MemSum)),
-  GcCount = to_megabyte_list(proplists:get_value(gc_count, MemSum)),
-  GcWordsReclaimed = to_megabyte_list(proplists:get_value(gc_words_reclaimed, MemSum)),
+  GcCount = to_list(proplists:get_value(gc_count, MemSum)),
+  GcWordsReclaimed = to_list(proplists:get_value(gc_words_reclaimed, MemSum)),
   Reductions = integer_to_list(proplists:get_value(reductions, MemSum)),
   io:format("\e[46m~-15.15s | ~-15.15s | ~-18.18s | ~-20.20s | ~-20.20s | ~-25.25s\e[49m|~n",
     ["Memory", "Megabyte", "Process State", "Count", "Memory", "Megabyte"]),
@@ -198,9 +197,9 @@ draw_memory_process_info(ProcessSum, MemSum) ->
   io:format("~-15.15s | ~-15.15s | ~-18.18s | ~-20.20s | ~-20.20s | ~-25.25s|~n",
     ["Process", ProcMem, "Process Count", ProcessCount, "IO Input", BytesIn]),
   io:format("~-15.15s | ~-15.15s | ~-18.18s | ~-20.20s | ~-20.20s | ~-25.25s|~n",
-    ["Atom", AtomMem, "Run Queue", Runqueue, "Gc Count", GcCount]),
+    ["Atom", AtomMem, "Port Count", PortCount, "Run Queue", Runqueue]),
   io:format("~-15.15s | ~-15.15s | ~-18.18s | ~-20.20s | ~-20.20s | ~-25.25s|~n",
-    ["Ets", EtsMem, "Error Log Queue", ErrorLogCount, "Gc Words Reclaimed", GcWordsReclaimed]),
+    ["Ets", EtsMem, "Gc Count", GcCount, "Gc Words Reclaimed", GcWordsReclaimed]),
   io:format("~-15.15s | ~-110.110s|~n", ["Binary", BinMem]).
 
 draw_scheduler_usage(MemSum) ->
@@ -282,4 +281,4 @@ to_list(Val) -> Val.
 
 uptime(UpTime) ->
   {D, {H, M, S}} = calendar:seconds_to_daystime(UpTime div 1000),
-  lists:flatten(io_lib:format("~p Days ~p:~p:~p", [D, H, M, S])).
+  lists:flatten(io_lib:format("~pDays ~p:~p:~p", [D, H, M, S])).
