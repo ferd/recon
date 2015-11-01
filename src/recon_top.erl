@@ -20,7 +20,7 @@ top(Pid) ->
     "b\n" -> erlang:send(Pid, binary_memory), top(Pid);
     "h\n" -> erlang:send(Pid, total_heap_size), top(Pid);
     "m\n" -> erlang:send(Pid, memory), top(Pid);
-    "p\n" -> erlang:send(Pid, pause_or_unpause), top(Pid);
+    "p\n" -> erlang:send(Pid, pause_or_resume), top(Pid);
     _ -> top(Pid)
   end.
 
@@ -41,7 +41,7 @@ loop(Interal, Type, _UpTime, StableInfo, LastTimeRef, false) ->
   erlang:cancel_timer(LastTimeRef),
   receive
     stop -> stop;
-    pause_or_unpause ->
+    pause_or_resume ->
       clear_screen(),
       {NewUpTime, _} = erlang:statistics(wall_clock),
       loop(Interal, Type, NewUpTime, StableInfo, LastTimeRef, true);
@@ -52,7 +52,7 @@ loop(Interal, Type, _UpTime, StableInfo, LastTimeRef, false) ->
 loop(Interal, Type, UpTime, StableInfo, LastTimeRef, Status) ->
   move_cursor_to_top(),
   draw_system_status(UpTime, StableInfo),
-  draw_node_stauts_status(),
+  draw_node_status(),
   draw_process_rank(Type, ?DEFAULT_RANK_NUM),
   io:format("\e[31;1mINPUT:\e[0m\e[44m  ~s |  ~s |   ~s       |~s|   ~s    |      ~s         \e[49m|~n",
     ["r(reduction)", "q(quit)", "b(binary memory)", "h(total heap  size)", "m(memory)", "p(pause/unpause)"]),
@@ -60,7 +60,7 @@ loop(Interal, Type, UpTime, StableInfo, LastTimeRef, Status) ->
   TimeRef = erlang:send_after(Interal, self(), Type),
   receive
     stop -> stop;
-    pause_or_unpause -> loop(Interal, Type, UpTime, StableInfo, TimeRef, not Status);
+    pause_or_resume -> loop(Interal, Type, UpTime, StableInfo, TimeRef, not Status);
     Type -> loop(Interal, Type, UpTime + Interal, StableInfo, TimeRef, Status);
     NewType ->
       {NewUpTime, _} = erlang:statistics(wall_clock),
@@ -88,7 +88,7 @@ draw_system_status(UpTime, StableInfo) ->
 %Binary          | 0.0164M                                                                                                       |
 %|01[|||||||||||||||||||                                 36.68%]  |03[|||||||||||||||||||||||||                           49.17%]|
 %|02[|||||||||||||||||||                                 37.51%]  |04[|||||||||||||||||||||||||||||||||||||||||||         83.68%]|
-draw_node_stauts_status() ->
+draw_node_status() ->
   [{ProcessSum, MemSum}] = recon:node_stats_list(1, 0),
   draw_memory_process_info(ProcessSum, MemSum),
   draw_scheduler_usage(MemSum),
@@ -122,9 +122,9 @@ draw_process_rank(memory, Num) ->
     ["Pid", "Memory", "Initial Call", "Reductions", "Msg Queue", "Current Function"]),
   [begin
      {Pid, MemVal, Call = [IsName|_]} = lists:nth(Pos, MemoryList),
-     [{_, Reductions}, {_, MsgQueueLen}] = recon:info(Pid, [reductions, message_queue_len]),
+     [{_, Reductions}, {_, MsgQueueLen}] = get_reductions_and_msg_queue_len(Pid),
      {CurFun, InitialCall} = get_current_initial_call(Call),
-     NameOrPid = display_name_or_pid(IsName, Pid),
+     NameOrPid = get_display_name_or_pid(IsName, Pid),
      io:format("| ~-19.19s|~10.10s| ~-25.25s|~10.10s| ~-7.7s|~-48.48s|~n",
        [NameOrPid, to_list(MemVal), InitialCall, to_list(Reductions), to_list(MsgQueueLen), CurFun])
    end|| Pos <- lists:seq(1, Num)];
@@ -134,9 +134,9 @@ draw_process_rank(binary_memory, Num) ->
     ["Pid", "Bin Memory", "Initial Call", "Reductions", "Msg Queue", "Current Function"]),
   [begin
      {Pid, MemVal, Call = [IsName|_]} = lists:nth(Pos, MemoryList),
-     [{_, Reductions}, {_, MsgQueueLen}] = recon:info(Pid, [reductions, message_queue_len]),
+     [{_, Reductions}, {_, MsgQueueLen}] = get_reductions_and_msg_queue_len(Pid),
      {CurFun, InitialCall} = get_current_initial_call(Call),
-     NameOrPid = display_name_or_pid(IsName, Pid),
+     NameOrPid = get_display_name_or_pid(IsName, Pid),
      io:format("| ~-19.19s|~10.10s| ~-25.25s|~10.10s| ~-7.7s|~-48.48s|~n",
        [NameOrPid, to_list(MemVal), InitialCall, to_list(Reductions), to_list(MsgQueueLen), CurFun])
    end|| Pos <- lists:seq(1, Num)];
@@ -146,9 +146,9 @@ draw_process_rank(reductions, Num) ->
     ["Pid", "Reductions", "Initial Call", "Memory", "Msg Queue", "Current Function"]),
   [begin
      {Pid, Reductions, Call = [IsName|_]} = lists:nth(Pos, ReductionList),
-     [{_, Memory}, {_, MsgQueueLen}] = recon:info(Pid, [memory, message_queue_len]),
+     [{_, Memory}, {_, MsgQueueLen}] = get_reductions_and_msg_queue_len(Pid),
      {CurFun, InitialCall} = get_current_initial_call(Call),
-     NameOrPid = display_name_or_pid(IsName, Pid),
+     NameOrPid = get_display_name_or_pid(IsName, Pid),
      io:format("| ~-19.19s|~10.10s| ~-25.25s|~10.10s| ~-7.7s|~-48.48s|~n",
        [NameOrPid, to_list(Reductions), InitialCall, to_list(Memory), to_list(MsgQueueLen), CurFun])
    end|| Pos <- lists:seq(1, Num)];
@@ -158,9 +158,9 @@ draw_process_rank(total_heap_size, Num) ->
     ["Pid", "Total Heap Size", "Initial Call", "Reductions", "Msg Queue", "Current Function"]),
   [begin
      {Pid, HeapSize, Call = [IsName|_]} = lists:nth(Pos, HeapList),
-     [{_, Reductions}, {_, MsgQueueLen}] = recon:info(Pid, [reductions, message_queue_len]),
+     [{_, Reductions}, {_, MsgQueueLen}] = get_reductions_and_msg_queue_len(Pid),
      {CurFun, InitialCall} = get_current_initial_call(Call),
-     NameOrPid = display_name_or_pid(IsName, Pid),
+     NameOrPid = get_display_name_or_pid(IsName, Pid),
      io:format("| ~-19.19s|~10.10s| ~-25.25s|~10.10s| ~-7.7s|~-48.48s|~n",
        [NameOrPid, to_list(HeapSize), InitialCall, to_list(Reductions), to_list(MsgQueueLen), CurFun])
    end|| Pos <- lists:seq(1, Num)].
@@ -221,6 +221,12 @@ draw_scheduler_usage(MemSum) ->
        [CPUSeq1, Process1, CPU1, CPUSeq2, Process2, CPU2])
    end|| Seq <- lists:seq(1, HalfSchedulerNum)].
 
+get_reductions_and_msg_queue_len(Pid) ->
+  case recon:info(Pid, [reductions, message_queue_len]) of
+    undefined -> [{reductions, "die"}, {message_queue_len, "die"}];
+    Ok -> Ok
+  end.
+
 get_current_initial_call(Call) ->
   {_, CurFun} = lists:keyfind(current_function, 1, Call),
   {_, InitialCall} = lists:keyfind(initial_call, 1, Call),
@@ -242,8 +248,8 @@ format_alarm_color(_Percent1, Percent2)when Percent2 >= ?CPU_ALARM_THRESHOLD ->
 format_alarm_color(_Percent1, _Percent2) ->
   "\e[32m|~-2.2s[~-52.52s\e[0m\e[42m~s\e[49m] \e[32m |~-2.2s[~-52.52s\e[0m\e[42m~s\e[49m]|~n".
 
-display_name_or_pid(IsName, _Pid)when is_atom(IsName) -> atom_to_list(IsName);
-display_name_or_pid(_IsName, Pid) -> erlang:pid_to_list(Pid).
+get_display_name_or_pid(IsName, _Pid)when is_atom(IsName) -> atom_to_list(IsName);
+get_display_name_or_pid(_IsName, Pid) -> erlang:pid_to_list(Pid).
 
 to_megabyte_list(M) ->
   Val = trunc(M/(1024*1024)*1000),
