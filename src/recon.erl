@@ -91,6 +91,7 @@
          port_info/1, port_info/2]).
 -export([rpc/1, rpc/2, rpc/3,
          named_rpc/1, named_rpc/2, named_rpc/3]).
+-export([top/0, top/1]).
 
 %%%%%%%%%%%%%
 %%% TYPES %%%
@@ -714,4 +715,13 @@ named_rpc(Nodes=[_|_], Fun, Timeout) when is_function(Fun,0) ->
     rpc:multicall(Nodes, erlang, apply, [fun() -> {node(),Fun()} end,[]], Timeout);
 named_rpc(Node, Fun, Timeout) when is_atom(Node) ->
     named_rpc([Node], Fun, Timeout).
+
+%% @doc a top tool in erlang shell the reflushtime is Milliseconds
+-define(TOP_MIN_REFLUSH_INTERAL, 2000).
+-spec top() -> stop.
+top() -> top(?TOP_MIN_REFLUSH_INTERAL).
+-spec top(pos_integer()) -> stop.
+top(ReflushMillSecond)when ReflushMillSecond >= ?TOP_MIN_REFLUSH_INTERAL ->
+  Pid = spawn_link(fun() -> recon_top:loop(ReflushMillSecond) end),
+  recon_top:top(Pid).
 
