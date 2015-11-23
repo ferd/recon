@@ -540,14 +540,17 @@ format(TraceMsg) ->
         %% {trace, Pid, gc_start, Info}
         {gc_start, [Info]} ->
             HeapSize = proplists:get_value(heap_size, Info),
-            {"gc beginning -- heap ~p bytes", [HeapSize]};
+            OldHeapSize = proplists:get_value(old_heap_size, Info),
+            MbufSize = proplists:get_value(mbuf_size, Info),
+            {"gc beginning -- heap ~p bytes",
+             [HeapSize + OldHeapSize + MbufSize]};
         %% {trace, Pid, gc_end, Info}
         {gc_end, [Info]} ->
-            [Info] = TraceInfo,
             HeapSize = proplists:get_value(heap_size, Info),
             OldHeapSize = proplists:get_value(old_heap_size, Info),
-            {"gc finished -- heap ~p bytes (recovered ~p bytes)",
-             [HeapSize, OldHeapSize-HeapSize]};
+            MbufSize = proplists:get_value(mbuf_size, Info),
+            {"gc finished -- heap ~p bytes",
+             [HeapSize + OldHeapSize + MbufSize]};
         _ ->
             {"unknown trace type ~p -- ~p", [Type, TraceInfo]}
     end,
