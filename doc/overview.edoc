@@ -69,7 +69,7 @@ in the repository's `script/' directory:
 
     <dt>`queue_fun.awk'</dt>
     <dd>
-        Awk script to tun on an Erlang Crash dump as
+        Awk script to run on an Erlang Crash dump as
         `awk -v threshold=<queue size> -f queue_fun.awk <crashdump>' and will
         show what function processes with queue sizes larger or equal to
         `<queue size>' were operating at the time of the crash dump. May help
