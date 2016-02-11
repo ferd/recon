@@ -218,7 +218,8 @@ time_fold(N, Interval, Fun, State, FoldFun, Init) ->
     TotalTime :: non_neg_integer().
 scheduler_usage_diff(First, Last) ->
     lists:map(
-        fun({{I, A0, T0}, {I, A1, T1}}) -> {I, (A1 - A0)/(T1 - T0)} end,
+        fun ({{I, A, T}, {I, A, T}})->{I,0} ;
+        ({{I, A0, T0}, {I, A1, T1}}) -> {I, (A1 - A0)/(T1 - T0)} end,
         lists:zip(lists:sort(First), lists:sort(Last))
     ).
 
