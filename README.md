@@ -27,7 +27,7 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
-- 2.3.0 (current master)
+- 2.3.0
   - Doc made clearer around semantics of `recon:proc_count` and
     `recon:proc_window`.
   - Fix doc typos
