@@ -157,12 +157,14 @@
 %%% a different pid() via the option `io_server' in the {@link calls/3} function.
 %%% For instance to write the traces to a file you can do something like
 %%%
+%%% ```
 %%% 1> {ok, Dev} = file:open("/tmp/trace",[write]).
 %%% 2> recon_trace:calls({queue, in, fun(_) -> return_trace() end}, 3, [{io_server, Dev}]).
 %%% 1
 %%% 3>
 %%% Recon tracer rate limit tripped.
 %%% 4> file:close(Dev).
+%%% '''
 %%%
 %%% The only output still sent to the Group Leader is the rate limit being
 %%% tripped, and any errors. The rest will be sent to the other IO
