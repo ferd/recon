@@ -1,3 +1,5 @@
+#!/usr/bin/env escript
+%% -*- erlang -*-
 %%% Run with 'escript app_deps.erl'
 %%% Change the path in filelib:wildcard/1 as required to capture
 %%% all your dependencies.
@@ -15,7 +17,9 @@ main(_) ->
                ++
                filelib:wildcard("apps/*/ebin/*.app")
                ++
-               filelib:wildcard("ebin/*.app"),
+               filelib:wildcard("ebin/*.app")
+               ++
+               filelib:wildcard("_build/default/lib/*/ebin/*.app"),
     to_graphviz(read_deps(AppFiles)).
 
 read_deps(AppFiles) ->

@@ -27,6 +27,9 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.3.1 (Current master)
+  - Updated `app_deps` script to run with rebar3 dependencies
+  - Minor docs update
 - 2.3.0
   - Doc made clearer around semantics of `recon:proc_count` and
     `recon:proc_window`.
