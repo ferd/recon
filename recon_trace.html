@@ -170,12 +170,12 @@ so tracing is automatically turned off once you disconnect.</p>
    a different pid() via the option <code>io_server</code> in the <a href="#calls-3"><code>calls/3</code></a> function.   
 For instance to write the traces to a file you can do something like</p>
   
-   <p>1&gt; {ok, Dev} = file:open("/tmp/trace",[write]).   
-2&gt; recon_trace:calls({queue, in, fun(_) -&gt; return_trace() end}, 3, [{io_server, Dev}]).   
-1   
-3&gt;   
-Recon tracer rate limit tripped.   
-4&gt; file:close(Dev).</p>
+   <pre>   1&gt; {ok, Dev} = file:open("/tmp/trace",[write]).
+   2&gt; recon_trace:calls({queue, in, fun(_) -&gt; return_trace() end}, 3, [{io_server, Dev}]).
+   1
+   3&gt;
+   Recon tracer rate limit tripped.
+   4&gt; file:close(Dev).</pre>
   
    The only output still sent to the Group Leader is the rate limit being
    tripped, and any errors. The rest will be sent to the other IO
