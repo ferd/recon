@@ -162,9 +162,24 @@ tracer process. The formatter also traps exits to be able to handle
 all received trace messages until the tracer termination, but will then   
 shut down as soon as possible.</p>
   
-   In case the operator is tracing from a remote shell which gets
-   disconnected, the links between the shell and the tracer should make it
-   so tracing is automatically turned off once you disconnect.
+   <p>In case the operator is tracing from a remote shell which gets   
+disconnected, the links between the shell and the tracer should make it   
+so tracing is automatically turned off once you disconnect.</p>
+  
+   <p>If sending output to the Group Leader is not desired, you may specify
+   a different pid() via the option <code>io_server</code> in the <a href="#calls-3"><code>calls/3</code></a> function.   
+For instance to write the traces to a file you can do something like</p>
+  
+   <p>1&gt; {ok, Dev} = file:open("/tmp/trace",[write]).   
+2&gt; recon_trace:calls({queue, in, fun(_) -&gt; return_trace() end}, 3, [{io_server, Dev}]).   
+1   
+3&gt;   
+Recon tracer rate limit tripped.   
+4&gt; file:close(Dev).</p>
+  
+   The only output still sent to the Group Leader is the rate limit being
+   tripped, and any errors. The rest will be sent to the other IO
+   server (see <a href="http://erlang.org/doc/apps/stdlib/io_protocol.html" target="_top"><code>http://erlang.org/doc/apps/stdlib/io_protocol.html</code></a>).
 <h3><a name="types">Data Types</a></h3>
 
 <h4 class="typedecl"><a name="type-args">args()</a></h4>
@@ -173,6 +188,10 @@ shut down as soon as possible.</p>
 
 <h4 class="typedecl"><a name="type-fn">fn()</a></h4>
 <p><code>fn() = '_' | atom()</code></p>
+
+
+<h4 class="typedecl"><a name="type-formatterfun">formatterfun()</a></h4>
+<p><code>formatterfun() = fun((term()) -&gt; iodata())</code></p>
 
 
 <h4 class="typedecl"><a name="type-matchspec">matchspec()</a></h4>
@@ -204,7 +223,7 @@ shut down as soon as possible.</p>
 
 
 <h4 class="typedecl"><a name="type-options">options()</a></h4>
-<p><code>options() = [{pid, <a href="#type-pidspec">pidspec()</a> | [<a href="#type-pidspec">pidspec()</a>, ...]} | {timestamp, formatter | trace} | {args, args | arity} | {scope, global | local}]</code></p>
+<p><code>options() = [{pid, <a href="#type-pidspec">pidspec()</a> | [<a href="#type-pidspec">pidspec()</a>, ...]} | {timestamp, formatter | trace} | {args, args | arity} | {io_server, pid()} | {formatter, <a href="#type-formatterfun">formatterfun()</a>} | {scope, global | local}]</code></p>
 
 
 <h4 class="typedecl"><a name="type-pidspec">pidspec()</a></h4>
@@ -225,6 +244,7 @@ shut down as soon as possible.</p>
 <tr><td valign="top"><a href="#calls-3">calls/3</a></td><td>Allows to set trace patterns and pid specifications to trace  
 function calls.</td></tr>
 <tr><td valign="top"><a href="#clear-0">clear/0</a></td><td>Stops all tracing at once.</td></tr>
+<tr><td valign="top"><a href="#format-1">format/1</a></td><td></td></tr>
 </table>
 
 <h3><a name="functions">Function Details</a></h3>
@@ -312,6 +332,11 @@ options:</p>
        of local calls, pass in <code>{scope, local}</code>. This is useful whenever
        you want to track the changes of code in a process that isn't called
        with <code>Module:Fun(Args)</code>, but just <code>Fun(Args)</code>.</li>
+   <li><code>{formatter, fun(Term) -&gt; io_data() end}</code>: override the default
+        formatting functionality provided by recon.</li>
+   <li><code>{io_server, pid() | atom()}</code>: by default, recon logs to the current
+       group leader, usually the shell. This option allows to redirect
+       trace output to a different IO server (such as a file handle).</li>
   </ul>
  
   Also note that putting extremely large <code>Max</code> values (i.e. <code>99999999</code> or
@@ -325,6 +350,11 @@ options:</p>
 <div class="spec">
 <p><code>clear() -&gt; ok</code><br></p>
 </div><p>Stops all tracing at once.</p>
+
+<h4 class="function"><a name="format-1">format/1</a></h4>
+<div class="spec">
+<p><code>format(TraceMsg) -&gt; any()</code></p>
+</div>
 
     </article>
   </body>

@@ -218,10 +218,10 @@ called in production systems.</td></tr>
   <code>"#Port&lt;0.2013&gt;"</code>).</td></tr>
 <tr><td valign="top"><a href="#port_types-0">port_types/0</a></td><td>Shows a list of all different ports on the node with their respective
   types.</td></tr>
-<tr><td valign="top"><a href="#proc_count-2">proc_count/2</a></td><td>Fetches a given attribute from all processes and returns
-  the biggest <code>Num</code> consumers.</td></tr>
-<tr><td valign="top"><a href="#proc_window-3">proc_window/3</a></td><td>Fetches a given attribute from all processes and returns  
-the biggest entries, over a sliding time window.</td></tr>
+<tr><td valign="top"><a href="#proc_count-2">proc_count/2</a></td><td>Fetches a given attribute from all processes (except the
+  caller) and returns the biggest <code>Num</code> consumers.</td></tr>
+<tr><td valign="top"><a href="#proc_window-3">proc_window/3</a></td><td>Fetches a given attribute from all processes (except the  
+caller) and returns the biggest entries, over a sliding time window.</td></tr>
 <tr><td valign="top"><a href="#remote_load-1">remote_load/1</a></td><td>Equivalent to <a href="#remote_load-2"><code>remote_load(nodes(), Mod)</code></a>.
 </td></tr>
 <tr><td valign="top"><a href="#remote_load-2">remote_load/2</a></td><td>Loads one or more modules remotely, in a diskless manner.</td></tr>
@@ -445,15 +445,15 @@ remote peer, transfer statistics, and socket options being used.</p>
 <div class="spec">
 <p><code>proc_count(AttributeName, Num) -&gt; [<a href="#type-proc_attrs">proc_attrs()</a>]</code>
 <ul class="definitions"><li><code>AttributeName = atom()</code></li><li><code>Num = non_neg_integer()</code></li></ul></p>
-</div><p>Fetches a given attribute from all processes and returns
-  the biggest <code>Num</code> consumers.</p>
+</div><p>Fetches a given attribute from all processes (except the
+  caller) and returns the biggest <code>Num</code> consumers.</p>
 
 <h4 class="function"><a name="proc_window-3">proc_window/3</a></h4>
 <div class="spec">
 <p><code>proc_window(AttributeName, Num, Milliseconds) -&gt; [<a href="#type-proc_attrs">proc_attrs()</a>]</code>
 <ul class="definitions"><li><code>AttributeName = atom()</code></li><li><code>Num = non_neg_integer()</code></li><li><code>Milliseconds = pos_integer()</code></li></ul></p>
-</div><p><p>Fetches a given attribute from all processes and returns  
-the biggest entries, over a sliding time window.</p>
+</div><p><p>Fetches a given attribute from all processes (except the  
+caller) and returns the biggest entries, over a sliding time window.</p>
  
   <p>This function is particularly useful when processes on the node  
 are mostly short-lived, usually too short to inspect through other  
