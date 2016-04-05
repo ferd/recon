@@ -647,12 +647,19 @@ port_info(PortTerm, specific) ->
             end ++
             case inet:getopts(Port, [active, broadcast, buffer, delay_send,
                                      dontroute, exit_on_close, header,
-                                     high_watermark, ipv6_v6only, keepalive,
+                                     high_watermark, keepalive,
                                      linger, low_watermark, mode, nodelay,
                                      packet, packet_size, priority,
                                      read_packets, recbuf, reuseaddr,
                                      send_timeout, sndbuf]) of
-                {ok, Opts} -> [{options, Opts}];
+                {ok, Opts} -> 
+                              {OtpMaj, OtpMin} =otp_release(),  
+                              % ipv6_v6only supports start R16                             
+                              case {OtpMaj, OtpMin} =< {15, 3} of
+                                 true -> [{options, Opts}];
+                                 false -> {ok, IpV6Only} = inet:getopts(Port,[ipv6_v6only]),
+                                         [{options, Opts ++ IpV6Only}]
+                              end;
                 {error, _} -> []
             end;
         {_,"efile"} ->
@@ -714,4 +721,24 @@ named_rpc(Nodes=[_|_], Fun, Timeout) when is_function(Fun,0) ->
     rpc:multicall(Nodes, erlang, apply, [fun() -> {node(),Fun()} end,[]], Timeout);
 named_rpc(Node, Fun, Timeout) when is_atom(Node) ->
     named_rpc([Node], Fun, Timeout).
+
+%% @doc Return current Major Version of running OTP.
+-spec otp_release() -> pos_integer().
+otp_release() ->
+    {OtpMaj, OtpMin} = version_tuple(),
+    {OtpMaj, OtpMin}.
+
+%% @doc Get otp release as Version tuple {Major, Minor}.
+version_tuple() ->
+    OtpRelease = erlang:system_info(otp_release),
+    case re:run(OtpRelease, "R?(\\d+)B?-?(\\d+)?", [{capture, all, list}]) of
+        {match, [_Full, Maj, Min]} ->
+            {list_to_integer(Maj), list_to_integer(Min)};
+        {match, [_Full, Maj]} ->
+            {list_to_integer(Maj), 0};
+        nomatch ->
+            {error, undefined}
+    end. 
+
+
 

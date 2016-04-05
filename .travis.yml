@@ -1,5 +1,8 @@
 language: erlang
 otp_release:
+  - 18.0
+  - 17.5
+  - 17.4
   - 17.3
   - 17.1
   - 17.0
@@ -14,6 +17,7 @@ script: "rm -rf deps ebin test/*.beam logs && ./rebar get-deps compile && ./reba
 branches:
   only:
     - master
+
 notifications:
   email:
     - mononcqc@ferd.ca
