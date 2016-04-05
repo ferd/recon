@@ -27,7 +27,7 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
-- 2.3.1 (Current master)
+- 2.3.1
   - Updated `app_deps` script to run with rebar3 dependencies
   - Minor docs update
 - 2.3.0
