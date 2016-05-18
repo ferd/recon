@@ -5,7 +5,7 @@ Recon wants to be a set of tools usable in production to diagnose Erlang problem
 
 To build the library:
 
-    ./rebar compile
+    rebar3 compile
 
 Documentation for the library can be obtained at http://ferd.github.io/recon/
 
@@ -27,6 +27,8 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.3.2 (current Master)
+  - Allow the `return_to` option in `recon_trace`
 - 2.3.1
   - Updated `app_deps` script to run with rebar3 dependencies
   - Minor docs update

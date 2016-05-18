@@ -194,6 +194,7 @@
                         | {args, args | arity}               % default: args
                         | {io_server, pid()}                 % default: group_leader()
                         | {formatter, formatterfun()}        % default: internal formatter
+                        | return_to | {return_to, boolean()} % default: false
                    %% match pattern options
                         | {scope, global | local}            % default: global
                         ].
@@ -308,6 +309,11 @@ calls(TSpecs = [_|_], Max) ->
 %%  <li>`{io_server, pid() | atom()}': by default, recon logs to the current
 %%      group leader, usually the shell. This option allows to redirect
 %%      trace output to a different IO server (such as a file handle).</li>
+%%  <li>`return_to': If this option is set (in conjunction with the match
+%%      option `{scope, local}'), the function to which the value is returned
+%%      is output in a trace. Note that this is distinct from giving the
+%%      *caller* since exception handling or calls in tail position may
+%%      hide the original caller.</li>
 %% </ul>
 %%
 %% Also note that putting extremely large `Max' values (i.e. `99999999' or
@@ -420,6 +426,7 @@ trace_calls(TSpecs, Pid, Opts) ->
 
 validate_opts(Opts) ->
     PidSpecs = validate_pid_specs(proplists:get_value(pid, Opts, all)),
+    Scope = proplists:get_value(scope, Opts, global),
     TraceOpts = case proplists:get_value(timestamp, Opts, formatter) of
                     formatter -> [];
                     trace -> [timestamp]
@@ -427,8 +434,18 @@ validate_opts(Opts) ->
                  case proplists:get_value(args, Opts, args) of
                     args -> [];
                     arity -> [arity]
+                 end ++
+                 case proplists:get_value(return_to, Opts, undefined) of
+                     true when Scope =:= local ->
+                         [return_to];
+                     true when Scope =:= global ->
+                         io:format("Option return_to only works with option {scope, local}~n"),
+                         %% Set it anyway
+                         [return_to];
+                     _ ->
+                         []
                  end,
-    MatchOpts = [proplists:get_value(scope, Opts, global)],
+    MatchOpts = [Scope],
     {PidSpecs, TraceOpts, MatchOpts}.
 
 %% Support the regular specs, but also allow `recon:pid_term()' and lists
@@ -498,7 +515,7 @@ format(TraceMsg) ->
             {"~p:~p~s", [M,F,format_args(Args)]};
         %% {trace, Pid, return_to, {M, F, Arity}}
         {return_to, [{M,F,Arity}]} ->
-            {"~p:~p/~p", [M,F,Arity]};
+            {" '--> ~p:~p/~p", [M,F,Arity]};
         %% {trace, Pid, return_from, {M, F, Arity}, ReturnValue}
         {return_from, [{M,F,Arity}, Return]} ->
             {"~p:~p/~p --> ~p", [M,F,Arity, Return]};
