@@ -260,10 +260,7 @@ proc_fake([_|T1], [H|T2]) ->
       AttributeName :: atom(),
       Num :: non_neg_integer().
 proc_count(AttrName, Num) ->
-    lists:sublist(lists:usort(
-        fun({_,A,_},{_,B,_}) -> A > B end,
-        recon_lib:proc_attrs(AttrName)
-    ), Num).
+    sublist_top_n(recon_lib:proc_attrs(AttrName), Num).
 
 %% @doc Fetches a given attribute from all processes (except the
 %% caller) and returns the biggest entries, over a sliding time window.
@@ -297,10 +294,7 @@ proc_count(AttrName, Num) ->
 proc_window(AttrName, Num, Time) ->
     Sample = fun() -> recon_lib:proc_attrs(AttrName) end,
     {First,Last} = recon_lib:sample(Time, Sample),
-    lists:sublist(lists:usort(
-        fun({_,A,_},{_,B,_}) -> A > B end,
-        recon_lib:sliding_window(First, Last)
-    ), Num).
+    sublist_top_n(recon_lib:sliding_window(First, Last), Num).
 
 %% @doc Refc binaries can be leaking when barely-busy processes route them
 %% around and do little else, or when extremely busy processes reach a stable
@@ -317,25 +311,22 @@ proc_window(AttrName, Num, Time) ->
 %% for more details on refc binaries
 -spec bin_leak(pos_integer()) -> [proc_attrs()].
 bin_leak(N) ->
-    lists:sublist(
-        lists:usort(
-            fun({K1,V1,_},{K2,V2,_}) -> {V1,K1} =< {V2,K2} end,
-            [try
-                {ok, {_,Pre,Id}} = recon_lib:proc_attrs(binary, Pid),
-                erlang:garbage_collect(Pid),
-                {ok, {_,Post,_}} = recon_lib:proc_attrs(binary, Pid),
-                {Pid, length(Post)-length(Pre), Id}
-            catch
-                _:_ -> {Pid, 0, []}
-            end || Pid <- processes()]),
-        N).
+    sublist_top_n([try
+                       {ok, {_,Pre,Id}} = recon_lib:proc_attrs(binary, Pid),
+                       erlang:garbage_collect(Pid),
+                       {ok, {_,Post,_}} = recon_lib:proc_attrs(binary, Pid),
+                       {Pid, length(Post)-length(Pre), Id}
+                   catch
+                       _:_ -> {Pid, 0, []}
+                   end || Pid <- processes()],
+                  N).
 
 %% @doc Shorthand for `node_stats(N, Interval, fun(X,_) -> io:format("~p~n",[X]) end, nostate)'.
 -spec node_stats_print(Repeat, Interval) -> term() when
       Repeat :: non_neg_integer(),
       Interval :: pos_integer().
 node_stats_print(N, Interval) ->
-    node_stats(N, Interval, fun(X, _) -> io:format("~p~n",[X]) end, ok).
+    node_stats(N, Interval, fun(X, _) -> io:format("~p~n", [X]) end, ok).
 
 %% @doc Because Erlang CPU usage as reported from `top' isn't the most
 %% reliable value (due to schedulers doing idle spinning to avoid going
@@ -378,7 +369,7 @@ scheduler_usage(Interval) when is_integer(Interval) ->
       Stats :: {[Absolutes::{atom(),term()}],
                 [Increments::{atom(),term()}]}.
 node_stats_list(N, Interval) ->
-    lists:reverse(node_stats(N, Interval, fun(X,Acc) -> [X|Acc] end, [])).
+    lists:reverse(node_stats(N, Interval, fun(X, Acc) -> [X|Acc] end, [])).
 
 %% @doc Gathers statistics `N' time, waiting `Interval' milliseconds between
 %% each run, and accumulates results using a folding function `FoldFun'.
@@ -551,10 +542,7 @@ port_types() ->
                      | 'cnt' | 'oct',
       Num :: non_neg_integer().
 inet_count(Attr, Num) ->
-    lists:sublist(lists:usort(
-        fun({_,A,_},{_,B,_}) -> A > B end,
-        recon_lib:inet_attrs(Attr)
-    ), Num).
+    sublist_top_n(recon_lib:inet_attrs(Attr), Num).
 
 %% @doc Fetches a given attribute from all inet ports (TCP, UDP, SCTP)
 %% and returns the biggest entries, over a sliding time window.
@@ -576,10 +564,7 @@ inet_count(Attr, Num) ->
 inet_window(Attr, Num, Time) when is_atom(Attr) ->
     Sample = fun() -> recon_lib:inet_attrs(Attr) end,
     {First,Last} = recon_lib:sample(Time, Sample),
-    lists:sublist(lists:usort(
-        fun({_,A,_},{_,B,_}) -> A > B end,
-        recon_lib:sliding_window(First, Last)
-    ), Num).
+    sublist_top_n(recon_lib:sliding_window(First, Last), Num).
 
 %% @doc Allows to be similar to `erlang:port_info/1', but allows
 %% more flexible port usage: usual ports, ports that were registered
@@ -714,4 +699,28 @@ named_rpc(Nodes=[_|_], Fun, Timeout) when is_function(Fun,0) ->
     rpc:multicall(Nodes, erlang, apply, [fun() -> {node(),Fun()} end,[]], Timeout);
 named_rpc(Node, Fun, Timeout) when is_atom(Node) ->
     named_rpc([Node], Fun, Timeout).
+
+%% @private Returns the top n element of List. n = Len 
+sublist_top_n(List, Len) ->
+    sublist_top_n(List, Len, 0, []).
+
+sublist_top_n([], _, _, Acc) ->
+    lists:reverse(Acc);
+sublist_top_n([NewKey = {New1, New2, _}|List], MaxLen, Len, Acc) ->
+    {NewLen, NewAcc} =
+        if Len < MaxLen -> {Len + 1, insert(NewKey, Acc)};
+           true ->
+                [{Small1, Small2, _}|Acc2] = Acc,
+                if {Small2, Small1} < {New2, New1}  -> {Len, insert(NewKey, Acc2)};
+                   true -> {Len, Acc}
+                end
+        end,
+    sublist_top_n(List, MaxLen, NewLen, NewAcc).
+
+%% @private insert Key in an ordered list
+insert(K, []) -> [K];
+insert({K1, K2, _} = K, [{H1, H2, _} = H|T]) ->
+    if {H2, H1} =< {K2, K1}  -> [H|insert(K, T)];
+       true -> [K, H|T]
+    end.
 
