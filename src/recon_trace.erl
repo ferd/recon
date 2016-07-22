@@ -470,6 +470,10 @@ validate_pid_specs(PidTerm) ->
 
 validate_tspec(Mod, Fun, Args) when is_function(Args) ->
     validate_tspec(Mod, Fun, fun_to_ms(Args));
+%% helper to save typing for common actions
+validate_tspec(Mod, Fun, trace) ->
+    validate_tspec(Mod, Fun,
+                   fun_to_ms(fun(_) -> return_trace() end));
 validate_tspec(Mod, Fun, Args) ->
     BannedMods = ['_', ?MODULE, io, lists],
     %% The banned mod check can be bypassed by using
