@@ -702,25 +702,41 @@ named_rpc(Node, Fun, Timeout) when is_atom(Node) ->
 
 %% @private Returns the top n element of List. n = Len 
 sublist_top_n(List, Len) ->
-    sublist_top_n(List, Len, 0, []).
+    pheap_fill(List, Len, []).
 
-sublist_top_n([], _, _, Acc) ->
-    lists:reverse(Acc);
-sublist_top_n([NewKey = {New1, New2, _}|List], MaxLen, Len, Acc) ->
-    {NewLen, NewAcc} =
-        if Len < MaxLen -> {Len + 1, insert(NewKey, Acc)};
-           true ->
-                [{Small1, Small2, _}|Acc2] = Acc,
-                if {Small2, Small1} < {New2, New1}  -> {Len, insert(NewKey, Acc2)};
-                   true -> {Len, Acc}
-                end
-        end,
-    sublist_top_n(List, MaxLen, NewLen, NewAcc).
+pheap_fill(List, 0, Heap) ->
+    pheap_full(List, Heap);
+pheap_fill([], 0, Heap) ->
+    pheap_to_list(Heap, []);
+pheap_fill([{Y, X, _} = H|T], N, Heap) ->
+    pheap_fill(T, N-1, insert({{X, Y}, H}, Heap)).
 
-%% @private insert Key in an ordered list
-insert(K, []) -> [K];
-insert({K1, K2, _} = K, [{H1, H2, _} = H|T]) ->
-    if {H2, H1} =< {K2, K1}  -> [H|insert(K, T)];
-       true -> [K, H|T]
+pheap_full([], Heap) ->
+    pheap_to_list(Heap, []);
+pheap_full([{Y, X, _} = H|T], [{K, _}|HeapT] = Heap) ->
+    case {X, Y} of
+        N when N > K ->
+            pheap_full(T, insert({N, H}, merge_pairs(HeapT)));
+        _ ->
+            pheap_full(T, Heap)
     end.
 
+pheap_to_list([], Acc) -> Acc;
+pheap_to_list([{_, H}|T], Acc) ->
+    pheap_to_list(merge_pairs(T), [H|Acc]).
+
+-compile({inline, [  insert/2
+                   , merge/2
+                  ]}).
+
+insert(E, []) -> [E];        %% merge([E], H)
+insert(E, [E2|_] = H) when E =< E2 -> [E, H];
+insert(E, [E2|H]) -> [E2, [E]|H].
+
+merge(H1, []) -> H1;
+merge([E1|H1], [E2|_]=H2) when E1 =< E2 -> [E1, H2|H1];
+merge(H1, [E2|H2]) -> [E2, H1|H2].
+
+merge_pairs([]) -> [];
+merge_pairs([H]) -> H;
+merge_pairs([A, B|T]) -> merge(merge(A, B), merge_pairs(T)).
