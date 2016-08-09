@@ -127,6 +127,7 @@ bin_leak(_Config) ->
     Res = recon:bin_leak(5),
     5 = length(Res),
     true = proc_attrs(Res),
+    true = lists:any(fun({_,Val,_})-> Val =/= 0  end, Res),
     %% all results are =< 0, and ordered from smallest to biggest
     lists:foldl(fun({_,Current,_}, Next) when Current =< Next -> Current end,
                 0,

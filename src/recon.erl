@@ -311,15 +311,17 @@ proc_window(AttrName, Num, Time) ->
 %% for more details on refc binaries
 -spec bin_leak(pos_integer()) -> [proc_attrs()].
 bin_leak(N) ->
-    sublist_top_n([try
-                       {ok, {_,Pre,Id}} = recon_lib:proc_attrs(binary, Pid),
-                       erlang:garbage_collect(Pid),
-                       {ok, {_,Post,_}} = recon_lib:proc_attrs(binary, Pid),
-                       {Pid, length(Post)-length(Pre), Id}
-                   catch
-                       _:_ -> {Pid, 0, []}
-                   end || Pid <- processes()],
-                  N).
+    Procs = sublist_top_n([try
+                               {ok, {_,Pre,Id}} = recon_lib:proc_attrs(binary, Pid),
+                               erlang:garbage_collect(Pid),
+                               {ok, {_,Post,_}} = recon_lib:proc_attrs(binary, Pid),
+                               Val = length(Post)-length(Pre),
+                               {Pid, {abs(Val), Val}, Id}
+                           catch
+                               _:_ -> {Pid, {0, 0}, []}
+                           end || Pid <- processes()],
+                          N),
+    [{Pid, Val, Id} ||{Pid, {_, Val}, Id} <-Procs].
 
 %% @doc Shorthand for `node_stats(N, Interval, fun(X,_) -> io:format("~p~n",[X]) end, nostate)'.
 -spec node_stats_print(Repeat, Interval) -> term() when
