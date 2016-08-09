@@ -315,13 +315,12 @@ bin_leak(N) ->
                                {ok, {_,Pre,Id}} = recon_lib:proc_attrs(binary, Pid),
                                erlang:garbage_collect(Pid),
                                {ok, {_,Post,_}} = recon_lib:proc_attrs(binary, Pid),
-                               Val = length(Post)-length(Pre),
-                               {Pid, {abs(Val), Val}, Id}
+                               {Pid, length(Pre) - length(Post), Id}
                            catch
                                _:_ -> {Pid, {0, 0}, []}
                            end || Pid <- processes()],
                           N),
-    [{Pid, Val, Id} ||{Pid, {_, Val}, Id} <-Procs].
+    [{Pid, -Val, Id} ||{Pid, Val, Id} <-Procs].
 
 %% @doc Shorthand for `node_stats(N, Interval, fun(X,_) -> io:format("~p~n",[X]) end, nostate)'.
 -spec node_stats_print(Repeat, Interval) -> term() when
