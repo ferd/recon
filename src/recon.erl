@@ -260,7 +260,7 @@ proc_fake([_|T1], [H|T2]) ->
       AttributeName :: atom(),
       Num :: non_neg_integer().
 proc_count(AttrName, Num) ->
-    sublist_top_n(recon_lib:proc_attrs(AttrName), Num).
+    recon_lib:sublist_top_n_attrs(recon_lib:proc_attrs(AttrName), Num).
 
 %% @doc Fetches a given attribute from all processes (except the
 %% caller) and returns the biggest entries, over a sliding time window.
@@ -294,7 +294,7 @@ proc_count(AttrName, Num) ->
 proc_window(AttrName, Num, Time) ->
     Sample = fun() -> recon_lib:proc_attrs(AttrName) end,
     {First,Last} = recon_lib:sample(Time, Sample),
-    sublist_top_n(recon_lib:sliding_window(First, Last), Num).
+    recon_lib:sublist_top_n_attrs(recon_lib:sliding_window(First, Last), Num).
 
 %% @doc Refc binaries can be leaking when barely-busy processes route them
 %% around and do little else, or when extremely busy processes reach a stable
@@ -311,15 +311,16 @@ proc_window(AttrName, Num, Time) ->
 %% for more details on refc binaries
 -spec bin_leak(pos_integer()) -> [proc_attrs()].
 bin_leak(N) ->
-    Procs = sublist_top_n([try
-                               {ok, {_,Pre,Id}} = recon_lib:proc_attrs(binary, Pid),
-                               erlang:garbage_collect(Pid),
-                               {ok, {_,Post,_}} = recon_lib:proc_attrs(binary, Pid),
-                               {Pid, length(Pre) - length(Post), Id}
-                           catch
-                               _:_ -> {Pid, {0, 0}, []}
-                           end || Pid <- processes()],
-                          N),
+    Procs = recon_lib:sublist_top_n_attrs([
+        try
+            {ok, {_,Pre,Id}} = recon_lib:proc_attrs(binary, Pid),
+            erlang:garbage_collect(Pid),
+            {ok, {_,Post,_}} = recon_lib:proc_attrs(binary, Pid),
+            {Pid, length(Pre) - length(Post), Id}
+        catch
+            _:_ -> {Pid, {0, 0}, []}
+        end || Pid <- processes()
+    ], N),
     [{Pid, -Val, Id} ||{Pid, Val, Id} <-Procs].
 
 %% @doc Shorthand for `node_stats(N, Interval, fun(X,_) -> io:format("~p~n",[X]) end, nostate)'.
@@ -543,7 +544,7 @@ port_types() ->
                      | 'cnt' | 'oct',
       Num :: non_neg_integer().
 inet_count(Attr, Num) ->
-    sublist_top_n(recon_lib:inet_attrs(Attr), Num).
+    recon_lib:sublist_top_n_attrs(recon_lib:inet_attrs(Attr), Num).
 
 %% @doc Fetches a given attribute from all inet ports (TCP, UDP, SCTP)
 %% and returns the biggest entries, over a sliding time window.
@@ -565,7 +566,7 @@ inet_count(Attr, Num) ->
 inet_window(Attr, Num, Time) when is_atom(Attr) ->
     Sample = fun() -> recon_lib:inet_attrs(Attr) end,
     {First,Last} = recon_lib:sample(Time, Sample),
-    sublist_top_n(recon_lib:sliding_window(First, Last), Num).
+    recon_lib:sublist_top_n_attrs(recon_lib:sliding_window(First, Last), Num).
 
 %% @doc Allows to be similar to `erlang:port_info/1', but allows
 %% more flexible port usage: usual ports, ports that were registered
@@ -701,43 +702,3 @@ named_rpc(Nodes=[_|_], Fun, Timeout) when is_function(Fun,0) ->
 named_rpc(Node, Fun, Timeout) when is_atom(Node) ->
     named_rpc([Node], Fun, Timeout).
 
-%% @private Returns the top n element of List. n = Len 
-sublist_top_n(List, Len) ->
-    pheap_fill(List, Len, []).
-
-pheap_fill(List, 0, Heap) ->
-    pheap_full(List, Heap);
-pheap_fill([], _, Heap) ->
-    pheap_to_list(Heap, []);
-pheap_fill([{Y, X, _} = H|T], N, Heap) ->
-    pheap_fill(T, N-1, insert({{X, Y}, H}, Heap)).
-
-pheap_full([], Heap) ->
-    pheap_to_list(Heap, []);
-pheap_full([{Y, X, _} = H|T], [{K, _}|HeapT] = Heap) ->
-    case {X, Y} of
-        N when N > K ->
-            pheap_full(T, insert({N, H}, merge_pairs(HeapT)));
-        _ ->
-            pheap_full(T, Heap)
-    end.
-
-pheap_to_list([], Acc) -> Acc;
-pheap_to_list([{_, H}|T], Acc) ->
-    pheap_to_list(merge_pairs(T), [H|Acc]).
-
--compile({inline, [  insert/2
-                   , merge/2
-                  ]}).
-
-insert(E, []) -> [E];        %% merge([E], H)
-insert(E, [E2|_] = H) when E =< E2 -> [E, H];
-insert(E, [E2|H]) -> [E2, [E]|H].
-
-merge(H1, []) -> H1;
-merge([E1|H1], [E2|_]=H2) when E1 =< E2 -> [E1, H2|H1];
-merge(H1, [E2|H2]) -> [E2, H1|H2].
-
-merge_pairs([]) -> [];
-merge_pairs([H]) -> H;
-merge_pairs([A, B|T]) -> merge(merge(A, B), merge_pairs(T)).

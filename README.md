@@ -29,6 +29,8 @@ all stable changes of the first version of Recon.
 
 - 2.3.2 (current Master)
   - Allow the `return_to` option in `recon_trace`
+  - More efficient sorting function for procs and ports attributes
+    (thanks to @zhongwencool and @pichi)
 - 2.3.1
   - Updated `app_deps` script to run with rebar3 dependencies
   - Minor docs update
