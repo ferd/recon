@@ -27,7 +27,7 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
-- 2.3.2 (current Master)
+- 2.3.2
   - Allow the `return_to` option in `recon_trace`
   - More efficient sorting function for procs and ports attributes
     (thanks to @zhongwencool and @pichi)
