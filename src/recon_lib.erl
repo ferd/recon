@@ -12,7 +12,8 @@
          triple_to_pid/3, term_to_pid/1,
          term_to_port/1,
          time_map/5, time_fold/6,
-         scheduler_usage_diff/2]).
+         scheduler_usage_diff/2,
+         sublist_top_n_attrs/2]).
 %% private exports
 -export([binary_memory/1]).
 
@@ -224,7 +225,53 @@ scheduler_usage_diff(First, Last) ->
         lists:zip(lists:sort(First), lists:sort(Last))
     ).
 
+%% @doc Returns the top n element of a list of process or inet attributes
+-spec sublist_top_n_attrs([Attrs], pos_integer()) -> [Attrs]
+    when Attrs :: recon:proc_attrs() | recon:inet_attrs().
+sublist_top_n_attrs(_, 0) ->
+    %% matching lists:sublist/2 behaviour
+    [];
+sublist_top_n_attrs(List, Len) ->
+    pheap_fill(List, Len, []).
+
 %% @private crush binaries from process_info into their amount of place
 %% taken in memory.
 binary_memory(Bins) ->
     lists:foldl(fun({_,Mem,_}, Tot) -> Mem+Tot end, 0, Bins).
+
+%%%%%%%%%%%%%%%
+%%% PRIVATE %%%
+%%%%%%%%%%%%%%%
+pheap_fill(List, 0, Heap) ->
+    pheap_full(List, Heap);
+pheap_fill([], _, Heap) ->
+    pheap_to_list(Heap, []);
+pheap_fill([{Y, X, _} = H|T], N, Heap) ->
+    pheap_fill(T, N-1, insert({{X, Y}, H}, Heap)).
+
+pheap_full([], Heap) ->
+    pheap_to_list(Heap, []);
+pheap_full([{Y, X, _} = H|T], [{K, _}|HeapT] = Heap) ->
+    case {X, Y} of
+        N when N > K ->
+            pheap_full(T, insert({N, H}, merge_pairs(HeapT)));
+        _ ->
+            pheap_full(T, Heap)
+    end.
+
+pheap_to_list([], Acc) -> Acc;
+pheap_to_list([{_, H}|T], Acc) ->
+    pheap_to_list(merge_pairs(T), [H|Acc]).
+
+-compile({inline, [insert/2, merge/2]}).
+insert(E, []) -> [E];        %% merge([E], H)
+insert(E, [E2|_] = H) when E =< E2 -> [E, H];
+insert(E, [E2|H]) -> [E2, [E]|H].
+
+merge(H1, []) -> H1;
+merge([E1|H1], [E2|_]=H2) when E1 =< E2 -> [E1, H2|H1];
+merge(H1, [E2|H2]) -> [E2, H1|H2].
+
+merge_pairs([]) -> [];
+merge_pairs([H]) -> H;
+merge_pairs([A, B|T]) -> merge(merge(A, B), merge_pairs(T)).
