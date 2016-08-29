@@ -52,6 +52,7 @@
 <tr><td valign="top"><a href="#scheduler_usage_diff-2">scheduler_usage_diff/2</a></td><td>Diffs two runs of erlang:statistics(scheduler_wall_time) and
   returns usage metrics in terms of cores and 0..1 percentages.</td></tr>
 <tr><td valign="top"><a href="#sliding_window-2">sliding_window/2</a></td><td>Compare two samples and return a list based on some key.</td></tr>
+<tr><td valign="top"><a href="#sublist_top_n_attrs-2">sublist_top_n_attrs/2</a></td><td>Returns the top n element of a list of process or inet attributes.</td></tr>
 <tr><td valign="top"><a href="#term_to_pid-1">term_to_pid/1</a></td><td>Transforms a given term to a pid.</td></tr>
 <tr><td valign="top"><a href="#term_to_port-1">term_to_port/1</a></td><td>Transforms a given term to a port.</td></tr>
 <tr><td valign="top"><a href="#time_fold-6">time_fold/6</a></td><td>Calls a given function every <code>Interval</code> milliseconds and supports
@@ -131,6 +132,12 @@ is standard for most comparison functions for processes in recon.</p>
 </div><p>Compare two samples and return a list based on some key. The type mentioned
   for the structure is <code>diff()</code> (<code>{Key,Val,Other}</code>), which is compatible with
   the <a href="recon.html#type-proc_attrs"><code>recon:proc_attrs()</code></a> type.</p>
+
+<h4 class="function"><a name="sublist_top_n_attrs-2">sublist_top_n_attrs/2</a></h4>
+<div class="spec">
+<p><code>sublist_top_n_attrs(List::[Attrs], Len::pos_integer()) -&gt; [Attrs]</code>
+<ul class="definitions"><li><code>Attrs = <a href="recon.html#type-proc_attrs">recon:proc_attrs()</a> | <a href="recon.html#type-inet_attrs">recon:inet_attrs()</a></code></li></ul></p>
+</div><p>Returns the top n element of a list of process or inet attributes</p>
 
 <h4 class="function"><a name="term_to_pid-1">term_to_pid/1</a></h4>
 <div class="spec">

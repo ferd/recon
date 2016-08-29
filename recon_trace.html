@@ -183,7 +183,7 @@ For instance to write the traces to a file you can do something like</p>
 <h3><a name="types">Data Types</a></h3>
 
 <h4 class="typedecl"><a name="type-args">args()</a></h4>
-<p><code>args() = '_' | 0..255 | <a href="#type-matchspec">matchspec()</a> | <a href="#type-shellfun">shellfun()</a></code></p>
+<p><code>args() = '_' | 0..255 | return_trace | <a href="#type-matchspec">matchspec()</a> | <a href="#type-shellfun">shellfun()</a></code></p>
 
 
 <h4 class="typedecl"><a name="type-fn">fn()</a></h4>
@@ -223,7 +223,7 @@ For instance to write the traces to a file you can do something like</p>
 
 
 <h4 class="typedecl"><a name="type-options">options()</a></h4>
-<p><code>options() = [{pid, <a href="#type-pidspec">pidspec()</a> | [<a href="#type-pidspec">pidspec()</a>, ...]} | {timestamp, formatter | trace} | {args, args | arity} | {io_server, pid()} | {formatter, <a href="#type-formatterfun">formatterfun()</a>} | {scope, global | local}]</code></p>
+<p><code>options() = [{pid, <a href="#type-pidspec">pidspec()</a> | [<a href="#type-pidspec">pidspec()</a>, ...]} | {timestamp, formatter | trace} | {args, args | arity} | {io_server, pid()} | {formatter, <a href="#type-formatterfun">formatterfun()</a>} | return_to | {return_to, boolean()} | {scope, global | local}]</code></p>
 
 
 <h4 class="typedecl"><a name="type-pidspec">pidspec()</a></h4>
@@ -309,7 +309,9 @@ function calls.</p>
        or
        <code>recon_trace:calls({Mod,Fun,[{'_', [], [{return_trace}]}]}, Max, Opts)</code>,
        the important bit being the <code>return_trace()</code> call or the
-       <code>{return_trace}</code> match spec value.</li>
+       <code>{return_trace}</code> match spec value.
+       A short-hand version for this pattern of 'match anything, trace everything'
+       for a function is <code>recon_trace:calls({Mod, Fun, return_trace})</code>. </li>
   </ul>
  
   <p>There's a few more combination possible, with multiple trace patterns per call, and more  
@@ -337,6 +339,11 @@ options:</p>
    <li><code>{io_server, pid() | atom()}</code>: by default, recon logs to the current
        group leader, usually the shell. This option allows to redirect
        trace output to a different IO server (such as a file handle).</li>
+   <li><code>return_to</code>: If this option is set (in conjunction with the match
+       option <code>{scope, local}</code>), the function to which the value is returned
+       is output in a trace. Note that this is distinct from giving the
+       *caller* since exception handling or calls in tail position may
+       hide the original caller.</li>
   </ul>
  
   Also note that putting extremely large <code>Max</code> values (i.e. <code>99999999</code> or
