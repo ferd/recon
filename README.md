@@ -31,6 +31,8 @@ all stable changes of the first version of Recon.
   - Allow the `return_to` option in `recon_trace`
   - More efficient sorting function for procs and ports attributes
     (thanks to @zhongwencool and @pichi)
+  - Allow the usage of `return_trace` in `recon_trace:calls/2-3` instead
+    of `fun(_) -> return_trace() end`.
 - 2.3.1
   - Updated `app_deps` script to run with rebar3 dependencies
   - Minor docs update

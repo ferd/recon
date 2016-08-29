@@ -201,7 +201,7 @@
 
 -type mod()          :: '_' | module().
 -type fn()           :: '_' | atom().
--type args()         :: '_' | 0..255 | matchspec() | shellfun().
+-type args()         :: '_' | 0..255 | return_trace | matchspec() | shellfun().
 -type tspec()        :: {mod(), fn(), args()}.
 -type max()          :: max_traces() | max_rate().
 -type num_matches()  :: non_neg_integer().
@@ -281,7 +281,9 @@ calls(TSpecs = [_|_], Max) ->
 %%      or
 %%      ``recon_trace:calls({Mod,Fun,[{'_', [], [{return_trace}]}]}, Max, Opts)'',
 %%      the important bit being the `return_trace()' call or the
-%%      `{return_trace}' match spec value.</li>
+%%      `{return_trace}' match spec value.
+%%      A short-hand version for this pattern of 'match anything, trace everything'
+%%      for a function is `recon_trace:calls({Mod, Fun, return_trace})'. </li>
 %% </ul>
 %%
 %% There's a few more combination possible, with multiple trace patterns per call, and more
@@ -470,6 +472,9 @@ validate_pid_specs(PidTerm) ->
 
 validate_tspec(Mod, Fun, Args) when is_function(Args) ->
     validate_tspec(Mod, Fun, fun_to_ms(Args));
+%% helper to save typing for common actions
+validate_tspec(Mod, Fun, return_trace) ->
+    validate_tspec(Mod, Fun, [{'_', [], [{return_trace}]}]);
 validate_tspec(Mod, Fun, Args) ->
     BannedMods = ['_', ?MODULE, io, lists],
     %% The banned mod check can be bypassed by using
