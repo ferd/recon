@@ -709,6 +709,9 @@ pheap_fill(List, 0, Heap) ->
     pheap_full(List, Heap);
 pheap_fill([], 0, Heap) ->
     pheap_to_list(Heap, []);
+pheap_fill([],N,Heap) ->
+    io:format("!!!! Warning: Given Number is ~p more than existing processes on node !!!! ~n~n",[N]),
+    pheap_to_list(Heap, []);
 pheap_fill([{Y, X, _} = H|T], N, Heap) ->
     pheap_fill(T, N-1, insert({{X, Y}, H}, Heap)).
 
