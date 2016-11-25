@@ -8,6 +8,7 @@
 *.beam
 erl_crash.dump
 .eunit
+.dialyzer_plt
 /doc/*.html
 /doc/edoc-info
 /doc/erlang.png
