@@ -173,7 +173,7 @@
 -module(recon_trace).
 
 %% API
--export([clear/0, calls/2, calls/3]).
+-export([clear/0, calls/2, calls/3, quick/2]).
 
 -export([format/1]).
 
@@ -229,6 +229,24 @@ calls({Mod, Fun, Args}, Max) ->
     calls([{Mod,Fun,Args}], Max, []);
 calls(TSpecs = [_|_], Max) ->
     calls(TSpecs, Max, []).
+
+%% @doc Allows quick tracing on all calls within a module without resorting
+%% to complex trace patterns.
+%%
+%% Parameters are `Module' and `Scope' where:
+%%
+%% <ul>
+%%   <li>`Module' is an atom representing a currently loaded module</li>
+%%   <li>`Scope' is either a maximum count of traces before stopping, or
+%%   a tuple representing the frequency of traces/millisecond before stopping,
+%%   for example `{1,1000}' meaning maximum 1 trace/second.</li>
+%% </ul>
+%%
+%% For example, `recon_trace:quick(queue, 5)' traces the next 5 calls to the
+%% queue module.
+-spec quick(module(), max()) -> num_matches().
+quick(Module, Max) ->
+              calls({Module, '_', '_'}, Max, [{pid, all}, {scope, local}]).
 
 %% @doc Allows to set trace patterns and pid specifications to trace
 %% function calls.
