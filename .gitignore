@@ -16,3 +16,9 @@ erl_crash.dump
 .rebar/
 _build/
 
+
+*.xml
+
+*.iml
+
+.idea/.name
