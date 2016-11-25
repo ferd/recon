@@ -59,6 +59,11 @@ in the repository's `script/' directory:
         Erlang shell (if compiled), or as `escript app_deps.erl'.
     </dd>
 
+    <dt>`module_deps.erl'</dt>
+    <dd>
+        Like app_deps, but shows module dependencies instead of application ones.
+        Takes a directory name to search recursively, and a filename to output to.
+    </dd>
     <dt>`erl_crashdump_analyzer.sh'</dt>
     <dd>
         Bash script to run on an Erlang crash dump as
