@@ -7,7 +7,7 @@
 -compile(export_all).
 
 all() -> [memory, fragmentation, cache_hit_rates, average_block_sizes,
-          sbcs_to_mbcs, allocators, snapshots, units].
+          sbcs_to_mbcs, allocators, allocators_merged, snapshots, units].
 
 memory(_Config) ->
     %% Freeze memory values for tests
@@ -107,6 +107,17 @@ sbcs_to_mbcs(_Config) ->
 
 allocators(_Config) ->
     true = allocdata(recon_alloc:allocators()).
+
+allocators_merged(_Config) ->
+    true = merged_allocdata(recon_alloc:allocators(types)).
+
+merged_allocdata(L) ->
+    Validate = fun({{Allocator, Ns}, List}) ->
+        is_atom(Allocator) andalso is_list(Ns)
+        andalso
+        lists:all(fun({_,_}) -> true; (_) -> false end, List)
+    end,
+    lists:all(Validate, L).
 
 snapshots(Config) ->
     File = filename:join(?config(priv_dir, Config), "snapshot"),
