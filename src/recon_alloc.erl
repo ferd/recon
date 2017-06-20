@@ -130,13 +130,15 @@
                    | std_alloc.
 -type instance() :: non_neg_integer().
 -type allocdata(T) :: {{allocator(), instance()}, T}.
+-type allocdata_types(T) :: {{allocator(), [instance()]}, T}.
 -export_type([allocator/0, instance/0, allocdata/1]).
 
 -define(CURRENT_POS, 2). % pos in sizes tuples for current value
 -define(MAX_POS, 4). % pos in sizes tuples for max value
 
 -export([memory/1, memory/2, fragmentation/1, cache_hit_rates/0,
-         average_block_sizes/1, sbcs_to_mbcs/1, allocators/0]).
+         average_block_sizes/1, sbcs_to_mbcs/1, allocators/0,
+         allocators/1]).
 
 %% Snapshot handling
 -type memory() :: [{atom(),atom()}].
@@ -374,6 +376,77 @@ allocators() ->
         Allocs <- [erlang:system_info({allocator,A})],
         Allocs =/= false,
         {_,N,Props} <- Allocs].
+
+%% @doc returns a dump of all allocator settings and values modified
+%%      depending on the argument.
+%% <ul>
+%%   <li>`types` report the settings and accumulated values for each
+%%       allocator type. This is useful when looking for anomalies
+%%       in the system as a whole and not specific instances.</li>
+%% </ul>
+-spec allocators(types) -> [allocdata_types(term())].
+allocators(types) ->
+    allocators_types(alloc(), []).
+
+allocators_types([{{Type,No},Vs}|T], As) ->
+    case lists:keytake(Type, 1, As) of
+        false ->
+            allocators_types(T,[{Type,[No],sort_values(Type, Vs)}|As]);
+        {value,{Type,Nos,OVs},NAs} ->
+            MergedValues = merge_values(sort_values(Type, Vs),OVs),
+            allocators_types(T,[{Type,[No|Nos],MergedValues}|NAs])
+    end;
+allocators_types([], As) ->
+    [{{Type,Nos},Vs} || {Type, Nos, Vs} <- As].
+
+merge_values([{Key,Vs}|T1], [{Key,OVs}|T2]) when Key =:= memkind ->
+    [{Key, merge_values(Vs, OVs)} | merge_values(T1, T2)];
+merge_values([{Key,Vs}|T1], [{Key,OVs}|T2]) when Key =:= calls;
+                                                 Key =:= fix_types;
+                                                 Key =:= sbmbcs;
+                                                 Key =:= mbcs;
+                                                 Key =:= mbcs_pool;
+                                                 Key =:= sbcs;
+                                                 Key =:= status ->
+    [{Key,lists:map(
+           fun({{K,MV1,V1}, {K,MV2,V2}}) ->
+                   %% Merge the MegaVs + Vs into one
+                   V = MV1 * 1000000 + V1 + MV2 * 1000000 + V2,
+                   {K, V div 1000000, V rem 1000000};
+              ({{K,V1}, {K,V2}}) when K =:= segments_watermark ->
+                   %% We take the maximum watermark as that is
+                   %% a value that we can use somewhat. Ideally
+                   %% maybe the average should be used, but the
+                   %% value is very rarely important so leave it
+                   %% like this for now.
+                   {K, lists:max([V1,V2])};
+              ({{K,V1}, {K,V2}}) ->
+                   {K, V1 + V2};
+              ({{K,C1,L1,M1}, {K,C2,L2,M2}}) ->
+                   %% Merge the Curr, Last, Max into one
+                   {K, C1+C2, L1+L2, M1+M2}
+           end, lists:zip(Vs,OVs))} | merge_values(T1,T2)];
+merge_values([{Type,_Vs}=E|T1], T2) when Type =:= mbcs_pool ->
+    %% For values never showing up in instance 0 but in all other
+    [E|merge_values(T1,T2)];
+merge_values(T1, [{Type,_Vs}=E|T2]) when Type =:= fix_types ->
+    %% For values only showing up in instance 0
+    [E|merge_values(T1,T2)];
+merge_values([E|T1], [E|T2]) ->
+    %% For values that are constant
+    [E|merge_values(T1,T2)];
+merge_values([{options,_Vs1}|T1], [{options,_Vs2} = E|T2]) ->
+    %% Options change a but in between instance 0 and the other,
+    %% We show the others as they are the most interesting.
+    [E|merge_values(T1,T2)];
+merge_values([],[]) ->
+    [].
+
+sort_values(mseg_alloc, Vs) ->
+    {value, {memkind, MemKindVs}, OVs} = lists:keytake(memkind, 1, Vs),
+    lists:sort([{memkind, lists:sort(MemKindVs)} | OVs]);
+sort_values(_Type, Vs) ->
+    lists:sort(Vs).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Snapshot handling %%%
