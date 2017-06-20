@@ -402,6 +402,8 @@ allocators_types([], As) ->
 merge_values([{Key,Vs}|T1], [{Key,OVs}|T2]) when Key =:= memkind ->
     [{Key, merge_values(Vs, OVs)} | merge_values(T1, T2)];
 merge_values([{Key,Vs}|T1], [{Key,OVs}|T2]) when Key =:= calls;
+                                                 Key =:= fix_types;
+                                                 Key =:= sbmbcs;
                                                  Key =:= mbcs;
                                                  Key =:= mbcs_pool;
                                                  Key =:= sbcs;
