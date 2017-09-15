@@ -348,7 +348,7 @@ node_stats_print(N, Interval) ->
 %% </ul>
 %%
 %% A scheduler isn't busy when doing anything else.
--spec scheduler_usage(Millisecs) -> [{SchedulerId, Usage}] when
+-spec scheduler_usage(Millisecs) -> undefined | [{SchedulerId, Usage}] when
     Millisecs :: non_neg_integer(),
     SchedulerId :: pos_integer(),
     Usage :: number().
