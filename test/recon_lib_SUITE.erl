@@ -2,7 +2,7 @@
 -include_lib("common_test/include/ct.hrl").
 -compile(export_all).
 
-all() -> [scheduler_usage_diff, sublist_top_n].
+all() -> [scheduler_usage_diff, sublist_top_n, term_to_pid].
 
 scheduler_usage_diff(_Config) ->
     {Active0, Total0} = {1000, 2000},
@@ -26,4 +26,22 @@ sublist_top_n(_Config) ->
         ct:pal("Sub ~p: ~p", [N, Sub]),
         Sub = (catch recon_lib:sublist_top_n_attrs(L, N))
      end || N <- lists:seq(0, length(L)+1)],
+    ok.
+
+term_to_pid(_Config) ->
+    Pid = self(),
+    Pid = recon_lib:term_to_pid(Pid),
+    List = pid_to_list(Pid),
+    Pid = recon_lib:term_to_pid(List),
+    Binary = list_to_binary(List),
+    Pid = recon_lib:term_to_pid(Binary),
+    Name = foo,
+    register(Name, Pid),
+    Pid = recon_lib:term_to_pid(Name),
+    yes = global:register_name(Name, Pid),
+    Pid = recon_lib:term_to_pid({global, Name}),
+    Sublist = lists:sublist(List, 2, length(List)-2),
+    Ints = [ element(1, string:to_integer(T)) || T <- string:tokens(Sublist, ".")],
+    Triple = list_to_tuple(Ints),
+    Pid = recon_lib:term_to_pid(Triple),
     ok.

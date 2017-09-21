@@ -150,6 +150,7 @@ triple_to_pid(X, Y, Z) ->
 term_to_pid(Pid) when is_pid(Pid) -> Pid;
 term_to_pid(Name) when is_atom(Name) -> whereis(Name);
 term_to_pid(List = "<0."++_) -> list_to_pid(List);
+term_to_pid(Binary = <<"<0.", _/binary>>) -> list_to_pid(binary_to_list(Binary));
 term_to_pid({global, Name}) -> global:whereis_name(Name);
 term_to_pid({via, Module, Name}) -> Module:whereis_name(Name);
 term_to_pid({X,Y,Z}) when is_integer(X), is_integer(Y), is_integer(Z) ->
