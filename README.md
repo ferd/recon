@@ -27,6 +27,11 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.3.3
+  - fixing `bin_leak` arith errors
+  - fixes to `recon_alloc:allocators/1` (incl. R16 compatibility)
+  - fix errors in scheduler wall time calculations
+  - `term_to_pid` supports binaries
 - 2.3.2
   - Allow the `return_to` option in `recon_trace`
   - More efficient sorting function for procs and ports attributes
