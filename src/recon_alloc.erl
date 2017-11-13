@@ -380,7 +380,7 @@ allocators() ->
 %% @doc returns a dump of all allocator settings and values modified
 %%      depending on the argument.
 %% <ul>
-%%   <li>`types` report the settings and accumulated values for each
+%%   <li>`types' report the settings and accumulated values for each
 %%       allocator type. This is useful when looking for anomalies
 %%       in the system as a whole and not specific instances.</li>
 %% </ul>
