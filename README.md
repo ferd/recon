@@ -27,6 +27,8 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.3.4
+  - fixing edoc tag that broke some downstream packaging attempts
 - 2.3.3
   - fixing `bin_leak` arith errors
   - fixes to `recon_alloc:allocators/1` (incl. R16 compatibility)
