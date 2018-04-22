@@ -205,8 +205,8 @@ time_map(N, Interval, Fun, State, MapFun) ->
 time_fold(0, _, _, _, _, Acc) ->
     Acc;
 time_fold(N, Interval, Fun, State, FoldFun, Init) ->
-    {Res, NewState} = Fun(State),
     timer:sleep(Interval),
+    {Res, NewState} = Fun(State),
     Acc = FoldFun(Res,Init),
     time_fold(N-1,Interval,Fun,NewState,FoldFun,Acc).
 

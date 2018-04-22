@@ -27,6 +27,9 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.3.5
+  - fixing timefold's first iteration to prevent errors at call-site
+    by sleeping before sampling
 - 2.3.4
   - fixing edoc tag that broke some downstream packaging attempts
 - 2.3.3

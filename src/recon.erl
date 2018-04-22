@@ -253,9 +253,6 @@ proc_fake([_|T1], [H|T2]) ->
 
 %% @doc Fetches a given attribute from all processes (except the
 %% caller) and returns the biggest `Num' consumers.
-%% @todo Implement this function so it only stores `Num' entries in
-%% memory at any given time, instead of as many as there are
-%% processes.
 -spec proc_count(AttributeName, Num) -> [proc_attrs()] when
       AttributeName :: atom(),
       Num :: non_neg_integer().
@@ -535,10 +532,6 @@ port_types() ->
 %% of packets sent, received, or both (`send_cnt', `recv_cnt', `cnt',
 %% respectively). Individual absolute values for each metric will be returned
 %% in the 3rd position of the resulting tuple.
-%%
-%% @todo Implement this function so it only stores `Num' entries in
-%% memory at any given time, instead of as many as there are
-%% processes.
 -spec inet_count(AttributeName, Num) -> [inet_attrs()] when
       AttributeName :: 'recv_cnt' | 'recv_oct' | 'send_cnt' | 'send_oct'
                      | 'cnt' | 'oct',
