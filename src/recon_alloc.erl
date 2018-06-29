@@ -335,7 +335,7 @@ average_block_sizes(Keyword) ->
 %% larger than the `sbct', it gets sent to a single block carrier. When the
 %% data is smaller than the `sbct', it gets placed into a multiblock carrier.
 %%
-%% mbcs are to be prefered to sbcs because they basically represent pre-
+%% mbcs are to be preferred to sbcs because they basically represent pre-
 %% allocated memory, whereas sbcs will map to one call to sys_alloc
 %% or mseg_alloc, which is more expensive than redistributing
 %% data that was obtained for multiblock carriers. Moreover, the VM is able to
