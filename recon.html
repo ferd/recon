@@ -179,7 +179,7 @@ contained in the Recon application.</p>
   around and do little else, or when extremely busy processes reach a stable
   amount of memory allocated and do the vast majority of their work with refc
   binaries.</td></tr>
-<tr><td valign="top"><a href="#files-0">files/0</a></td><td>returns a list of all file handles open on the node.</td></tr>
+<tr><td valign="top"><a href="#files-0">files/0</a></td><td>(<em>Deprecated</em>.) returns a list of all file handles open on the node.</td></tr>
 <tr><td valign="top"><a href="#get_state-1">get_state/1</a></td><td>Shorthand call to <code>recon:get_state(PidTerm, 5000)</code></td></tr>
 <tr><td valign="top"><a href="#get_state-2">get_state/2</a></td><td>Fetch the internal state of an OTP process.</td></tr>
 <tr><td valign="top"><a href="#inet_count-2">inet_count/2</a></td><td>Fetches a given attribute from all inet ports (TCP, UDP, SCTP)
@@ -260,7 +260,10 @@ that freed the biggest amount of binaries, potentially highlighting leaks.</p>
 <h4 class="function"><a name="files-0">files/0</a></h4>
 <div class="spec">
 <p><code>files() -&gt; [port()]</code><br></p>
-</div><p>returns a list of all file handles open on the node.</p>
+</div><p><strong>This function is deprecated:</strong> Starting with OTP-21, files are implemented as NIFs
+  and can no longer be listed. This function returns an empty list
+  in such a case.</p>
+<p>returns a list of all file handles open on the node.</p>
 
 <h4 class="function"><a name="get_state-1">get_state/1</a></h4>
 <div class="spec">
@@ -285,8 +288,7 @@ that freed the biggest amount of binaries, potentially highlighting leaks.</p>
   or both (<code>send_oct</code>, <code>recv_oct</code>, <code>oct</code>, respectively), or the number
   of packets sent, received, or both (<code>send_cnt</code>, <code>recv_cnt</code>, <code>cnt</code>,
   respectively). Individual absolute values for each metric will be returned
-  in the 3rd position of the resulting tuple.
- </p>
+  in the 3rd position of the resulting tuple.</p>
 
 <h4 class="function"><a name="inet_window-3">inet_window/3</a></h4>
 <div class="spec">
@@ -382,7 +384,8 @@ The function will gather statistics in two forms: Absolutes and Increments.</p>
  
   <p>Absolutes are values that keep changing with time, and are useful to know  
 about as a datapoint: process count, size of the run queue, error_logger  
-queue length, and the memory of the node (total, processes, atoms, binaries,  
+queue length in versions before OTP-21 or those thar run it explicitely,  
+and the memory of the node (total, processes, atoms, binaries,  
 and ets tables).</p>
  
   Increments are values that are mostly useful when compared to a previous
@@ -508,7 +511,7 @@ data (say reductions) will look like bottlenecks when they're not one.</p>
 
 <h4 class="function"><a name="scheduler_usage-1">scheduler_usage/1</a></h4>
 <div class="spec">
-<p><code>scheduler_usage(Millisecs) -&gt; [{SchedulerId, Usage}]</code>
+<p><code>scheduler_usage(Millisecs) -&gt; undefined | [{SchedulerId, Usage}]</code>
 <ul class="definitions"><li><code>Millisecs = non_neg_integer()</code></li><li><code>SchedulerId = pos_integer()</code></li><li><code>Usage = number()</code></li></ul></p>
 </div><p><p>Because Erlang CPU usage as reported from <code>top</code> isn't the most  
 reliable value (due to schedulers doing idle spinning to avoid going  

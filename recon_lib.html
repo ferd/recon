@@ -121,7 +121,7 @@ is standard for most comparison functions for processes in recon.</p>
 
 <h4 class="function"><a name="scheduler_usage_diff-2">scheduler_usage_diff/2</a></h4>
 <div class="spec">
-<p><code>scheduler_usage_diff(SchedTime, SchedTime) -&gt; [{SchedulerId, Usage}]</code>
+<p><code>scheduler_usage_diff(SchedTime, SchedTime) -&gt; undefined | [{SchedulerId, Usage}]</code>
 <ul class="definitions"><li><code>SchedTime = [{SchedulerId, ActiveTime, TotalTime}]</code></li><li><code>SchedulerId = pos_integer()</code></li><li><code>Usage = number()</code></li><li><code>ActiveTime = non_neg_integer()</code></li><li><code>TotalTime = non_neg_integer()</code></li></ul></p>
 </div><p>Diffs two runs of erlang:statistics(scheduler_wall_time) and
   returns usage metrics in terms of cores and 0..1 percentages.</p>

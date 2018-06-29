@@ -148,6 +148,10 @@ before.</p>
 <p><code>allocdata(T) = {{<a href="#type-allocator">allocator()</a>, <a href="#type-instance">instance()</a>}, T}</code></p>
 
 
+<h4 class="typedecl"><a name="type-allocdata_types">allocdata_types()</a></h4>
+<p><code>allocdata_types(T) = {{<a href="#type-allocator">allocator()</a>, [<a href="#type-instance">instance()</a>]}, T}</code></p>
+
+
 <h4 class="typedecl"><a name="type-instance">instance()</a></h4>
 <p><code>instance() = non_neg_integer()</code></p>
 
@@ -162,6 +166,8 @@ before.</p>
 
 <h3><a name="index">Function Index</a></h3>
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#allocators-0">allocators/0</a></td><td>returns a dump of all allocator settings and values.</td></tr>
+<tr><td valign="top"><a href="#allocators-1">allocators/1</a></td><td>returns a dump of all allocator settings and values modified
+       depending on the argument.</td></tr>
 <tr><td valign="top"><a href="#average_block_sizes-1">average_block_sizes/1</a></td><td>Checks all allocators in <a href="#type-allocator"><code>allocator()</code></a> and returns the average
   block sizes being used for <code>mbcs</code> and <code>sbcs</code>.</td></tr>
 <tr><td valign="top"><a href="#cache_hit_rates-0">cache_hit_rates/0</a></td><td>looks at the <code>mseg_alloc</code> allocator (allocator used by all the
@@ -192,6 +198,17 @@ node depending on what is to be reported:.</td></tr>
 <div class="spec">
 <p><code>allocators() -&gt; [<a href="#type-allocdata">allocdata</a>(term())]</code><br></p>
 </div><p>returns a dump of all allocator settings and values</p>
+
+<h4 class="function"><a name="allocators-1">allocators/1</a></h4>
+<div class="spec">
+<p><code>allocators(X1::types) -&gt; [<a href="#type-allocdata_types">allocdata_types</a>(term())]</code><br></p>
+</div><p>returns a dump of all allocator settings and values modified
+       depending on the argument.
+  <ul>
+    <li><code>types</code> report the settings and accumulated values for each
+        allocator type. This is useful when looking for anomalies
+        in the system as a whole and not specific instances.</li>
+  </ul></p>
 
 <h4 class="function"><a name="average_block_sizes-1">average_block_sizes/1</a></h4>
 <div class="spec">
@@ -315,7 +332,7 @@ before the memory allocators are initialized.</p>
   larger than the <code>sbct</code>, it gets sent to a single block carrier. When the
   data is smaller than the <code>sbct</code>, it gets placed into a multiblock carrier.</p>
  
-  <p>mbcs are to be prefered to sbcs because they basically represent pre-  
+  <p>mbcs are to be preferred to sbcs because they basically represent pre-  
 allocated memory, whereas sbcs will map to one call to sys_alloc  
 or mseg_alloc, which is more expensive than redistributing  
 data that was obtained for multiblock carriers. Moreover, the VM is able to  
