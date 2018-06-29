@@ -16,7 +16,7 @@ Current Status
 
 [![Build Status](https://travis-ci.org/ferd/recon.png)](https://travis-ci.org/ferd/recon)
 
-Versions supported: R15B02 and up
+Versions supported: OTP-17 and up. Support of R16B03-1 down to R15B02 is best effort.
 
 Changelog
 ---------
@@ -27,6 +27,11 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.3.6
+  - Adapting for OTP-21. Includes the 'deprecation' of `recon:files/0`
+    since OTP-21 no longer supports listing all file descriptors, and
+    removing `error_logger_queue_len` from node stats since a new
+    logging mechanism was introduced in-process instead.
 - 2.3.5
   - fixing timefold's first iteration to prevent errors at call-site
     by sleeping before sampling
