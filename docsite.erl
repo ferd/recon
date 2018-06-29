@@ -1,6 +1,6 @@
 #!/usr/bin/env escript
 %% -*- erlang -*-
-%%! -smp disable
+%%!
 %% This script takes the EDoc output page, and tries to bring them to
 %% a more modern format suitable for a recon site.
 %% Run with `escript docsite.erl' or as `./docsite.erl'. The script

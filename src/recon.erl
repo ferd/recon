@@ -376,7 +376,8 @@ node_stats_list(N, Interval) ->
 %%
 %% Absolutes are values that keep changing with time, and are useful to know
 %% about as a datapoint: process count, size of the run queue, error_logger
-%% queue length, and the memory of the node (total, processes, atoms, binaries,
+%% queue length in versions before OTP-21 or those thar run it explicitely,
+%% and the memory of the node (total, processes, atoms, binaries,
 %% and ets tables).
 %%
 %% Increments are values that are mostly useful when compared to a previous
@@ -392,6 +393,10 @@ node_stats_list(N, Interval) ->
       Stats :: {[Absolutes::{atom(),term()}],
                 [Increments::{atom(),term()}]}.
 node_stats(N, Interval, FoldFun, Init) ->
+    Logger = case whereis(error_logger) of
+        undefined -> logger;
+        _ -> error_logger
+    end,
     %% Turn on scheduler wall time if it wasn't there already
     FormerFlag = erlang:system_flag(scheduler_wall_time, true),
     %% Stats is an ugly fun, but it does its thing.
@@ -399,7 +404,14 @@ node_stats(N, Interval, FoldFun, Init) ->
         %% Absolutes
         ProcC = erlang:system_info(process_count),
         RunQ = erlang:statistics(run_queue),
-        {_,LogQ} = process_info(whereis(error_logger),  message_queue_len),
+        LogQ = case Logger of
+            error_logger ->
+                {_,LogQLen} = process_info(whereis(error_logger),
+                                           message_queue_len),
+                LogQLen;
+            _ ->
+                undefined
+        end,
         %% Mem (Absolutes)
         Mem = erlang:memory(),
         Tot = proplists:get_value(total, Mem),
@@ -418,8 +430,9 @@ node_stats(N, Interval, FoldFun, Init) ->
         SchedWallNew = erlang:statistics(scheduler_wall_time),
         SchedUsage = recon_lib:scheduler_usage_diff(SchedWall, SchedWallNew),
          %% Stats Results
-        {{[{process_count,ProcC}, {run_queue,RunQ},
-           {error_logger_queue_len,LogQ}, {memory_total,Tot},
+        {{[{process_count,ProcC}, {run_queue,RunQ}] ++
+          [{error_logger_queue_len,LogQ} || LogQ =/= undefined] ++
+          [{memory_total,Tot},
            {memory_procs,ProcM}, {memory_atoms,Atom},
            {memory_bin,Bin}, {memory_ets,Ets}],
           [{bytes_in,BytesIn}, {bytes_out,BytesOut},
@@ -511,6 +524,9 @@ udp() -> recon_lib:port_list(name, "udp_inet").
 sctp() -> recon_lib:port_list(name, "sctp_inet").
 
 %% @doc returns a list of all file handles open on the node.
+%% @deprecated Starting with OTP-21, files are implemented as NIFs
+%% and can no longer be listed. This function returns an empty list
+%% in such a case.
 -spec files() -> [port()].
 files() -> recon_lib:port_list(name, "efile").
 

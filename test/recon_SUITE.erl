@@ -7,6 +7,16 @@
 -include_lib("eunit/include/eunit.hrl").
 -compile(export_all).
 
+-ifdef(OTP_RELEASE).
+-define(FILES_IMPL, nif).
+-define(ERROR_LOGGER_MATCH(_),  ).
+-define(REDUCTIONS_MATCH(X), X).
+-else.
+-define(FILES_IMPL, port).
+-define(ERROR_LOGGER_MATCH(X), X,).
+-define(REDUCTIONS_MATCH(_), []).
+-endif.
+
 all() -> [{group,info}, proc_count, proc_window, bin_leak,
           node_stats_list, get_state, source, tcp, udp, files, port_types,
           inet_count, inet_window, binary_memory, scheduler_usage].
@@ -29,6 +39,17 @@ init_per_group(info, Config) ->
 end_per_group(info, Config) ->
     exit(?config(pid, Config), kill).
 
+init_per_testcase(files, Config) ->
+    case ?FILES_IMPL of
+        nif -> {skip, "files can no longer be listed in OTP-21 and above"};
+        port -> Config
+    end;
+init_per_testcase(_, Config) ->
+    Config.
+
+end_per_testcase(_, Config) ->
+    Config.
+
 %%%%%%%%%%%%%
 %%% TESTS %%%
 %%%%%%%%%%%%%
@@ -36,15 +57,18 @@ end_per_group(info, Config) ->
 info3(Config) ->
     Pid = ?config(pid, Config),
     {A,B,C} = pid_to_triple(Pid),
-    Info = recon:info(Pid),
-    Info = recon:info(A,B,C).
-
+    Info1 = recon:info(Pid),
+    Info2 = recon:info(A,B,C),
+    %% Reduction count is unreliable
+    ?assertMatch(?REDUCTIONS_MATCH(
+                    [{work, [{reductions,_}]}, {work, [{reductions,_}]}]
+                 ), (Info1 -- Info2) ++ (Info2 -- Info1)).
 
 info4(Config) ->
     Pid = ?config(pid, Config),
     Keys = [meta, signals, location, memory_used, work,
-            links, monitors, reductions, messages,
-            [links, monitors, reductions, messages]],
+            links, monitors, messages,
+            [links, monitors, messages]],
     {A,B,C} = pid_to_triple(Pid),
     lists:map(fun(Key) ->
                   Info = recon:info(Pid, Key),
@@ -67,11 +91,25 @@ info1(Config) ->
               undefined == proplists:get_value(K, proplists:get_value(Cat,Info))
         ]),
     register(info1, Pid),
-    Res = recon:info(info1),
-    Res = recon:info(whereis(info1)),
-    Res = recon:info(pid_to_triple(whereis(info1))),
-    Res = recon:info(lists:flatten(io_lib:format("~p",[Pid]))),
-    unregister(info1).
+    Res1 = recon:info(info1),
+    Res2 = recon:info(whereis(info1)),
+    Res3 = recon:info(pid_to_triple(whereis(info1))),
+    Res4 = recon:info(lists:flatten(io_lib:format("~p",[Pid]))),
+    unregister(info1),
+    L = lists:usort(Res1 ++ Res2 ++ Res3 ++ Res4),
+    ?assertMatch(?REDUCTIONS_MATCH([{work,[{reductions,_}]},
+                                    {work,[{reductions,_}]},
+                                    {work,[{reductions,_}]}]), L -- Res1),
+    ?assertMatch(?REDUCTIONS_MATCH([{work,[{reductions,_}]},
+                                    {work,[{reductions,_}]},
+                                    {work,[{reductions,_}]}]), L -- Res2),
+    ?assertMatch(?REDUCTIONS_MATCH([{work,[{reductions,_}]},
+                                    {work,[{reductions,_}]},
+                                    {work,[{reductions,_}]}]), L -- Res3),
+    ?assertMatch(?REDUCTIONS_MATCH([{work,[{reductions,_}]},
+                                    {work,[{reductions,_}]},
+                                    {work,[{reductions,_}]}]), L -- Res4),
+    ok.
 
 info2(Config) ->
     Pid = ?config(pid, Config),
@@ -82,7 +120,7 @@ info2(Config) ->
                                  total_heap_size, garbage_collection]},
                   {work, [reductions]}],
     %% registered_name is special -- only returns
-    %% [] when passed through by info/2. Because we pass terms through
+    %% [] when passed through by info/2. Because we pass terms through
     %% according to the docs, we have to respect that
     [] = recon:info(Pid, registered_name),
     %% Register to get the expected tuple
@@ -138,7 +176,7 @@ node_stats_list(_Config) ->
     Res = recon:node_stats_list(2,100),
     2 = length([1 || {[{process_count,_},
                        {run_queue,_},
-                       {error_logger_queue_len,_},
+                       ?ERROR_LOGGER_MATCH({error_logger_queue_len,_})
                        {memory_total,_},
                        {memory_procs,_},
                        {memory_atoms,_},
