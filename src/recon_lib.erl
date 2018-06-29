@@ -77,8 +77,11 @@ port_list(Attr, Val) ->
 %% all processes of the node, except the caller.
 -spec proc_attrs(term()) -> [recon:proc_attrs()].
 proc_attrs(AttrName) ->
-    [Attrs || Pid <- processes() -- [self()],
-              {ok, Attrs} <- [proc_attrs(AttrName, Pid)]].
+    Self = self(),
+    [Attrs || Pid <- processes(),
+	      Pid =/= Self,
+              {ok, Attrs} <- [proc_attrs(AttrName, Pid)]
+	].
 
 %% @doc Returns the attributes of a given process. This form of attributes
 %% is standard for most comparison functions for processes in recon.
