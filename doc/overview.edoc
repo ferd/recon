@@ -41,6 +41,12 @@ Included modules are:
         Provides production-safe tracing facilities, to dig into the
         execution of programs and function calls as they are running.
     </dd>
+
+    <dt>{@link recon_rec}</dt>
+    <dd>
+        An extension to recon_trace, enables printing out records in a more readable format
+        based on known record definitions.
+    </dd>
 </dl>
 
 This library contains few tests -- most of the functionality has been
