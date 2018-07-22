@@ -5,14 +5,14 @@
 
 %%%%%%%%%% SETUP
 
-all() -> [record_defs].
+all() -> [record_defs, lists_and_limits].
 
 init_per_suite(Config) ->
-    true = recon_rec:import(records1),
+    Res = recon_rec:import(records1),
+    [{imported, records1, another, 3}, {imported, records1, state, 3}] = lists:sort(Res),
     Config.
 
 end_per_suite(C) ->
-    whereis(recon_ets) ! stop,
     C.
 
 init_per_testcase(_, Config) -> Config.
@@ -26,7 +26,8 @@ end_per_testcase(_, Config) ->
 record_defs(_Config) ->
     has_record(state, 3), % make sure table was not wiped out
     has_record(another, 3),
-    false = recon_rec:import(records2), %% one record is a duplicate
+    ImportRes = recon_rec:import(records2), %% one record is a duplicate
+    [{imported,records2,another,4}, {ignored,records2,state,3,records1}] = lists:sort(ImportRes),
     has_record(state, 3),
     has_record(another, 3),
     has_record(another, 4),
@@ -36,13 +37,31 @@ record_defs(_Config) ->
     no_record(state, 3),
     no_record(another, 3),
     has_record(another, 4),
-    true = recon_rec:import(records2),
+    ImportRes2 = recon_rec:import(records2),
+    [{imported,records2,state,3}, {overwritten,records2,another,4}] = lists:sort(ImportRes2),
     [Res1] = recon_rec:lookup_record(state, 3),
     check_first_field(one, Res1),
     recon_rec:clear(),
     no_record(state, 3),
     no_record(another, 3),
     no_record(another, 4),
+    ok.
+
+lists_and_limits(_Config) ->
+    recon_rec:import(records1),
+    recon_rec:import(records2),
+    List = recon_rec:get_list(),
+    [{records1,another,[ddd,eee,fff],all},
+     {records1,state,[aaa,bbb,ccc],all},
+     {records2,another,[one,two,three,four],all}] = List,
+    recon_rec:limit(another, 3, ddd),
+    {records1,another,[ddd,eee,fff], [ddd]} = hd(recon_rec:get_list()),
+    recon_rec:limit(another, 3, [ddd, eee]),
+    {records1,another,[ddd,eee,fff], [ddd, eee]} = hd(recon_rec:get_list()),
+    recon_rec:limit(another, 3, all),
+    {records1,another,[ddd,eee,fff], all} = hd(recon_rec:get_list()),
+    recon_rec:clear(record2),
+    {error, record_unknown} = recon_rec:limit(another, 4, all),
     ok.
 
 %%%%%%%%%% HELPERS

@@ -13,7 +13,7 @@
          term_to_port/1,
          time_map/5, time_fold/6,
          scheduler_usage_diff/2,
-         sublist_top_n_attrs/2, format/1]).
+         sublist_top_n_attrs/2, format_trace_output/1]).
 %% private exports
 -export([binary_memory/1]).
 
@@ -245,16 +245,19 @@ sublist_top_n_attrs(List, Len) ->
 binary_memory(Bins) ->
     lists:foldl(fun({_,Mem,_}, Tot) -> Mem+Tot end, 0, Bins).
 
-format(Args) when is_tuple(Args) ->
+%% @doc formats call arguments and return values - most types are just printed out, except for
+%% tuples recognised as records, which mimic the source code syntax
+%% @end
+format_trace_output(Args) when is_tuple(Args) ->
     recon_rec:format_tuple(Args);
-format(Args) when is_list(Args) ->
-    case is_printable(Args) of
+format_trace_output(Args) when is_list(Args) ->
+    case io_lib:printable_list(Args) of
         true -> io_lib:format("~p", [Args]);
         false ->
-            L = lists:map(fun format/1, Args),
+            L = lists:map(fun format_trace_output/1, Args),
             "[" ++ string:join(L, ", ") ++ "]"
     end;
-format(Args) ->
+format_trace_output(Args) ->
     io_lib:format("~p", [Args]).
 
 %%%%%%%%%%%%%%%
@@ -294,5 +297,4 @@ merge_pairs([]) -> [];
 merge_pairs([H]) -> H;
 merge_pairs([A, B|T]) -> merge(merge(A, B), merge_pairs(T)).
 
-is_printable(List) ->
-    lists:all(fun(I) -> I > 31 andalso I < 128 end, List).
+

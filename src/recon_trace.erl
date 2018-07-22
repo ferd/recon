@@ -523,7 +523,7 @@ format(TraceMsg) ->
             {" '--> ~p:~p/~p", [M,F,Arity]};
         %% {trace, Pid, return_from, {M, F, Arity}, ReturnValue}
         {return_from, [{M,F,Arity}, Return]} ->
-            {"~p:~p/~p --> ~s", [M,F,Arity, recon_lib:format(Return)]};
+            {"~p:~p/~p --> ~s", [M,F,Arity, recon_lib:format_trace_output(Return)]};
         %% {trace, Pid, exception_from, {M, F, Arity}, {Class, Value}}
         {exception_from, [{M,F,Arity}, {Class,Val}]} ->
             {"~p:~p/~p ~p ~p", [M,F,Arity, Class, Val]};
@@ -600,7 +600,7 @@ to_hms(_) ->
 format_args(Arity) when is_integer(Arity) ->
     "/"++integer_to_list(Arity);
 format_args(Args) when is_list(Args) ->
-    "("++string:join([recon_lib:format(Arg) || Arg <- Args], ", ")++")".
+    "("++string:join([recon_lib:format_trace_output(Arg) || Arg <- Args], ", ")++")".
 
 %%%%%%%%%%%%%%%
 %%% HELPERS %%%
