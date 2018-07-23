@@ -5,9 +5,9 @@
 %%% Record definitions are imported from modules by user. Definitions are
 %%% distinguished by record name and its arity, if you have multiple records
 %%% of the same name and size, you have to choose one of them and some of your
-%% records may be wrongly labelled. You can manipulate your definition list by
-%% using import/1 and clear/1, and check which definitions are in use by executing
-%% list/0.
+%%% records may be wrongly labelled. You can manipulate your definition list by
+%%% using import/1 and clear/1, and check which definitions are in use by executing
+%%% list/0.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(recon_rec).
@@ -18,23 +18,28 @@
 
 -export([lookup_record/2]). %% for testing
 
+% basic types
+-type field() :: atom().
+-type record_name() :: atom().
+% compound
+-type limit() :: all | none | field() | [field()].
+-type listentry() :: {module(), record_name(), [field()], limit()}.
+-type import_result() :: {imported, module(), record_name(), arity()}
+                         | {overwritten, module(), record_name(), arity()}
+                         | {ignored, module(), record_name(), arity(), module()}.
+
 %% @doc import record definitions from a module. If a record definition of the same name
-%% and arity has already been imported from another module then a warning is issued and the new
-%% definition is ignored. You have to choose one and possibly remove the old one using
+%% and arity has already been imported from another module then the new
+%% definition is ignored (returned info tells you from which module the existing definition was imported).
+%% You have to choose one and possibly remove the old one using
 %% clear/1. Supports importing multiple modules at once (by giving a list of atoms as
 %% an argument).
 %% @end
+-spec import(module() | [module()]) -> import_result() | [import_result()].
 import(Modules) when is_list(Modules) ->
     lists:foldl(fun import/2, [], Modules);
 import(Module) ->
     import(Module, []).
-
-%% @private if a tuple is a known record, formats is as "#recname{field=value}", otherwise returns
-%% just a printout of a tuple.
-format_tuple(Tuple) ->
-    ensure_table_exists(),
-    First = element(1, Tuple),
-    lists:flatten(format_tuple(First, Tuple)).
 
 %% @doc remove definitions imported from a module.
 clear(Module) ->
@@ -59,28 +64,35 @@ list() ->
         end,
     lists:foreach(F, get_list()).
 
+%% @doc returns a list of active record definitions
+-spec get_list() -> [listentry()].
 get_list() ->
     ensure_table_exists(),
     Lst = lists:map(fun make_list_entry/1, ets:tab2list(ets_table_name())),
     lists:sort(Lst).
 
-%% @doc Limit output to selected fields of a record (set to 'all' to reset).
-limit(Name, Arity, all) ->
-    limit(Name, Arity, []);
-limit(Name, Arity, Field) when is_atom(Field) ->
-    limit(Name, Arity, [Field]);
-limit(Name, Arity, FieldList) ->
+%% @doc Limit output to selected fields of a record (can be 'all', 'none', a field or a list of fields).
+-spec limit(record_name(), arity(), limit()) -> ok | {error, record_unknown}.
+limit(Name, Arity, Limit) ->
     case lookup_record(Name, Arity) of
         [] ->
             {error, record_unknown};
         [{Key, Fields, Mod, _}] ->
-            ets:insert(ets_table_name(), {Key, Fields, Mod, FieldList}),
+            ets:insert(ets_table_name(), {Key, Fields, Mod, Limit}),
             ok
     end.
+
+%% @private if a tuple is a known record, formats is as "#recname{field=value}", otherwise returns
+%% just a printout of a tuple.
+format_tuple(Tuple) ->
+    ensure_table_exists(),
+    First = element(1, Tuple),
+    format_tuple(First, Tuple).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PRIVATE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 make_list_entry({{Name, _}, Fields, Module, Limits}) ->
     FmtLimit = case Limits of
@@ -141,7 +153,7 @@ ensure_table_exists() ->
 ets_table_name() -> recon_record_definitions.
 
 rec_info({Name, Fields}, Module) ->
-    {{Name, length(Fields)}, field_names(Fields), Module, []}.
+    {{Name, length(Fields)}, field_names(Fields), Module, all}.
 
 rem_for_module({_, _, Module, _} = Rec, Module) ->
     ets:delete_object(ets_table_name(), Rec);
@@ -169,7 +181,7 @@ format_tuple(Name, Rec) when is_atom(Name) ->
         [RecDef] -> format_record(Rec, RecDef);
         _ ->
             List = tuple_to_list(Rec),
-            "{" ++ lists:join(", ", [recon_lib:format_trace_output(El) || El <- List]) ++ "}"
+            ["{", lists:join(", ", [recon_lib:format_trace_output(El) || El <- List]), "}"]
     end;
 format_tuple(_, Tuple) ->
     format_default(Tuple).
@@ -184,8 +196,9 @@ format_record(Rec, {{Name, Arity}, Fields, _, Limits}) ->
             [_ | Values] = tuple_to_list(Rec),
             List = lists:zip(Fields, Values),
             LimitedList = apply_limits(List, Limits),
-            "#" ++ atom_to_list(Name) ++ "{"
-                ++ lists:join(", ", [format_kv(Key, Val) || {Key, Val} <- LimitedList]) ++ "}";
+            ["#", atom_to_list(Name), "{",
+             lists:join(", ", [format_kv(Key, Val) || {Key, Val} <- LimitedList]),
+             "}"];
         _ ->
             format_default(Rec)
     end.
@@ -193,6 +206,9 @@ format_record(Rec, {{Name, Arity}, Fields, _, Limits}) ->
 format_kv(Key, Val) ->
     [recon_lib:format_trace_output(Key), "=", recon_lib:format_trace_output(Val)].
 
-apply_limits(List, []) -> List;
+apply_limits(List, all) -> List;
+apply_limits(_List, none) -> [];
+apply_limits(List, Field) when is_atom(Field) ->
+    [{Field, proplists:get_value(Field, List)}, {more, '...'}];
 apply_limits(List, Limits) ->
     lists:filter(fun({K, _}) -> lists:member(K, Limits) end, List) ++ [{more, '...'}].
