@@ -87,7 +87,7 @@ make_list_entry({{Name, _}, Fields, Module, Limits}) ->
                    [] -> all;
                    Other -> Other
                end,
-    {Module, Name, field_names(Fields), FmtLimit}.
+    {Module, Name, Fields, FmtLimit}.
 
 import(Module, ResultList) ->
     ensure_table_exists(),
@@ -141,7 +141,7 @@ ensure_table_exists() ->
 ets_table_name() -> recon_record_definitions.
 
 rec_info({Name, Fields}, Module) ->
-    {{Name, length(Fields)}, Fields, Module, []}.
+    {{Name, length(Fields)}, field_names(Fields), Module, []}.
 
 rem_for_module({_, _, Module, _} = Rec, Module) ->
     ets:delete_object(ets_table_name(), Rec);
@@ -182,8 +182,7 @@ format_record(Rec, {{Name, Arity}, Fields, _, Limits}) ->
     case tuple_size(Rec) of
         ExpectedLength ->
             [_ | Values] = tuple_to_list(Rec),
-            FieldNames = field_names(Fields),
-            List = lists:zip(FieldNames, Values),
+            List = lists:zip(Fields, Values),
             LimitedList = apply_limits(List, Limits),
             "#" ++ atom_to_list(Name) ++ "{"
                 ++ lists:join(", ", [format_kv(Key, Val) || {Key, Val} <- LimitedList]) ++ "}";

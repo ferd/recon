@@ -60,7 +60,7 @@ lists_and_limits(_Config) ->
     {records1,another,[ddd,eee,fff], [ddd, eee]} = hd(recon_rec:get_list()),
     recon_rec:limit(another, 3, all),
     {records1,another,[ddd,eee,fff], all} = hd(recon_rec:get_list()),
-    recon_rec:clear(record2),
+    recon_rec:clear(records2),
     {error, record_unknown} = recon_rec:limit(another, 4, all),
     ok.
 
@@ -74,4 +74,4 @@ no_record(Name, Count) ->
 
 check_first_field(F, Rec) ->
     {_, Fields, _, _} = Rec,
-    {record_field, _, {atom, _, F}} = hd(Fields).
+    F = hd(Fields).
