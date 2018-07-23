@@ -169,7 +169,7 @@ format_tuple(Name, Rec) when is_atom(Name) ->
         [RecDef] -> format_record(Rec, RecDef);
         _ ->
             List = tuple_to_list(Rec),
-            "{" ++ string:join([recon_lib:format_trace_output(El) || El <- List], ", ") ++ "}"
+            "{" ++ lists:join(", ", [recon_lib:format_trace_output(El) || El <- List]) ++ "}"
     end;
 format_tuple(_, Tuple) ->
     format_default(Tuple).
@@ -186,13 +186,13 @@ format_record(Rec, {{Name, Arity}, Fields, _, Limits}) ->
             List = lists:zip(FieldNames, Values),
             LimitedList = apply_limits(List, Limits),
             "#" ++ atom_to_list(Name) ++ "{"
-                ++ string:join([format_kv(Key, Val) || {Key, Val} <- LimitedList], ", ") ++ "}";
+                ++ lists:join(", ", [format_kv(Key, Val) || {Key, Val} <- LimitedList]) ++ "}";
         _ ->
             format_default(Rec)
     end.
 
 format_kv(Key, Val) ->
-    recon_lib:format_trace_output(Key) ++ "=" ++ recon_lib:format_trace_output(Val).
+    [recon_lib:format_trace_output(Key), "=", recon_lib:format_trace_output(Val)].
 
 apply_limits(List, []) -> List;
 apply_limits(List, Limits) ->
