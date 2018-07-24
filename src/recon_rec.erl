@@ -14,6 +14,7 @@
 -author("bartlomiej.gorny@erlang-solutions.com").
 %% API
 
+-export([is_active/0]).
 -export([import/1, format_tuple/1, clear/1, clear/0, list/0, get_list/0, limit/3]).
 
 -export([lookup_record/2]). %% for testing
@@ -40,6 +41,14 @@ import(Modules) when is_list(Modules) ->
     lists:foldl(fun import/2, [], Modules);
 import(Module) ->
     import(Module, []).
+
+%% @doc quickly check if we want to do any record formatting
+-spec is_active() -> boolean().
+is_active() ->
+    case whereis(recon_ets) of
+        undefined -> false;
+        _ -> true
+    end.
 
 %% @doc remove definitions imported from a module.
 clear(Module) ->
@@ -181,7 +190,7 @@ format_tuple(Name, Rec) when is_atom(Name) ->
         [RecDef] -> format_record(Rec, RecDef);
         _ ->
             List = tuple_to_list(Rec),
-            ["{", lists:join(", ", [recon_lib:format_trace_output(El) || El <- List]), "}"]
+            ["{", lists:join(", ", [recon_lib:format_trace_output(true, El) || El <- List]), "}"]
     end;
 format_tuple(_, Tuple) ->
     format_default(Tuple).
@@ -204,7 +213,7 @@ format_record(Rec, {{Name, Arity}, Fields, _, Limits}) ->
     end.
 
 format_kv(Key, Val) ->
-    [recon_lib:format_trace_output(Key), "=", recon_lib:format_trace_output(Val)].
+    [recon_lib:format_trace_output(true, Key), "=", recon_lib:format_trace_output(true, Val)].
 
 apply_limits(List, all) -> List;
 apply_limits(_List, none) -> [];

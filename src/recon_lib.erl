@@ -13,7 +13,8 @@
          term_to_port/1,
          time_map/5, time_fold/6,
          scheduler_usage_diff/2,
-         sublist_top_n_attrs/2, format_trace_output/1]).
+         sublist_top_n_attrs/2,
+         format_trace_output/1, format_trace_output/2]).
 %% private exports
 -export([binary_memory/1]).
 
@@ -248,16 +249,19 @@ binary_memory(Bins) ->
 %% @doc formats call arguments and return values - most types are just printed out, except for
 %% tuples recognised as records, which mimic the source code syntax
 %% @end
-format_trace_output(Args) when is_tuple(Args) ->
+format_trace_output(Args) ->
+    format_trace_output(recon_rec:is_active(), Args).
+
+format_trace_output(true, Args) when is_tuple(Args) ->
     recon_rec:format_tuple(Args);
-format_trace_output(Args) when is_list(Args) ->
+format_trace_output(true, Args) when is_list(Args) ->
     case io_lib:printable_list(Args) of
         true -> io_lib:format("~p", [Args]);
         false ->
-            L = lists:map(fun format_trace_output/1, Args),
+            L = lists:map(fun(A) -> format_trace_output(true, A) end, Args),
             "[" ++ string:join(L, ", ") ++ "]"
     end;
-format_trace_output(Args) ->
+format_trace_output(_, Args) ->
     io_lib:format("~p", [Args]).
 
 %%%%%%%%%%%%%%%

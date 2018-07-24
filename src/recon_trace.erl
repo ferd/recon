@@ -598,9 +598,10 @@ to_hms(_) ->
     {0,0,0}.
 
 format_args(Arity) when is_integer(Arity) ->
-    "/"++integer_to_list(Arity);
+    ["/", integer_to_list(Arity)];
 format_args(Args) when is_list(Args) ->
-    "("++string:join([recon_lib:format_trace_output(Arg) || Arg <- Args], ", ")++")".
+    Active = recon_rec:is_active(),
+    ["(", lists:join(", ", [recon_lib:format_trace_output(Active, Arg) || Arg <- Args]), ")"].
 
 %%%%%%%%%%%%%%%
 %%% HELPERS %%%
