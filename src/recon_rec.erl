@@ -56,8 +56,7 @@ clear(Module) ->
 
 %% @doc remove all imported definitions, destroy the table, clean up
 clear() ->
-    catch ets:delete_all_objects(ets_table_name()),
-    catch whereis(recon_ets) ! stop,
+    recon_lib:maybe_kill(recon_ets),
     ok.
 
 %% @doc prints out all "known" (imported) record definitions and their limit settings.

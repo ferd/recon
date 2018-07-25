@@ -219,8 +219,8 @@ clear() ->
     erlang:trace(all, false, [all]),
     erlang:trace_pattern({'_','_','_'}, false, [local,meta,call_count,call_time]),
     erlang:trace_pattern({'_','_','_'}, false, []), % unsets global
-    maybe_kill(recon_trace_tracer),
-    maybe_kill(recon_trace_formatter),
+    recon_lib:maybe_kill(recon_trace_tracer),
+    recon_lib:maybe_kill(recon_trace_formatter),
     ok.
 
 %% @equiv calls({Mod, Fun, Args}, Max, [])
@@ -606,25 +606,6 @@ format_args(Args) when is_list(Args) ->
 %%%%%%%%%%%%%%%
 %%% HELPERS %%%
 %%%%%%%%%%%%%%%
-
-maybe_kill(Name) ->
-    case whereis(Name) of
-        undefined ->
-            ok;
-        Pid ->
-            unlink(Pid),
-            exit(Pid, kill),
-            wait_for_death(Pid, Name)
-    end.
-
-wait_for_death(Pid, Name) ->
-    case is_process_alive(Pid) orelse whereis(Name) =:= Pid of
-        true ->
-            timer:sleep(10),
-            wait_for_death(Pid, Name);
-        false ->
-            ok
-    end.
 
 %% Borrowed from dbg
 fun_to_ms(ShellFun) when is_function(ShellFun) ->

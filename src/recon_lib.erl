@@ -13,6 +13,7 @@
          term_to_port/1,
          time_map/5, time_fold/6,
          scheduler_usage_diff/2,
+         maybe_kill/1,
          sublist_top_n_attrs/2,
          format_trace_output/1, format_trace_output/2]).
 %% private exports
@@ -264,6 +265,16 @@ format_trace_output(true, Args) when is_list(Args) ->
 format_trace_output(_, Args) ->
     io_lib:format("~p", [Args]).
 
+maybe_kill(Name) ->
+    case whereis(Name) of
+        undefined ->
+            ok;
+        Pid ->
+            unlink(Pid),
+            exit(Pid, kill),
+            wait_for_death(Pid, Name)
+    end.
+
 %%%%%%%%%%%%%%%
 %%% PRIVATE %%%
 %%%%%%%%%%%%%%%
@@ -301,4 +312,12 @@ merge_pairs([]) -> [];
 merge_pairs([H]) -> H;
 merge_pairs([A, B|T]) -> merge(merge(A, B), merge_pairs(T)).
 
+wait_for_death(Pid, Name) ->
+    case is_process_alive(Pid) orelse whereis(Name) =:= Pid of
+        true ->
+            timer:sleep(10),
+            wait_for_death(Pid, Name);
+        false ->
+            ok
+    end.
 
