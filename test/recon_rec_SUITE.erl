@@ -51,17 +51,17 @@ lists_and_limits(_Config) ->
     recon_rec:import(records1),
     recon_rec:import(records2),
     List = recon_rec:get_list(),
-    [{records1,another,[ddd,eee,fff],all},
-     {records1,state,[aaa,bbb,ccc],all},
-     {records2,another,[one,two,three,four],all}] = List,
+    [{records1,another,[ddd,eee,fff],none},
+     {records1,state,[aaa,bbb,ccc],none},
+     {records2,another,[one,two,three,four],none}] = List,
     recon_rec:limit(another, 3, ddd),
-    {records1,another,[ddd,eee,fff], [ddd]} = hd(recon_rec:get_list()),
+    {records1,another,[ddd,eee,fff], ddd} = hd(recon_rec:get_list()),
     recon_rec:limit(another, 3, [ddd, eee]),
     {records1,another,[ddd,eee,fff], [ddd, eee]} = hd(recon_rec:get_list()),
     recon_rec:limit(another, 3, all),
     {records1,another,[ddd,eee,fff], all} = hd(recon_rec:get_list()),
     recon_rec:clear(records2),
-    {error, record_unknown} = recon_rec:limit(another, 4, all),
+    {error, record_unknown} = recon_rec:limit(another, 4, none),
     ok.
 
 %%%%%%%%%% HELPERS

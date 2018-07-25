@@ -79,7 +79,10 @@ get_list() ->
     Lst = lists:map(fun make_list_entry/1, ets:tab2list(ets_table_name())),
     lists:sort(Lst).
 
-%% @doc Limit output to selected fields of a record (can be 'all', 'none', a field or a list of fields).
+%% @doc Limit output to selected fields of a record (can be 'none', 'all', a field or a list of fields).
+%% Limit set to 'none' means there is no limit, and all fields are displayed; limit 'all' means that
+%% all fields are squashed and only record name will be shown.
+%% @end
 -spec limit(record_name(), arity(), limit()) -> ok | {error, record_unknown}.
 limit(Name, Arity, Limit) ->
     case lookup_record(Name, Arity) of
@@ -104,7 +107,7 @@ format_tuple(Tuple) ->
 
 make_list_entry({{Name, _}, Fields, Module, Limits}) ->
     FmtLimit = case Limits of
-                   [] -> all;
+                   [] -> none;
                    Other -> Other
                end,
     {Module, Name, Fields, FmtLimit}.
@@ -161,7 +164,7 @@ ensure_table_exists() ->
 ets_table_name() -> recon_record_definitions.
 
 rec_info({Name, Fields}, Module) ->
-    {{Name, length(Fields)}, field_names(Fields), Module, all}.
+    {{Name, length(Fields)}, field_names(Fields), Module, none}.
 
 rem_for_module({_, _, Module, _} = Rec, Module) ->
     ets:delete_object(ets_table_name(), Rec);
@@ -214,8 +217,8 @@ format_record(Rec, {{Name, Arity}, Fields, _, Limits}) ->
 format_kv(Key, Val) ->
     [recon_lib:format_trace_output(true, Key), "=", recon_lib:format_trace_output(true, Val)].
 
-apply_limits(List, all) -> List;
-apply_limits(_List, none) -> [];
+apply_limits(List, none) -> List;
+apply_limits(_List, all) -> [];
 apply_limits(List, Field) when is_atom(Field) ->
     [{Field, proplists:get_value(Field, List)}, {more, '...'}];
 apply_limits(List, Limits) ->
