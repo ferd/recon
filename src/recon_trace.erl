@@ -178,7 +178,7 @@
 -export([format/1]).
 
 %% Internal exports
--export([count_tracer/1, rate_tracer/2, formatter/5]).
+-export([count_tracer/1, rate_tracer/2, formatter/5, format_trace_output/2]).
 
 -type matchspec()    :: [{[term()], [term()], [term()]}].
 -type shellfun()     :: fun((_) -> term()).
@@ -219,8 +219,8 @@ clear() ->
     erlang:trace(all, false, [all]),
     erlang:trace_pattern({'_','_','_'}, false, [local,meta,call_count,call_time]),
     erlang:trace_pattern({'_','_','_'}, false, []), % unsets global
-    recon_lib:maybe_kill(recon_trace_tracer),
-    recon_lib:maybe_kill(recon_trace_formatter),
+    maybe_kill(recon_trace_tracer),
+    maybe_kill(recon_trace_formatter),
     ok.
 
 %% @equiv calls({Mod, Fun, Args}, Max, [])
@@ -523,7 +523,7 @@ format(TraceMsg) ->
             {" '--> ~p:~p/~p", [M,F,Arity]};
         %% {trace, Pid, return_from, {M, F, Arity}, ReturnValue}
         {return_from, [{M,F,Arity}, Return]} ->
-            {"~p:~p/~p --> ~s", [M,F,Arity, recon_lib:format_trace_output(Return)]};
+            {"~p:~p/~p --> ~s", [M,F,Arity, format_trace_output(Return)]};
         %% {trace, Pid, exception_from, {M, F, Arity}, {Class, Value}}
         {exception_from, [{M,F,Arity}, {Class,Val}]} ->
             {"~p:~p/~p ~p ~p", [M,F,Arity, Class, Val]};
@@ -601,11 +601,49 @@ format_args(Arity) when is_integer(Arity) ->
     ["/", integer_to_list(Arity)];
 format_args(Args) when is_list(Args) ->
     Active = recon_rec:is_active(),
-    ["(", lists:join(", ", [recon_lib:format_trace_output(Active, Arg) || Arg <- Args]), ")"].
+    ["(", lists:join(", ", [format_trace_output(Active, Arg) || Arg <- Args]), ")"].
+
+
+%% @doc formats call arguments and return values - most types are just printed out, except for
+%% tuples recognised as records, which mimic the source code syntax
+%% @end
+format_trace_output(Args) ->
+    format_trace_output(recon_rec:is_active(), Args).
+
+format_trace_output(true, Args) when is_tuple(Args) ->
+    recon_rec:format_tuple(Args);
+format_trace_output(true, Args) when is_list(Args) ->
+    case io_lib:printable_list(Args) of
+        true -> io_lib:format("~p", [Args]);
+        false ->
+            L = lists:map(fun(A) -> format_trace_output(true, A) end, Args),
+            "[" ++ string:join(L, ", ") ++ "]"
+    end;
+format_trace_output(_, Args) ->
+    io_lib:format("~p", [Args]).
 
 %%%%%%%%%%%%%%%
 %%% HELPERS %%%
 %%%%%%%%%%%%%%%
+
+maybe_kill(Name) ->
+    case whereis(Name) of
+        undefined ->
+            ok;
+        Pid ->
+            unlink(Pid),
+            exit(Pid, kill),
+            wait_for_death(Pid, Name)
+    end.
+
+wait_for_death(Pid, Name) ->
+    case is_process_alive(Pid) orelse whereis(Name) =:= Pid of
+        true ->
+            timer:sleep(10),
+            wait_for_death(Pid, Name);
+        false ->
+            ok
+    end.
 
 %% Borrowed from dbg
 fun_to_ms(ShellFun) when is_function(ShellFun) ->

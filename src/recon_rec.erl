@@ -17,7 +17,9 @@
 -export([is_active/0]).
 -export([import/1, format_tuple/1, clear/1, clear/0, list/0, get_list/0, limit/3]).
 
--export([lookup_record/2]). %% for testing
+-ifdef(TEST).
+-export([lookup_record/2]).
+-endif.
 
 % basic types
 -type field() :: atom().
@@ -56,7 +58,7 @@ clear(Module) ->
 
 %% @doc remove all imported definitions, destroy the table, clean up
 clear() ->
-    recon_lib:maybe_kill(recon_ets),
+    maybe_kill(recon_ets),
     ok.
 
 %% @doc prints out all "known" (imported) record definitions and their limit settings.
@@ -192,7 +194,7 @@ format_tuple(Name, Rec) when is_atom(Name) ->
         [RecDef] -> format_record(Rec, RecDef);
         _ ->
             List = tuple_to_list(Rec),
-            ["{", lists:join(", ", [recon_lib:format_trace_output(true, El) || El <- List]), "}"]
+            ["{", lists:join(", ", [recon_trace:format_trace_output(true, El) || El <- List]), "}"]
     end;
 format_tuple(_, Tuple) ->
     format_default(Tuple).
@@ -215,7 +217,7 @@ format_record(Rec, {{Name, Arity}, Fields, _, Limits}) ->
     end.
 
 format_kv(Key, Val) ->
-    [recon_lib:format_trace_output(true, Key), "=", recon_lib:format_trace_output(true, Val)].
+    [recon_trace:format_trace_output(true, Key), "=", recon_trace:format_trace_output(true, Val)].
 
 apply_limits(List, none) -> List;
 apply_limits(_List, all) -> [];
@@ -223,3 +225,27 @@ apply_limits(List, Field) when is_atom(Field) ->
     [{Field, proplists:get_value(Field, List)}, {more, '...'}];
 apply_limits(List, Limits) ->
     lists:filter(fun({K, _}) -> lists:member(K, Limits) end, List) ++ [{more, '...'}].
+
+%%%%%%%%%%%%%%%
+%%% HELPERS %%%
+%%%%%%%%%%%%%%%
+
+maybe_kill(Name) ->
+    case whereis(Name) of
+        undefined ->
+            ok;
+        Pid ->
+            unlink(Pid),
+            exit(Pid, kill),
+            wait_for_death(Pid, Name)
+    end.
+
+wait_for_death(Pid, Name) ->
+    case is_process_alive(Pid) orelse whereis(Name) =:= Pid of
+        true ->
+            timer:sleep(10),
+            wait_for_death(Pid, Name);
+        false ->
+            ok
+    end.
+
