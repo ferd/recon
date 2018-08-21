@@ -619,8 +619,16 @@ format_trace_output(true, Args) when is_list(Args) ->
             L = lists:map(fun(A) -> format_trace_output(true, A) end, Args),
             "[" ++ string:join(L, ", ") ++ "]"
     end;
+format_trace_output(true, Args) when is_map(Args) ->
+    ItemList = maps:to_list(Args),
+    ["#{",
+        lists:join(", ", [format_kv(Key, Val) || {Key, Val} <- ItemList]),
+    "}"];
 format_trace_output(_, Args) ->
     io_lib:format("~p", [Args]).
+
+format_kv(Key, Val) ->
+    [format_trace_output(true, Key), "=", format_trace_output(true, Val)].
 
 %%%%%%%%%%%%%%%
 %%% HELPERS %%%
