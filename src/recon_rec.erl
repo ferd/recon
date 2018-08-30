@@ -69,7 +69,7 @@ clear() ->
 list() ->
     F = fun({Module, Name, Fields, Limits}) ->
             Fnames = lists:map(fun atom_to_list/1, Fields),
-            Flds = string:join(Fnames, ", "),
+            Flds = join(",", Fnames),
             io:format("~p: #~p(~p){~s} ~p~n", [Module, Name, length(Fields), Flds, Limits])
         end,
     lists:foreach(F, get_list()).
@@ -194,7 +194,7 @@ format_tuple(Name, Rec) when is_atom(Name) ->
         [RecDef] -> format_record(Rec, RecDef);
         _ ->
             List = tuple_to_list(Rec),
-            ["{", lists:join(", ", [recon_trace:format_trace_output(true, El) || El <- List]), "}"]
+            ["{", join(", ", [recon_trace:format_trace_output(true, El) || El <- List]), "}"]
     end;
 format_tuple(_, Tuple) ->
     format_default(Tuple).
@@ -210,7 +210,7 @@ format_record(Rec, {{Name, Arity}, Fields, _, Limits}) ->
             List = lists:zip(Fields, Values),
             LimitedList = apply_limits(List, Limits),
             ["#", atom_to_list(Name), "{",
-             lists:join(", ", [format_kv(Key, Val) || {Key, Val} <- LimitedList]),
+             join(", ", [format_kv(Key, Val) || {Key, Val} <- LimitedList]),
              "}"];
         _ ->
             format_default(Rec)
@@ -249,3 +249,12 @@ wait_for_death(Pid, Name) ->
             ok
     end.
 
+-ifdef(OTP_RELEASE).
+-spec join(term(), [term()]) -> [term()].
+join(Sep, List) ->
+    lists:join(Sep, List).
+-else.
+-spec join(string(), [string()]) -> string().
+join(Sep, List) ->
+    string:join(List, Sep).
+-endif.

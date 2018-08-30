@@ -601,7 +601,7 @@ format_args(Arity) when is_integer(Arity) ->
     ["/", integer_to_list(Arity)];
 format_args(Args) when is_list(Args) ->
     Active = recon_rec:is_active(),
-    ["(", lists:join(", ", [format_trace_output(Active, Arg) || Arg <- Args]), ")"].
+    ["(", join(", ", [format_trace_output(Active, Arg) || Arg <- Args]), ")"].
 
 
 %% @doc formats call arguments and return values - most types are just printed out, except for
@@ -617,12 +617,12 @@ format_trace_output(true, Args) when is_list(Args) ->
         true -> io_lib:format("~p", [Args]);
         false ->
             L = lists:map(fun(A) -> format_trace_output(true, A) end, Args),
-            "[" ++ string:join(L, ", ") ++ "]"
+            "[" ++ join(", ", L) ++ "]"
     end;
 format_trace_output(true, Args) when is_map(Args) ->
     ItemList = maps:to_list(Args),
     ["#{",
-        lists:join(", ", [format_kv(Key, Val) || {Key, Val} <- ItemList]),
+        join(", ", [format_kv(Key, Val) || {Key, Val} <- ItemList]),
     "}"];
 format_trace_output(_, Args) ->
     io_lib:format("~p", [Args]).
@@ -669,3 +669,13 @@ fun_to_ms(ShellFun) when is_function(ShellFun) ->
         false ->
             exit(shell_funs_only)
     end.
+
+-ifdef(OTP_RELEASE).
+-spec join(term(), [term()]) -> [term()].
+join(Sep, List) ->
+    lists:join(Sep, List).
+-else.
+-spec join(string(), [string()]) -> string().
+join(Sep, List) ->
+    string:join(List, Sep).
+-endif.
