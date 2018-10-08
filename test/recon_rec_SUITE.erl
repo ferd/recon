@@ -7,15 +7,10 @@
 
 all() -> [record_defs, lists_and_limits].
 
-init_per_suite(Config) ->
+init_per_testcase(_, Config) ->
     Res = recon_rec:import(records1),
     [{imported, records1, another, 3}, {imported, records1, state, 3}] = lists:sort(Res),
     Config.
-
-end_per_suite(C) ->
-    C.
-
-init_per_testcase(_, Config) -> Config.
 
 end_per_testcase(_, Config) ->
     recon_rec:clear(),

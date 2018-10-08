@@ -155,17 +155,27 @@ ensure_table_exists() ->
         undefined ->
             case whereis(recon_ets) of
                 undefined ->
+                    Parent = self(),
+                    Ref = make_ref(),
                     %% attach to the currently running session
-                    spawn_link(fun() ->
+                    {Pid, MonRef} = spawn_monitor(fun() ->
                         register(recon_ets, self()),
                         ets:new(ets_table_name(), [set, public, named_table]),
+                        Parent ! Ref,
                         ets_keeper()
-                    end);
-                P ->
-                    P
+                    end),
+                    receive
+                        Ref ->
+                            erlang:demonitor(MonRef, [flush]),
+                            Pid;
+                        {'DOWN', MonRef, _, _, Reason} ->
+                            error(Reason)
+                    end;
+                Pid ->
+                    Pid
             end;
-        _ ->
-            ok
+        Pid ->
+            Pid
     end.
 
 ets_table_name() -> recon_record_definitions.
