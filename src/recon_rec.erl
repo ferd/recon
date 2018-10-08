@@ -28,8 +28,8 @@
 -type limit() :: all | none | field() | [field()].
 -type listentry() :: {module(), record_name(), [field()], limit()}.
 -type import_result() :: {imported, module(), record_name(), arity()}
-                         | {overwritten, module(), record_name(), arity()}
-                         | {ignored, module(), record_name(), arity(), module()}.
+                       | {overwritten, module(), record_name(), arity()}
+                       | {ignored, module(), record_name(), arity(), module()}.
 
 %% @doc import record definitions from a module. If a record definition of the same name
 %% and arity has already been imported from another module then the new
@@ -70,8 +70,10 @@ list() ->
     F = fun({Module, Name, Fields, Limits}) ->
             Fnames = lists:map(fun atom_to_list/1, Fields),
             Flds = join(",", Fnames),
-            io:format("~p: #~p(~p){~s} ~p~n", [Module, Name, length(Fields), Flds, Limits])
+            io:format("~p: #~p(~p){~s} ~p~n",
+                      [Module, Name, length(Fields), Flds, Limits])
         end,
+    io:format("Module: #Name(Size){<Fields>} Limits~n==========~n", []),
     lists:foreach(F, get_list()).
 
 %% @doc returns a list of active record definitions
@@ -151,16 +153,19 @@ lookup_record(RecName, FieldCount) ->
 ensure_table_exists() ->
     case ets:info(ets_table_name()) of
         undefined ->
-            Pid = case whereis(recon_ets) of
-                      undefined ->
-                          P = spawn(fun() -> ets_keeper() end),
-                          register(recon_ets, P),
-                          P;
-                      P -> P
-                  end,
-            ets:new(ets_table_name(), [set, public, named_table]),
-            ets:give_away(ets_table_name(), Pid, none);
-        _ -> ok
+            case whereis(recon_ets) of
+                undefined ->
+                    %% attach to the currently running session
+                    spawn_link(fun() ->
+                        register(recon_ets, self()),
+                        ets:new(ets_table_name(), [set, public, named_table]),
+                        ets_keeper()
+                    end);
+                P ->
+                    P
+            end;
+        _ ->
+            ok
     end.
 
 ets_table_name() -> recon_record_definitions.
@@ -170,7 +175,8 @@ rec_info({Name, Fields}, Module) ->
 
 rem_for_module({_, _, Module, _} = Rec, Module) ->
     ets:delete_object(ets_table_name(), Rec);
-rem_for_module(_, _) -> ok.
+rem_for_module(_, _) ->
+    ok.
 
 ets_keeper() ->
     receive
@@ -224,7 +230,7 @@ apply_limits(_List, all) -> [];
 apply_limits(List, Field) when is_atom(Field) ->
     [{Field, proplists:get_value(Field, List)}, {more, '...'}];
 apply_limits(List, Limits) ->
-    lists:filter(fun({K, _}) -> lists:member(K, Limits) end, List) ++ [{more, '...'}].
+    [lists:filter(fun({K, _}) -> lists:member(K, Limits) end, List), {more, '...'}].
 
 %%%%%%%%%%%%%%%
 %%% HELPERS %%%

@@ -169,6 +169,13 @@
 %%% The only output still sent to the Group Leader is the rate limit being
 %%% tripped, and any errors. The rest will be sent to the other IO
 %%% server (see [http://erlang.org/doc/apps/stdlib/io_protocol.html]).
+%%%
+%%% == Record Printing ==
+%%%
+%%% Thanks to code contributed by Bartek Górny, record printing can be added
+%%% to traces by first importing records in an active session with
+%%% `recon_rec:import([Module, ...])', after which the records declared in
+%%% the module list will be supported.
 %%% @end
 -module(recon_trace).
 
@@ -598,10 +605,10 @@ to_hms(_) ->
     {0,0,0}.
 
 format_args(Arity) when is_integer(Arity) ->
-    ["/", integer_to_list(Arity)];
+    [$/, integer_to_list(Arity)];
 format_args(Args) when is_list(Args) ->
     Active = recon_rec:is_active(),
-    ["(", join(", ", [format_trace_output(Active, Arg) || Arg <- Args]), ")"].
+    [$(, join(", ", [format_trace_output(Active, Arg) || Arg <- Args]), $)].
 
 
 %% @doc formats call arguments and return values - most types are just printed out, except for
@@ -614,10 +621,11 @@ format_trace_output(true, Args) when is_tuple(Args) ->
     recon_rec:format_tuple(Args);
 format_trace_output(true, Args) when is_list(Args) ->
     case io_lib:printable_list(Args) of
-        true -> io_lib:format("~p", [Args]);
+        true ->
+            io_lib:format("~p", [Args]);
         false ->
             L = lists:map(fun(A) -> format_trace_output(true, A) end, Args),
-            "[" ++ join(", ", L) ++ "]"
+            [$[, join(", ", L), $]]
     end;
 format_trace_output(true, Args) when is_map(Args) ->
     ItemList = maps:to_list(Args),
