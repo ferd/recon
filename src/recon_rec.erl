@@ -240,7 +240,7 @@ apply_limits(_List, all) -> [];
 apply_limits(List, Field) when is_atom(Field) ->
     [{Field, proplists:get_value(Field, List)}, {more, '...'}];
 apply_limits(List, Limits) ->
-    [lists:filter(fun({K, _}) -> lists:member(K, Limits) end, List), {more, '...'}].
+    lists:filter(fun({K, _}) -> lists:member(K, Limits) end, List) ++ [{more, '...'}].
 
 %%%%%%%%%%%%%%%
 %%% HELPERS %%%
