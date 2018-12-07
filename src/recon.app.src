@@ -1,7 +1,7 @@
 {application, recon,
  [{description, "Diagnostic tools for production use"},
-  {vsn, "2.3.6"},
-  {modules, [recon, recon_alloc, recon_lib, recon_trace]},
+  {vsn, "2.4.0"},
+  {modules, [recon, recon_alloc, recon_lib, recon_trace, recon_rec]},
   {registered, []},
   {applications, [kernel, stdlib]},
 

@@ -16,7 +16,7 @@ Current Status
 
 [![Build Status](https://travis-ci.org/ferd/recon.png)](https://travis-ci.org/ferd/recon)
 
-Versions supported: OTP-17 and up. Support of R16B03-1 down to R15B02 is best effort.
+Versions supported: OTP-17 and up. Support of R16B03-1 down to R15B02 is best effort. Builds with Rebar3 require OTP-17.1 and up because that's what the tool supports.
 
 Changelog
 ---------
@@ -27,6 +27,8 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.4.0
+  - Optional formatting of records in traces (thanks to @bartekgorny)
 - 2.3.6
   - Adapting for OTP-21. Includes the 'deprecation' of `recon:files/0`
     since OTP-21 no longer supports listing all file descriptors, and

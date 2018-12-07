@@ -7,7 +7,6 @@ otp_release:
   - 18.3
   - 17.3
   - 17.1
-  - 17.0
 script: "wget https://s3.amazonaws.com/rebar3/rebar3 && escript rebar3 do edoc, eunit, ct"
 branches:
   only:
