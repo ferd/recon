@@ -13,7 +13,7 @@
         <h1>Recon</h1>
         <nav>
           <ul>
-<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a><li><a href="recon_trace.html">recon_trace</a>
+<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a><li><a href="recon_rec.html">recon_rec</a><li><a href="recon_trace.html">recon_trace</a>
           </ul>
         </nav>
     </header>
@@ -177,9 +177,16 @@ For instance to write the traces to a file you can do something like</p>
    Recon tracer rate limit tripped.
    4&gt; file:close(Dev).</pre>
   
-   The only output still sent to the Group Leader is the rate limit being
+   <p>The only output still sent to the Group Leader is the rate limit being
    tripped, and any errors. The rest will be sent to the other IO
-   server (see <a href="http://erlang.org/doc/apps/stdlib/io_protocol.html" target="_top"><code>http://erlang.org/doc/apps/stdlib/io_protocol.html</code></a>).
+   server (see <a href="http://erlang.org/doc/apps/stdlib/io_protocol.html" target="_top"><code>http://erlang.org/doc/apps/stdlib/io_protocol.html</code></a>).</p>
+  
+   <h4><a name="Record_Printing">Record Printing</a></h4>
+  
+   Thanks to code contributed by Bartek Górny, record printing can be added
+   to traces by first importing records in an active session with
+   <code>recon_rec:import([Module, ...])</code>, after which the records declared in
+   the module list will be supported.
 <h3><a name="types">Data Types</a></h3>
 
 <h4 class="typedecl"><a name="type-args">args()</a></h4>
@@ -245,6 +252,7 @@ For instance to write the traces to a file you can do something like</p>
 function calls.</td></tr>
 <tr><td valign="top"><a href="#clear-0">clear/0</a></td><td>Stops all tracing at once.</td></tr>
 <tr><td valign="top"><a href="#format-1">format/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#format_trace_output-2">format_trace_output/2</a></td><td></td></tr>
 </table>
 
 <h3><a name="functions">Function Details</a></h3>
@@ -361,6 +369,11 @@ options:</p>
 <h4 class="function"><a name="format-1">format/1</a></h4>
 <div class="spec">
 <p><code>format(TraceMsg) -&gt; any()</code></p>
+</div>
+
+<h4 class="function"><a name="format_trace_output-2">format_trace_output/2</a></h4>
+<div class="spec">
+<p><code>format_trace_output(X1, Args) -&gt; any()</code></p>
 </div>
 
     </article>
