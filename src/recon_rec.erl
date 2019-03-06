@@ -16,6 +16,7 @@
 
 -export([is_active/0]).
 -export([import/1, format_tuple/1, clear/1, clear/0, list/0, get_list/0, limit/3]).
+-export([ensure_table_exists/0]).
 
 -ifdef(TEST).
 -export([lookup_record/2]).
@@ -54,7 +55,7 @@ is_active() ->
 
 %% @doc remove definitions imported from a module.
 clear(Module) ->
-    lists:map(fun(R) -> rem_for_module(R, Module) end, ets:tab2list(ets_table_name())).
+    lists:map(fun(R) -> rem_for_module(R, Module) end, ets:tab2list(records_table_name())).
 
 %% @doc remove all imported definitions, destroy the table, clean up
 clear() ->
@@ -80,22 +81,24 @@ list() ->
 -spec get_list() -> [listentry()].
 get_list() ->
     ensure_table_exists(),
-    Lst = lists:map(fun make_list_entry/1, ets:tab2list(ets_table_name())),
+    Lst = lists:map(fun make_list_entry/1, ets:tab2list(records_table_name())),
     lists:sort(Lst).
 
 %% @doc Limit output to selected fields of a record (can be 'none', 'all', a field or a list of fields).
 %% Limit set to 'none' means there is no limit, and all fields are displayed; limit 'all' means that
 %% all fields are squashed and only record name will be shown.
 %% @end
--spec limit(record_name(), arity(), limit()) -> ok | {error, record_unknown}.
-limit(Name, Arity, Limit) ->
+-spec limit(record_name(), arity(), limit()) -> ok | {error, any()}.
+limit(Name, Arity, Limit) when is_atom(Name), is_integer(Arity) ->
     case lookup_record(Name, Arity) of
         [] ->
             {error, record_unknown};
         [{Key, Fields, Mod, _}] ->
-            ets:insert(ets_table_name(), {Key, Fields, Mod, Limit}),
+            ets:insert(records_table_name(), {Key, Fields, Mod, Limit}),
             ok
-    end.
+    end;
+limit(_, _, _) ->
+    {error, "Bad argument - the spec is limit(atom(), integer(), limit())"}.
 
 %% @private if a tuple is a known record, formats is as "#recname{field=value}", otherwise returns
 %% just a printout of a tuple.
@@ -129,10 +132,10 @@ store_record(Rec, Module, ResultList) ->
     Arity = length(Fields),
     Result = case lookup_record(Name, Arity) of
         [] ->
-            ets:insert(ets_table_name(), rec_info(Rec, Module)),
+            ets:insert(records_table_name(), rec_info(Rec, Module)),
             {imported, Module, Name, Arity};
         [{_, _, Module, _}] ->
-            ets:insert(ets_table_name(), rec_info(Rec, Module)),
+            ets:insert(records_table_name(), rec_info(Rec, Module)),
             {overwritten, Module, Name, Arity};
         [{_, _, Mod, _}] ->
             {ignored, Module, Name, Arity, Mod}
@@ -150,10 +153,10 @@ get_record(_, Acc) -> Acc.
 %% @private
 lookup_record(RecName, FieldCount) ->
     ensure_table_exists(),
-    ets:lookup(ets_table_name(), {RecName, FieldCount}).
+    ets:lookup(records_table_name(), {RecName, FieldCount}).
 
 ensure_table_exists() ->
-    case ets:info(ets_table_name()) of
+    case ets:info(records_table_name()) of
         undefined ->
             case whereis(recon_ets) of
                 undefined ->
@@ -162,7 +165,8 @@ ensure_table_exists() ->
                     %% attach to the currently running session
                     {Pid, MonRef} = spawn_monitor(fun() ->
                         register(recon_ets, self()),
-                        ets:new(ets_table_name(), [set, public, named_table]),
+                        ets:new(records_table_name(), [set, public, named_table]),
+                        ets:new(recon_map:patterns_table_name(), [set, public, named_table]),
                         Parent ! Ref,
                         ets_keeper()
                     end),
@@ -180,13 +184,13 @@ ensure_table_exists() ->
             Pid
     end.
 
-ets_table_name() -> recon_record_definitions.
+records_table_name() -> recon_record_definitions.
 
 rec_info({Name, Fields}, Module) ->
     {{Name, length(Fields)}, field_names(Fields), Module, none}.
 
 rem_for_module({_, _, Module, _} = Rec, Module) ->
-    ets:delete_object(ets_table_name(), Rec);
+    ets:delete_object(records_table_name(), Rec);
 rem_for_module(_, _) ->
     ok.
 
