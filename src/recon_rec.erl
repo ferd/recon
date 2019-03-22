@@ -60,6 +60,7 @@ clear(Module) ->
 %% @doc remove all imported definitions, destroy the table, clean up
 clear() ->
     maybe_kill(recon_ets),
+    recon_map:clear(),
     ok.
 
 %% @doc prints out all "known" (imported) record definitions and their limit settings.
@@ -166,7 +167,6 @@ ensure_table_exists() ->
                     {Pid, MonRef} = spawn_monitor(fun() ->
                         register(recon_ets, self()),
                         ets:new(records_table_name(), [set, public, named_table]),
-                        ets:new(recon_map:patterns_table_name(), [set, public, named_table]),
                         Parent ! Ref,
                         ets_keeper()
                     end),

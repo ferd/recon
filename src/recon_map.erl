@@ -16,12 +16,26 @@
 -export([limit/3]).
 -export([list/0]).
 -export([process_map/1]).
--export([patterns_table_name/0]).
+-export([is_active/0]).
+-export([clear/0]).
 
 -type map_label() :: atom().
 -type pattern() :: map().
 -type field() :: atom().
 -type limit() :: all | none | field() | [field()].
+
+%% @doc quickly check if we want to do any record formatting
+-spec is_active() -> boolean().
+is_active() ->
+    case whereis(recon_ets_maps) of
+        undefined -> false;
+        _ -> true
+    end.
+
+%% @doc remove all imported definitions, destroy the table, clean up
+clear() ->
+    maybe_kill(recon_ets_maps),
+    ok.
 
 %% @doc Limit output to selected keys of a map (can be 'none', 'all', a key or a list of keys).
 %% Pattern selects maps to process.
@@ -35,6 +49,7 @@ limit(_, _, _) ->
     {error, "Bad argument - the spec is limit(atom(), map(), limit())"}.
 
 list() ->
+    ensure_table_exists(),
     io:format("~nmap definitions and limits:~n"),
     list(lists:sort(ets:tab2list(patterns_table_name()))).
 
@@ -46,8 +61,8 @@ list([{Label, Pattern, Limit} | Rest]) ->
     list(Rest).
 
 %% @doc given a map, scans saved patterns for one that matches; if found, returns a label
-%% and a map with limits applied; otherwise returns 'none' and original map
-%% pattern can be:
+%% and a map with limits applied; otherwise returns 'none' and original map.
+%% Pattern can be:
 %% - a map - then each key in pattern is check for equality with the map in question
 %% - a fun(map()) -> boolean()
 -spec process_map(map()) -> {atom(), map()}.
@@ -101,6 +116,64 @@ get_value_from_map(F, M, Flist) ->
 patterns_table_name() -> recon_map_patterns.
 
 store_pattern(Label, Pattern, Limit) ->
-    recon_rec:ensure_table_exists(),
+    ensure_table_exists(),
     ets:insert(patterns_table_name(), {Label, Pattern, Limit}),
     ok.
+
+ensure_table_exists() ->
+    case ets:info(patterns_table_name()) of
+        undefined ->
+            case whereis(recon_ets_maps) of
+                undefined ->
+                    Parent = self(),
+                    Ref = make_ref(),
+                    %% attach to the currently running session
+                    {Pid, MonRef} = spawn_monitor(fun() ->
+                        register(recon_ets_maps, self()),
+                        ets:new(patterns_table_name(), [set, public, named_table]),
+                        Parent ! Ref,
+                        ets_keeper()
+                    end),
+                    receive
+                        Ref ->
+                            erlang:demonitor(MonRef, [flush]),
+                            Pid;
+                        {'DOWN', MonRef, _, _, Reason} ->
+                            error(Reason)
+                    end;
+                Pid ->
+                    Pid
+            end;
+        Pid ->
+            Pid
+    end.
+
+ets_keeper() ->
+    receive
+        stop -> ok;
+        _ -> ets_keeper()
+    end.
+
+%%%%%%%%%%%%%%%
+%%% HELPERS %%%
+%%%%%%%%%%%%%%%
+
+maybe_kill(Name) ->
+    case whereis(Name) of
+        undefined ->
+            ok;
+        Pid ->
+            unlink(Pid),
+            exit(Pid, kill),
+            wait_for_death(Pid, Name)
+    end.
+
+wait_for_death(Pid, Name) ->
+    case is_process_alive(Pid) orelse whereis(Name) =:= Pid of
+        true ->
+            timer:sleep(10),
+            wait_for_death(Pid, Name);
+        false ->
+            ok
+    end.
+

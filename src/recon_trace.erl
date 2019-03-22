@@ -185,7 +185,7 @@
 -export([format/1]).
 
 %% Internal exports
--export([count_tracer/1, rate_tracer/2, formatter/5, format_trace_output/2]).
+-export([count_tracer/1, rate_tracer/2, formatter/5, format_trace_output/1, format_trace_output/2]).
 
 -type matchspec()    :: [{[term()], [term()], [term()]}].
 -type shellfun()     :: fun((_) -> term()).
@@ -607,27 +607,29 @@ to_hms(_) ->
 format_args(Arity) when is_integer(Arity) ->
     [$/, integer_to_list(Arity)];
 format_args(Args) when is_list(Args) ->
-    Active = recon_rec:is_active(),
-    [$(, join(", ", [format_trace_output(Active, Arg) || Arg <- Args]), $)].
+    [$(, join(", ", [format_trace_output(Arg) || Arg <- Args]), $)].
 
 
 %% @doc formats call arguments and return values - most types are just printed out, except for
 %% tuples recognised as records, which mimic the source code syntax
 %% @end
 format_trace_output(Args) ->
-    format_trace_output(recon_rec:is_active(), Args).
+    format_trace_output(recon_rec:is_active(), recon_map:is_active(), Args).
 
-format_trace_output(true, Args) when is_tuple(Args) ->
+format_trace_output(Recs, Args) ->
+    format_trace_output(Recs, recon_map:is_active(), Args).
+
+format_trace_output(true, _, Args) when is_tuple(Args) ->
     recon_rec:format_tuple(Args);
-format_trace_output(true, Args) when is_list(Args) ->
+format_trace_output(true, Maps, Args) when is_list(Args) ->
     case io_lib:printable_list(Args) of
         true ->
             io_lib:format("~p", [Args]);
         false ->
-            L = lists:map(fun(A) -> format_trace_output(true, A) end, Args),
+            L = lists:map(fun(A) -> format_trace_output(true, Maps, A) end, Args),
             [$[, join(", ", L), $]]
     end;
-format_trace_output(true, Args) when is_map(Args) ->
+format_trace_output(Recs, true, Args) when is_map(Args) ->
     {Label, Map} = recon_map:process_map(Args),
     Label1 = case Label of
                  none -> "";
@@ -636,13 +638,18 @@ format_trace_output(true, Args) when is_map(Args) ->
     ItemList = maps:to_list(Map),
     [Label1,
      "#{",
-        join(", ", [format_kv(Key, Val) || {Key, Val} <- ItemList]),
+        join(", ", [format_kv(Recs, Key, Val) || {Key, Val} <- ItemList]),
     "}"];
-format_trace_output(_, Args) ->
+format_trace_output(Recs, false, Args) when is_map(Args) ->
+    ItemList = maps:to_list(Args),
+    ["#{",
+        join(", ", [format_kv(Recs, Key, Val) || {Key, Val} <- ItemList]),
+    "}"];
+format_trace_output(_, _, Args) ->
     io_lib:format("~p", [Args]).
 
-format_kv(Key, Val) ->
-    [format_trace_output(true, Key), "=", format_trace_output(true, Val)].
+format_kv(Recs, Key, Val) ->
+    [format_trace_output(Recs, true, Key), "=", format_trace_output(Recs, true, Val)].
 
 %%%%%%%%%%%%%%%
 %%% HELPERS %%%
