@@ -103,15 +103,7 @@ apply_map_limits(none, M) ->
 apply_map_limits(all, _) ->
     #{};
 apply_map_limits(Fields, M) ->
-    maps:from_list(lists:foldl(fun(F, Flist) -> get_value_from_map(F, M, Flist) end, [], Fields)).
-
-get_value_from_map(F, M, Flist) ->
-    case maps:is_key(F, M) of
-        true ->
-            [{F, maps:get(F, M)} | Flist];
-        false ->
-            Flist
-    end.
+    maps:with(Fields, M).
 
 patterns_table_name() -> recon_map_patterns.
 
