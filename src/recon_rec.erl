@@ -96,9 +96,7 @@ limit(Name, Arity, Limit) when is_atom(Name), is_integer(Arity) ->
         [{Key, Fields, Mod, _}] ->
             ets:insert(records_table_name(), {Key, Fields, Mod, Limit}),
             ok
-    end;
-limit(_, _, _) ->
-    {error, "Bad argument - the spec is limit(atom(), integer(), limit())"}.
+    end.
 
 %% @private if a tuple is a known record, formats is as "#recname{field=value}", otherwise returns
 %% just a printout of a tuple.

@@ -44,9 +44,7 @@ clear() ->
 limit(Label, #{} = Pattern, Limit) when is_atom(Label) ->
     store_pattern(Label, Pattern, Limit);
 limit(Label, Pattern, Limit) when is_atom(Label), is_function(Pattern) ->
-    store_pattern(Label, Pattern, Limit);
-limit(_, _, _) ->
-    {error, "Bad argument - the spec is limit(atom(), map(), limit())"}.
+    store_pattern(Label, Pattern, Limit).
 
 list() ->
     ensure_table_exists(),
