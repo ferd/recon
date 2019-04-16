@@ -69,12 +69,12 @@ list([{Label, Pattern, Limit} | Rest]) ->
 %% <li> a map - then each key in pattern is checked for equality with the map in question</li>
 %% <li> a fun(map()) -> boolean()</li>
 %% </ul>
--spec process_map(map()) -> {atom(), map()}.
+-spec process_map(map()) -> map() | {atom(), map()}.
 process_map(M) ->
     process_map(M, ets:tab2list(patterns_table_name())).
 
 process_map(M, []) ->
-    {none, M};
+    M;
 process_map(M, [{Label, Pattern, Limit} | Rest]) ->
     case map_matches(M, Pattern) of
         true ->

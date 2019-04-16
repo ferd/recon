@@ -630,13 +630,12 @@ format_trace_output(true, Maps, Args) when is_list(Args) ->
             [$[, join(", ", L), $]]
     end;
 format_trace_output(Recs, true, Args) when is_map(Args) ->
-    {Label, Map} = recon_map:process_map(Args),
-    Label1 = case Label of
-                 none -> "";
-                 A -> atom_to_list(A)
-             end,
+    {Label, Map} = case recon_map:process_map(Args) of
+                       {L, M} -> {atom_to_list(L), M};
+                       M -> {"", M}
+                   end,
     ItemList = maps:to_list(Map),
-    [Label1,
+    [Label,
      "#{",
         join(", ", [format_kv(Recs, true, Key, Val) || {Key, Val} <- ItemList]),
     "}"];
