@@ -38,7 +38,11 @@ clear() ->
     ok.
 
 %% @doc Limit output to selected keys of a map (can be 'none', 'all', a key or a list of keys).
-%% Pattern selects maps to process.
+%% Pattern selects maps to process: a "pattern" is just a map, and if all key/value pairs of a pattern
+%% are present in a map (in other words, the pattern is a subset), then we say the map matches
+%% and we process it accordingly (apply the limit).
+%%
+%% Instead of a pattern you can also provide a function which will take a map and return a boolean.
 %% @end
 -spec limit(map_label(), pattern(), limit()) -> ok | {error, any()}.
 limit(Label, #{} = Pattern, Limit) when is_atom(Label) ->
@@ -61,8 +65,10 @@ list([{Label, Pattern, Limit} | Rest]) ->
 %% @doc given a map, scans saved patterns for one that matches; if found, returns a label
 %% and a map with limits applied; otherwise returns 'none' and original map.
 %% Pattern can be:
-%% - a map - then each key in pattern is check for equality with the map in question
-%% - a fun(map()) -> boolean()
+%% <ul>
+%% <li> a map - then each key in pattern is checked for equality with the map in question</li>
+%% <li> a fun(map()) -> boolean()</li>
+%% </ul>
 -spec process_map(map()) -> {atom(), map()}.
 process_map(M) ->
     process_map(M, ets:tab2list(patterns_table_name())).
