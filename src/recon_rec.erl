@@ -100,8 +100,6 @@ limit(Name, Arity, Limit) when is_atom(Name), is_integer(Arity) ->
 
 %% @private if a tuple is a known record, formats is as "#recname{field=value}", otherwise returns
 %% just a printout of a tuple.
-format_tuple(Tuple) when element(1, Tuple) == set ->
-    ["set:", recon_trace:format_trace_output(true, sets:to_list(Tuple))];
 format_tuple(Tuple) ->
     ensure_table_exists(),
     First = element(1, Tuple),
