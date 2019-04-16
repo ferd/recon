@@ -638,18 +638,18 @@ format_trace_output(Recs, true, Args) when is_map(Args) ->
     ItemList = maps:to_list(Map),
     [Label1,
      "#{",
-        join(", ", [format_kv(Recs, Key, Val) || {Key, Val} <- ItemList]),
+        join(", ", [format_kv(Recs, true, Key, Val) || {Key, Val} <- ItemList]),
     "}"];
 format_trace_output(Recs, false, Args) when is_map(Args) ->
     ItemList = maps:to_list(Args),
     ["#{",
-        join(", ", [format_kv(Recs, Key, Val) || {Key, Val} <- ItemList]),
+        join(", ", [format_kv(Recs, false, Key, Val) || {Key, Val} <- ItemList]),
     "}"];
 format_trace_output(_, _, Args) ->
     io_lib:format("~p", [Args]).
 
-format_kv(Recs, Key, Val) ->
-    [format_trace_output(Recs, true, Key), "=", format_trace_output(Recs, true, Val)].
+format_kv(Recs, Maps, Key, Val) ->
+    [format_trace_output(Recs, Maps, Key), "=", format_trace_output(Recs, Maps, Val)].
 
 %%%%%%%%%%%%%%%
 %%% HELPERS %%%
