@@ -649,7 +649,7 @@ format_trace_output(_, _, Args) ->
     io_lib:format("~p", [Args]).
 
 format_kv(Recs, Maps, Key, Val) ->
-    [format_trace_output(Recs, Maps, Key), "=", format_trace_output(Recs, Maps, Val)].
+    [format_trace_output(Recs, Maps, Key), "=>", format_trace_output(Recs, Maps, Val)].
 
 %%%%%%%%%%%%%%%
 %%% HELPERS %%%
