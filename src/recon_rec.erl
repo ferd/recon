@@ -60,7 +60,6 @@ clear(Module) ->
 %% @doc remove all imported definitions, destroy the table, clean up
 clear() ->
     maybe_kill(recon_ets),
-    recon_map:clear(),
     ok.
 
 %% @doc prints out all "known" (imported) record definitions and their limit settings.
