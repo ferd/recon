@@ -18,6 +18,7 @@
 -export([process_map/1]).
 -export([is_active/0]).
 -export([clear/0]).
+-export([remove/1, rename/2]).
 
 -type map_label() :: atom().
 -type pattern() :: map().
@@ -42,6 +43,8 @@ clear() ->
 %% are present in a map (in other words, the pattern is a subset), then we say the map matches
 %% and we process it accordingly (apply the limit).
 %%
+%% Patterns are applied in alphabetical order, until a match is found.
+%%
 %% Instead of a pattern you can also provide a function which will take a map and return a boolean.
 %% @end
 -spec limit(map_label(), pattern(), limit()) -> ok | {error, any()}.
@@ -54,6 +57,21 @@ list() ->
     ensure_table_exists(),
     io:format("~nmap definitions and limits:~n"),
     list(lists:sort(ets:tab2list(patterns_table_name()))).
+
+remove(Label) ->
+    ensure_table_exists(),
+    ets:delete(patterns_table_name(), Label).
+
+rename(Name, NewName) ->
+    ensure_table_exists(),
+    case ets:lookup(patterns_table_name(), Name) of
+        [{Name, Pattern, Limit}] ->
+            ets:delete(patterns_table_name(), Name),
+            ets:insert(patterns_table_name(), {NewName, Pattern, Limit}),
+            renamed;
+        [] ->
+            missing
+    end.
 
 list([]) ->
     io:format("~n"),
@@ -124,7 +142,7 @@ ensure_table_exists() ->
                     %% attach to the currently running session
                     {Pid, MonRef} = spawn_monitor(fun() ->
                         register(recon_ets_maps, self()),
-                        ets:new(patterns_table_name(), [set, public, named_table]),
+                        ets:new(patterns_table_name(), [ordered_set, public, named_table]),
                         Parent ! Ref,
                         ets_keeper()
                     end),
