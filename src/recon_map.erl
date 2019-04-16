@@ -85,8 +85,6 @@ process_map(M, [{Label, Pattern, Limit} | Rest]) ->
 
 map_matches(#{} = M, Pattern) when is_function(Pattern) ->
     Pattern(M);
-map_matches(#{} = M, #{} = Pattern) ->
-    map_matches(M, maps:to_list(Pattern));
 map_matches(_, []) ->
     true;
 map_matches(M, [{K, V} | Rest]) ->
@@ -113,7 +111,7 @@ patterns_table_name() -> recon_map_patterns.
 
 store_pattern(Label, Pattern, Limit) ->
     ensure_table_exists(),
-    ets:insert(patterns_table_name(), {Label, Pattern, Limit}),
+    ets:insert(patterns_table_name(), {Label, maps:to_list(Pattern), Limit}),
     ok.
 
 ensure_table_exists() ->
