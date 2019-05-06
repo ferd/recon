@@ -21,9 +21,8 @@
 -export([remove/1, rename/2]).
 
 -type map_label() :: atom().
--type pattern() :: map().
--type field() :: atom().
--type limit() :: all | none | field() | [field()].
+-type pattern() :: map() | function().
+-type limit() :: all | none | atom() | binary() | [any()].
 
 %% @doc quickly check if we want to do any record formatting
 -spec is_active() -> boolean().
@@ -129,8 +128,16 @@ patterns_table_name() -> recon_map_patterns.
 
 store_pattern(Label, Pattern, Limit) ->
     ensure_table_exists(),
-    ets:insert(patterns_table_name(), {Label, maps:to_list(Pattern), Limit}),
+    ets:insert(patterns_table_name(), {Label, prepare_pattern(Pattern), prepare_limit(Limit)}),
     ok.
+
+prepare_limit(Limit) when is_binary(Limit) -> [Limit];
+prepare_limit(Limit) when is_atom(Limit) -> [Limit];
+prepare_limit(Limit) when is_list(Limit) -> Limit.
+
+prepare_pattern(Pattern) when is_function(Pattern) -> Pattern;
+prepare_pattern(Pattern) when is_map(Pattern) -> maps:to_list(Pattern).
+
 
 ensure_table_exists() ->
     case ets:info(patterns_table_name()) of
