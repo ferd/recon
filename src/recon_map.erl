@@ -131,6 +131,8 @@ store_pattern(Label, Pattern, Limit) ->
     ets:insert(patterns_table_name(), {Label, prepare_pattern(Pattern), prepare_limit(Limit)}),
     ok.
 
+prepare_limit(all) -> all;
+prepare_limit(none) -> none;
 prepare_limit(Limit) when is_binary(Limit) -> [Limit];
 prepare_limit(Limit) when is_atom(Limit) -> [Limit];
 prepare_limit(Limit) when is_list(Limit) -> Limit.
