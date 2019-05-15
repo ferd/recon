@@ -9,5 +9,6 @@
   {licenses, ["BSD"]},
   {links, [{"Github", "https://github.com/ferd/recon/"},
            {"Documentation", "http://ferd.github.io/recon/"}]},
-  {files, ["src/", "script/", "rebar.lock", "README.md", "LICENSE"]}
+  {build_tools, ["mix", "rebar3"]},
+  {files, ["src/", "script/", "rebar.lock", "mix.exs", "README.md", "LICENSE"]}
 ]}.
