@@ -15,8 +15,8 @@
 %% API
 
 -export([is_active/0]).
--export([import/1, format_tuple/1, clear/1, clear/0, list/0, get_list/0, limit/3]).
--export([ensure_table_exists/0]).
+-export([import/1, clear/1, clear/0, list/0, get_list/0, limit/3]).
+-export([format_tuple/1]).
 
 -ifdef(TEST).
 -export([lookup_record/2]).
@@ -63,7 +63,7 @@ clear() ->
     ok.
 
 %% @doc prints out all "known" (imported) record definitions and their limit settings.
-%% Print out tells module a record originates from, its name and a list of field names,
+%% Printout tells module a record originates from, its name and a list of field names,
 %% plus the record's arity (may be handy if handling big records) and a list of field it
 %% limits its output to, if set.
 %% @end
@@ -151,6 +151,7 @@ lookup_record(RecName, FieldCount) ->
     ensure_table_exists(),
     ets:lookup(records_table_name(), {RecName, FieldCount}).
 
+%% @private
 ensure_table_exists() ->
     case ets:info(records_table_name()) of
         undefined ->
@@ -234,6 +235,7 @@ format_record(Rec, {{Name, Arity}, Fields, _, Limits}) ->
     end.
 
 format_kv(Key, Val) ->
+    %% Some messy mutually recursive calls we can't avoid
     [recon_trace:format_trace_output(true, Key), "=", recon_trace:format_trace_output(true, Val)].
 
 apply_limits(List, none) -> List;
