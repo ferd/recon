@@ -420,6 +420,9 @@ merge_values([{Key,Vs}|T1], [{Key,OVs}|T2]) when Key =:= calls;
                    %% value is very rarely important so leave it
                    %% like this for now.
                    {K, lists:max([V1,V2])};
+              ({{K,V1}, {K,V2}}) when K =:= foreign_blocks ->
+                   %% foreign blocks are just merged as a bigger list.
+                   {K, V1++V2};
               ({{K,V1}, {K,V2}}) ->
                    {K, V1 + V2};
               ({{K,C1,L1,M1}, {K,C2,L2,M2}}) ->

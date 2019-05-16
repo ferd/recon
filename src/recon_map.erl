@@ -13,12 +13,8 @@
 -author("bartlomiej.gorny@erlang-solutions.com").
 %% API
 
--export([limit/3]).
--export([list/0]).
+-export([limit/3, list/0, is_active/0, clear/0, remove/1, rename/2]).
 -export([process_map/1]).
--export([is_active/0]).
--export([clear/0]).
--export([remove/1, rename/2]).
 
 -type map_label() :: atom().
 -type pattern() :: map() | function().
@@ -52,26 +48,38 @@ limit(Label, #{} = Pattern, Limit) when is_atom(Label) ->
 limit(Label, Pattern, Limit) when is_atom(Label), is_function(Pattern) ->
     store_pattern(Label, Pattern, Limit).
 
+%% @doc prints out all "known" map definitions and their limit settings.
+%% Printout tells a map's name, the matching fields required, and the limit options.
+%% @end
 list() ->
     ensure_table_exists(),
     io:format("~nmap definitions and limits:~n"),
-    list(lists:sort(ets:tab2list(patterns_table_name()))).
+    list(ets:tab2list(patterns_table_name())).
 
+%% @doc remove a given map entry
+-spec remove(map_label()) -> true.
 remove(Label) ->
     ensure_table_exists(),
     ets:delete(patterns_table_name(), Label).
 
+%% @doc rename a given map entry, which allows to to change priorities for
+%% matching. The first argument is the current name, and the second
+%% argument is the new name.
+-spec rename(map_label(), map_label()) -> renamed | missing.
 rename(Name, NewName) ->
     ensure_table_exists(),
     case ets:lookup(patterns_table_name(), Name) of
         [{Name, Pattern, Limit}] ->
-            ets:delete(patterns_table_name(), Name),
             ets:insert(patterns_table_name(), {NewName, Pattern, Limit}),
+            ets:delete(patterns_table_name(), Name),
             renamed;
         [] ->
             missing
     end.
 
+%% @doc prints out all "known" map filter definitions and their settings.
+%% Printout tells the map's label, the matching patterns, and the limit options
+%% @end
 list([]) ->
     io:format("~n"),
     ok;
@@ -79,7 +87,7 @@ list([{Label, Pattern, Limit} | Rest]) ->
     io:format("~p: ~p -> ~p~n", [Label, Pattern, Limit]),
     list(Rest).
 
-%% @doc given a map, scans saved patterns for one that matches; if found, returns a label
+%% @private given a map, scans saved patterns for one that matches; if found, returns a label
 %% and a map with limits applied; otherwise returns 'none' and original map.
 %% Pattern can be:
 %% <ul>

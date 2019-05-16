@@ -66,7 +66,7 @@ info3(Config) ->
 
 info4(Config) ->
     Pid = ?config(pid, Config),
-    Keys = [meta, signals, location, memory_used, work,
+    Keys = [meta, signals, location, memory_used,
             links, monitors, messages,
             [links, monitors, messages]],
     {A,B,C} = pid_to_triple(Pid),

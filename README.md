@@ -27,6 +27,9 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.5.0
+  - Optional formatting of records in traces (thanks to @bartekgorny)
+  - Basic support for OTP-22 in `recon_alloc` (base handling of `foreign_blocks` type)
 - 2.4.0
   - Optional formatting of records in traces (thanks to @bartekgorny)
 - 2.3.6
