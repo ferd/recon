@@ -13,7 +13,7 @@
         <h1>Recon</h1>
         <nav>
           <ul>
-<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a><li><a href="recon_rec.html">recon_rec</a><li><a href="recon_trace.html">recon_trace</a>
+<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a><li><a href="recon_map.html">recon_map</a><li><a href="recon_rec.html">recon_rec</a><li><a href="recon_trace.html">recon_trace</a>
           </ul>
         </nav>
     </header>
@@ -252,6 +252,8 @@ For instance to write the traces to a file you can do something like</p>
 function calls.</td></tr>
 <tr><td valign="top"><a href="#clear-0">clear/0</a></td><td>Stops all tracing at once.</td></tr>
 <tr><td valign="top"><a href="#format-1">format/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#format_trace_output-1">format_trace_output/1</a></td><td>formats call arguments and return values - most types are just printed out, except for
+  tuples recognised as records, which mimic the source code syntax.</td></tr>
 <tr><td valign="top"><a href="#format_trace_output-2">format_trace_output/2</a></td><td></td></tr>
 </table>
 
@@ -371,9 +373,15 @@ options:</p>
 <p><code>format(TraceMsg) -&gt; any()</code></p>
 </div>
 
+<h4 class="function"><a name="format_trace_output-1">format_trace_output/1</a></h4>
+<div class="spec">
+<p><code>format_trace_output(Args) -&gt; any()</code></p>
+</div><p>formats call arguments and return values - most types are just printed out, except for
+  tuples recognised as records, which mimic the source code syntax</p>
+
 <h4 class="function"><a name="format_trace_output-2">format_trace_output/2</a></h4>
 <div class="spec">
-<p><code>format_trace_output(X1, Args) -&gt; any()</code></p>
+<p><code>format_trace_output(Recs, Args) -&gt; any()</code></p>
 </div>
 
     </article>

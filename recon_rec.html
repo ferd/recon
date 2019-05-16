@@ -13,7 +13,7 @@
         <h1>Recon</h1>
         <nav>
           <ul>
-<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a><li><a href="recon_rec.html">recon_rec</a><li><a href="recon_trace.html">recon_trace</a>
+<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a><li><a href="recon_map.html">recon_map</a><li><a href="recon_rec.html">recon_rec</a><li><a href="recon_trace.html">recon_trace</a>
           </ul>
         </nav>
     </header>
@@ -98,7 +98,7 @@
 
 <h4 class="function"><a name="limit-3">limit/3</a></h4>
 <div class="spec">
-<p><code>limit(Name::<a href="#type-record_name">record_name()</a>, Arity::arity(), Limit::<a href="#type-limit">limit()</a>) -&gt; ok | {error, record_unknown}</code><br></p>
+<p><code>limit(Name::<a href="#type-record_name">record_name()</a>, Arity::arity(), Limit::<a href="#type-limit">limit()</a>) -&gt; ok | {error, any()}</code><br></p>
 </div><p>Limit output to selected fields of a record (can be 'none', 'all', a field or a list of fields).
   Limit set to 'none' means there is no limit, and all fields are displayed; limit 'all' means that
   all fields are squashed and only record name will be shown.</p>
@@ -107,7 +107,7 @@
 <div class="spec">
 <p><code>list() -&gt; any()</code></p>
 </div><p>prints out all "known" (imported) record definitions and their limit settings.
-  Print out tells module a record originates from, its name and a list of field names,
+  Printout tells module a record originates from, its name and a list of field names,
   plus the record's arity (may be handy if handling big records) and a list of field it
   limits its output to, if set.</p>
 
