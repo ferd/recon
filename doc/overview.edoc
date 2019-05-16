@@ -1,7 +1,7 @@
 @title Recon Application
 @author Fred Hebert <mononcqc@ferd.ca>
   [http://ferd.ca/]
-@copyright 2012-2018 Fred Hebert (BSD 3-Clause License)
+@copyright 2012-2019 Fred Hebert (BSD 3-Clause License)
 
 @doc Recon is a library to be dropped into any other Erlang project,
 to be used to assist DevOps people diagnose problems in production
