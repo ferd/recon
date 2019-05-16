@@ -620,12 +620,7 @@ format_trace_output(Recs, Args) ->
     format_trace_output(Recs, recon_map:is_active(), Args).
 
 format_trace_output(true, _, Args) when is_tuple(Args) ->
-    case sets:is_set(Args) of
-        true ->
-            ["set:", format_trace_output(true, sets:to_list(Args))];
-        false ->
-            recon_rec:format_tuple(Args)
-    end;
+    recon_rec:format_tuple(Args);
 format_trace_output(true, Maps, Args) when is_list(Args) ->
     case io_lib:printable_list(Args) of
         true ->
