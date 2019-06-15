@@ -525,6 +525,9 @@ format(TraceMsg) ->
         %% {trace, Pid, call, {M, F, Args}}
         {call, [{M,F,Args}]} ->
             {"~p:~p~s", [M,F,format_args(Args)]};
+        %% {trace, Pid, call, {M, F, Args}, Msg}
+        {call, [{M,F,Args}, Msg]} ->
+            {"~p:~p~s ~s", [M,F,format_args(Args), format_trace_output(Msg)]};
         %% {trace, Pid, return_to, {M, F, Arity}}
         {return_to, [{M,F,Arity}]} ->
             {" '--> ~p:~p/~p", [M,F,Arity]};
