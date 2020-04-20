@@ -187,7 +187,7 @@
 %% Internal exports
 -export([count_tracer/1, rate_tracer/2, formatter/5, format_trace_output/1, format_trace_output/2]).
 
--type matchspec()    :: [{[term()], [term()], [term()]}].
+-type matchspec()    :: [{[term()] | '_', [term()], [term()]}].
 -type shellfun()     :: fun((_) -> term()).
 -type formatterfun() :: fun((_) -> iodata()).
 -type millisecs()    :: non_neg_integer().
