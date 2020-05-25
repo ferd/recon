@@ -384,7 +384,7 @@ format_alloc(Alloc, Props) ->
 format_blocks(_, _, []) ->
     [];
 format_blocks(Alloc, Key, [{blocks, L} | List]) when is_list(L) ->
-    %% OTP-23 introduces carrier migrations across types, which changes the
+    %% OTP-22 introduces carrier migrations across types, and OTP-23 changes the
     %% format of data reported to be a bit richer; however it's not compatible
     %% with most calculations made for this library.
     %% So what we do here for `blocks' is merge all the info into the one the
