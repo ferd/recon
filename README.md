@@ -27,6 +27,10 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.5.1
+  - Fix support for extra messages in traces (thanks to Péter Gömöri)
+  - Fix some typespecs for match specs (thanks to @chenduo)
+  - Support OTP-23 change of format in allocator blocks related to carrier migration support
 - 2.5.0
   - Optional formatting of records in traces (thanks to @bartekgorny)
   - Basic support for OTP-22 in `recon_alloc` (base handling of `foreign_blocks` type)
