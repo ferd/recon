@@ -369,13 +369,62 @@ sbcs_to_mbcs(Keyword) ->
 allocators() ->
     UtilAllocators = erlang:system_info(alloc_util_allocators),
     Allocators = [sys_alloc,mseg_alloc|UtilAllocators],
-    %% versions is deleted in order to allow the use of the orddict api,
-    %% and never really having come across a case where it was useful to know.
-    [{{A,N},lists:sort(proplists:delete(versions,Props))} ||
+    [{{A,N}, format_alloc(A, Props)} ||
         A <- Allocators,
         Allocs <- [erlang:system_info({allocator,A})],
         Allocs =/= false,
         {_,N,Props} <- Allocs].
+
+format_alloc(Alloc, Props) ->
+    %% {versions,_,_} is implicitly deleted in order to allow the use of the
+    %% orddict api, and never really having come across a case where it was
+    %% useful to know.
+    [{K, format_blocks(Alloc, K, V)} || {K, V} <- lists:sort(Props)].
+
+format_blocks(_, _, []) ->
+    [];
+format_blocks(Alloc, Key, [{blocks, L} | List]) when is_list(L) ->
+    %% OTP-22 introduces carrier migrations across types, and OTP-23 changes the
+    %% format of data reported to be a bit richer; however it's not compatible
+    %% with most calculations made for this library.
+    %% So what we do here for `blocks' is merge all the info into the one the
+    %% library expects (`blocks' and `blocks_size'), then keep the original
+    %% one in case it is further needed.
+    %% There were further changes to `mbcs_pool' changing `foreign_blocks',
+    %% `blocks' and `blocks_size' into just `blocks' with a proplist, so we're breaking
+    %% up to use that one too.
+    %% In the end we go from `{blocks, [{Alloc, [...]}]}' to:
+    %%  - `{blocks, ...}' (4-tuple in mbcs and sbcs, 2-tuple in mbcs_pool)
+    %%  - `{blocks_size, ...}' (4-tuple in mbcs and sbcs, 2-tuple in mbcs_pool)
+    %%  - `{foreign_blocks, [...]}' (just append lists =/= `Alloc')
+    %%  - `{raw_blocks, [...]}' (original value)
+    Foreign = lists:filter(fun({A, _Props}) -> A =/= Alloc end, L),
+    Type = case Key of
+        mbcs_pool -> int;
+        _ -> quadruple
+    end,
+    MergeF = fun(K) ->
+        fun({_A, Props}, Acc) ->
+            case lists:keyfind(K, 1, Props) of
+                {K,Cur,Last,Max} -> {Cur, Last, Max};
+                {K,V} -> Acc+V
+            end
+        end
+    end,
+    %% Since tuple sizes change, hack around it using tuple_to_list conversion
+    %% and set the accumulator to a list so it defaults to not putting anything
+    {Blocks, BlocksSize} = case Type of
+        int ->
+            {{blocks, lists:foldl(MergeF(count), 0, L)},
+             {blocks_size, lists:foldl(MergeF(size), 0, L)}};
+        quadruple ->
+            {list_to_tuple([blocks | tuple_to_list(lists:foldl(MergeF(count), {0,0,0}, L))]),
+             list_to_tuple([blocks_size | tuple_to_list(lists:foldl(MergeF(size), {0,0,0}, L))])}
+    end,
+    [Blocks, BlocksSize, {foreign_blocks, Foreign}, {raw_blocks, L}
+     | format_blocks(Alloc, Key, List)];
+format_blocks(Alloc, Key, [H | T]) ->
+    [H | format_blocks(Alloc, Key, T)].
 
 %% @doc returns a dump of all allocator settings and values modified
 %%      depending on the argument.
@@ -420,7 +469,7 @@ merge_values([{Key,Vs}|T1], [{Key,OVs}|T2]) when Key =:= calls;
                    %% value is very rarely important so leave it
                    %% like this for now.
                    {K, lists:max([V1,V2])};
-              ({{K,V1}, {K,V2}}) when K =:= foreign_blocks ->
+              ({{K,V1}, {K,V2}}) when K =:= foreign_blocks; K =:= raw_blocks ->
                    %% foreign blocks are just merged as a bigger list.
                    {K, V1++V2};
               ({{K,V1}, {K,V2}}) ->
