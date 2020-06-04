@@ -199,7 +199,7 @@
 -type options()      :: [ {pid, pidspec() | [pidspec(),...]} % default: all
                         | {timestamp, formatter | trace}     % default: formatter
                         | {args, args | arity}               % default: args
-                        | {io_server, pid()}                 % default: group_leader()
+                        | {io_server, pid() | atom()}        % default: group_leader()
                         | {formatter, formatterfun()}        % default: internal formatter
                         | return_to | {return_to, boolean()} % default: false
                    %% match pattern options
