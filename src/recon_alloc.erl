@@ -406,7 +406,9 @@ format_blocks(Alloc, Key, [{blocks, L} | List]) when is_list(L) ->
     MergeF = fun(K) ->
         fun({_A, Props}, Acc) ->
             case lists:keyfind(K, 1, Props) of
-                {K,Cur,Last,Max} -> {Cur, Last, Max};
+                {K,Cur,Last,Max} ->
+                    {AccCur, AccLast, AccMax} = Acc,
+                    {AccCur + Cur, AccLast + Last, AccMax + Max};
                 {K,V} -> Acc+V
             end
         end
