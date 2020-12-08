@@ -1,5 +1,5 @@
 ---
-name: CI for recon
+name: build
 on:
   push:
     branches:
