@@ -1,0 +1,22 @@
+---
+name: CI for recon
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  ci:
+    name: Run checks and tests over ${{matrix.otp_vsn}} and ${{matrix.os}}
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        otp_vsn: [18.3, 19.3, 20.0, 21.0, 22.0, 23.0]
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - run: rebar3 edoc
+      - run: rebar3 eunit
+      - run: rebar3 ct
