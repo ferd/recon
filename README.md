@@ -14,7 +14,7 @@ It is recommended that you use tags if you do not want bleeding edge and develop
 Current Status
 --------------
 
-[![Build Status](https://travis-ci.org/ferd/recon.png)](https://travis-ci.org/ferd/recon)
+[![Build Status](https://github.com/ferd/recon/workflows/build/badge.svg)](https://github.com/ferd/recon)
 
 Versions supported: OTP-17 and up. Support of R16B03-1 down to R15B02 is best effort. Builds with Rebar3 require OTP-17.1 and up because that's what the tool supports.
 
