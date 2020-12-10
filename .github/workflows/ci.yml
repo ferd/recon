@@ -11,6 +11,8 @@ jobs:
   ci:
     name: Run checks and tests over ${{matrix.otp_vsn}} and ${{matrix.os}}
     runs-on: ${{matrix.os}}
+    container:
+      image: erlang:${{matrix.otp_vsn}}
     strategy:
       matrix:
         otp_vsn: [18.3, 19.3, 20.0, 21.0, 22.0, 23.0]
