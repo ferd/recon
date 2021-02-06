@@ -197,6 +197,7 @@ info(PidTerm) ->
 %%
 %% A fake attribute `binary_memory' is also available to return the
 %% amount of memory used by refc binaries for a process.
+-dialyzer({no_contracts, info/2}). % ... Overloaded contract for recon:info/2 has overlapping domains
 -spec info(pid_term(), info_type()) -> {info_type(), [{info_key(), term()}]}
     ;     (pid_term(), [atom()]) -> [{atom(), term()}]
     ;     (pid_term(), atom()) -> {atom(), term()}.
@@ -607,6 +608,7 @@ port_info(PortTerm) ->
 %% as defined in {@link port_info_type()}, and although the type signature
 %% doesn't show it in the generated documentation, individual items
 %% accepted by `erlang:port_info/2' are accepted, and lists of them too.
+-dialyzer({no_contracts, port_info/2}). % ... Overloaded contract for recon:port_info/2 has overlapping domains
 -spec port_info(port_term(), port_info_type()) -> {port_info_type(),
                                                    [{port_info_key(), _}]}
     ;          (port_term(), [atom()]) -> [{atom(), term()}]

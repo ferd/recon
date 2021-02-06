@@ -22,3 +22,4 @@ jobs:
       - run: rebar3 edoc
       - run: rebar3 eunit
       - run: rebar3 ct
+      - run: rebar3 dialyzer
