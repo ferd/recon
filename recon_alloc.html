@@ -40,7 +40,7 @@ in this task.</p>
    a problem, but will offer little help to figure out <em>what</em> is wrong.</p>
   
    <p>To figure this out, you need to dig deeper into the allocator data
-   (obtainable with <a href="#allocators-0"><code>allocators/0</code></a>), and/or have some precise knowledge   
+   (obtainable with <a docgen-rel="seemfa" docgen-href="#allocators/0" href="#allocators-0"><code>allocators/0</code></a>), and/or have some precise knowledge   
 about the type of load and work done by the VM to be able to assess what   
 each reaction to individual tweak should be.</p>
   
@@ -54,7 +54,7 @@ helped or not, ultimately.</p>
    they do not change during analysis while using the regular functionality of
    this module, so that the allocator values can be saved, or that
    they can be shared, dumped, and reloaded for further analysis using files.
-   See <a href="#snapshot_load-1"><code>snapshot_load/1</code></a> for a simple use-case.</p>
+   See <a docgen-rel="seemfa" docgen-href="#snapshot_load/1" href="#snapshot_load-1"><code>snapshot_load/1</code></a> for a simple use-case.</p>
   
    Glossary:
    <dl>
@@ -99,7 +99,7 @@ helped or not, ultimately.</p>
       allocator (ets_alloc, binary_alloc, etc.). The specific allocator can
       thus do allocation for specific Erlang requirements within bits of
       memory that has been preallocated before. This allows more reuse,
-      and we can even measure the cache hit rates <a href="#cache_hit_rates-0"><code>cache_hit_rates/0</code></a>.</p>
+      and we can even measure the cache hit rates <a docgen-rel="seemfa" docgen-href="#cache_hit_rates/0" href="#cache_hit_rates-0"><code>cache_hit_rates/0</code></a>.</p>
   
       <p>There is however a threshold above which an item in memory won't fit      
 a multiblock carrier. When that happens, the specific allocator does      
@@ -136,7 +136,7 @@ before.</p>
    </dl>
   
    By default all sizes returned by this module are in bytes. You can change
-   this by calling <a href="#set_unit-1"><code>set_unit/1</code></a>.
+   this by calling <a docgen-rel="seemfa" docgen-href="#set_unit/1" href="#set_unit-1"><code>set_unit/1</code></a>.
   
 <h3><a name="types">Data Types</a></h3>
 
@@ -168,10 +168,10 @@ before.</p>
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#allocators-0">allocators/0</a></td><td>returns a dump of all allocator settings and values.</td></tr>
 <tr><td valign="top"><a href="#allocators-1">allocators/1</a></td><td>returns a dump of all allocator settings and values modified
        depending on the argument.</td></tr>
-<tr><td valign="top"><a href="#average_block_sizes-1">average_block_sizes/1</a></td><td>Checks all allocators in <a href="#type-allocator"><code>allocator()</code></a> and returns the average
+<tr><td valign="top"><a href="#average_block_sizes-1">average_block_sizes/1</a></td><td>Checks all allocators in <a docgen-rel="seetype" docgen-href="#allocator/0" href="#type-allocator"><code>allocator()</code></a> and returns the average
   block sizes being used for <code>mbcs</code> and <code>sbcs</code>.</td></tr>
 <tr><td valign="top"><a href="#cache_hit_rates-0">cache_hit_rates/0</a></td><td>looks at the <code>mseg_alloc</code> allocator (allocator used by all the
-  allocators in <a href="#type-allocator"><code>allocator()</code></a>) and returns information relative to  
+  allocators in <a docgen-rel="seetype" docgen-href="#allocator/0" href="#type-allocator"><code>allocator()</code></a>) and returns information relative to  
 the cache hit rates.</td></tr>
 <tr><td valign="top"><a href="#fragmentation-1">fragmentation/1</a></td><td>Compares the block sizes to the carrier sizes, both for
   single block (<code>sbcs</code>) and multiblock (<code>mbcs</code>) carriers.</td></tr>
@@ -180,16 +180,16 @@ the cache hit rates.</td></tr>
 node depending on what is to be reported:.</td></tr>
 <tr><td valign="top"><a href="#sbcs_to_mbcs-1">sbcs_to_mbcs/1</a></td><td>compares the amount of single block carriers (<code>sbcs</code>) vs the
   number of multiblock carriers (<code>mbcs</code>) for each individual allocator in
-  <a href="#type-allocator"><code>allocator()</code></a>.</td></tr>
+  <a docgen-rel="seetype" docgen-href="#allocator/0" href="#type-allocator"><code>allocator()</code></a>.</td></tr>
 <tr><td valign="top"><a href="#set_unit-1">set_unit/1</a></td><td>set the current unit to be used by recon_alloc.</td></tr>
 <tr><td valign="top"><a href="#snapshot-0">snapshot/0</a></td><td>Take a new snapshot of the current memory allocator statistics.</td></tr>
 <tr><td valign="top"><a href="#snapshot_clear-0">snapshot_clear/0</a></td><td>clear the current snapshot in the process dictionary, if present,
   and return the value it had before being unset.</td></tr>
-<tr><td valign="top"><a href="#snapshot_get-0">snapshot_get/0</a></td><td>returns the current snapshot stored by <a href="#snapshot-0"><code>snapshot/0</code></a>.</td></tr>
+<tr><td valign="top"><a href="#snapshot_get-0">snapshot_get/0</a></td><td>returns the current snapshot stored by <a docgen-rel="seemfa" docgen-href="#snapshot/0" href="#snapshot-0"><code>snapshot/0</code></a>.</td></tr>
 <tr><td valign="top"><a href="#snapshot_load-1">snapshot_load/1</a></td><td>load a snapshot from a given file.</td></tr>
-<tr><td valign="top"><a href="#snapshot_print-0">snapshot_print/0</a></td><td>print a dump of the current snapshot stored by <a href="#snapshot-0"><code>snapshot/0</code></a>
+<tr><td valign="top"><a href="#snapshot_print-0">snapshot_print/0</a></td><td>print a dump of the current snapshot stored by <a docgen-rel="seemfa" docgen-href="#snapshot/0" href="#snapshot-0"><code>snapshot/0</code></a>
   Prints <code>undefined</code> if no snapshot has been taken.</td></tr>
-<tr><td valign="top"><a href="#snapshot_save-1">snapshot_save/1</a></td><td>save the current snapshot taken by <a href="#snapshot-0"><code>snapshot/0</code></a> to a file.</td></tr>
+<tr><td valign="top"><a href="#snapshot_save-1">snapshot_save/1</a></td><td>save the current snapshot taken by <a docgen-rel="seemfa" docgen-href="#snapshot/0" href="#snapshot-0"><code>snapshot/0</code></a> to a file.</td></tr>
 </table>
 
 <h3><a name="functions">Function Details</a></h3>
@@ -197,11 +197,13 @@ node depending on what is to be reported:.</td></tr>
 <h4 class="function"><a name="allocators-0">allocators/0</a></h4>
 <div class="spec">
 <p><code>allocators() -&gt; [<a href="#type-allocdata">allocdata</a>(term())]</code><br></p>
+<p> </p>
 </div><p>returns a dump of all allocator settings and values</p>
 
 <h4 class="function"><a name="allocators-1">allocators/1</a></h4>
 <div class="spec">
 <p><code>allocators(X1::types) -&gt; [<a href="#type-allocdata_types">allocdata_types</a>(term())]</code><br></p>
+<p> </p>
 </div><p>returns a dump of all allocator settings and values modified
        depending on the argument.
   <ul>
@@ -214,7 +216,8 @@ node depending on what is to be reported:.</td></tr>
 <div class="spec">
 <p><code>average_block_sizes(Keyword::current | max) -&gt; [{<a href="#type-allocator">allocator()</a>, [{Key, Val}]}]</code>
 <ul class="definitions"><li><code>Key = mbcs | sbcs</code></li><li><code>Val = number()</code></li></ul></p>
-</div><p><p>Checks all allocators in <a href="#type-allocator"><code>allocator()</code></a> and returns the average
+<p> </p>
+</div><p><p>Checks all allocators in <a docgen-rel="seetype" docgen-href="#allocator/0" href="#type-allocator"><code>allocator()</code></a> and returns the average
   block sizes being used for <code>mbcs</code> and <code>sbcs</code>. This value is interesting
   to use because it will tell us how large most blocks are.
   This can be related to the VM's largest multiblock carrier size
@@ -222,7 +225,7 @@ node depending on what is to be reported:.</td></tr>
 allocation strategies regarding the carrier sizes to be used.</p>
  
   <p>This function isn't exceptionally useful unless you know you have some
-  specific problem, say with sbcs/mbcs ratios (see <a href="#sbcs_to_mbcs-0"><code>sbcs_to_mbcs/0</code></a>)  
+  specific problem, say with sbcs/mbcs ratios (see <a docgen-rel="seemfa" docgen-href="#sbcs_to_mbcs/0" href="#sbcs_to_mbcs-0"><code>sbcs_to_mbcs/0</code></a>)  
 or fragmentation for a specific allocator, and want to figure out what  
 values to pick to increase or decrease sizes compared to the currently  
 configured value.</p>
@@ -234,8 +237,9 @@ configured value.</p>
 <div class="spec">
 <p><code>cache_hit_rates() -&gt; [{{instance, <a href="#type-instance">instance()</a>}, [{Key, Val}]}]</code>
 <ul class="definitions"><li><code>Key = hit_rate | hits | calls</code></li><li><code>Val = term()</code></li></ul></p>
+<p> </p>
 </div><p><p>looks at the <code>mseg_alloc</code> allocator (allocator used by all the
-  allocators in <a href="#type-allocator"><code>allocator()</code></a>) and returns information relative to  
+  allocators in <a docgen-rel="seetype" docgen-href="#allocator/0" href="#type-allocator"><code>allocator()</code></a>) and returns information relative to  
 the cache hit rates. Unless memory has expected spiky behaviour, it should  
 usually be above 0.80 (80%).</p>
  
@@ -260,6 +264,7 @@ that point.</p>
 <h4 class="function"><a name="fragmentation-1">fragmentation/1</a></h4>
 <div class="spec">
 <p><code>fragmentation(Keyword::current | max) -&gt; [<a href="#type-allocdata">allocdata</a>([{atom(), term()}])]</code><br></p>
+<p> </p>
 </div><p><p>Compares the block sizes to the carrier sizes, both for
   single block (<code>sbcs</code>) and multiblock (<code>mbcs</code>) carriers.</p>
  
@@ -278,12 +283,18 @@ that point.</p>
 
 <h4 class="function"><a name="memory-1">memory/1</a></h4>
 <div class="spec">
-<p><code>memory(Key::used | allocated | unused) -&gt; pos_integer()</code><br></p>
+<p><code>memory(Key::used | allocated | unused) -&gt; pos_integer()</code><br></p><p><code>memory(Key::usage) -&gt; number()</code><br></p><p><code>memory(Key::allocated_types | allocated_instances) -&gt; [{<a href="#type-allocator">allocator()</a>, pos_integer()}]</code><br></p>
+<p> </p>
+<p> </p>
+<p> </p>
 </div><p>Equivalent to <code>memory(Key, current)</code>.</p>
 
 <h4 class="function"><a name="memory-2">memory/2</a></h4>
 <div class="spec">
-<p><code>memory(X1::used | allocated | unused, Keyword::current | max) -&gt; pos_integer()</code><br></p>
+<p><code>memory(X1::used | allocated | unused, Keyword::current | max) -&gt; pos_integer()</code><br></p><p><code>memory(X1::usage, Keyword::current | max) -&gt; number()</code><br></p><p><code>memory(X1::allocated_types | allocated_instances, Keyword::current | max) -&gt; [{<a href="#type-allocator">allocator()</a>, pos_integer()}]</code><br></p>
+<p> </p>
+<p> </p>
+<p> </p>
 </div><p><p>reports one of multiple possible memory values for the entire  
 node depending on what is to be reported:</p>
  
@@ -318,14 +329,15 @@ before the memory allocators are initialized.</p>
  
   Also note that low memory usages can be the sign of fragmentation in
   memory, in which case exploring which specific allocator is at fault
-  is recommended (see <a href="#fragmentation-1"><code>fragmentation/1</code></a>)</p>
+  is recommended (see <a docgen-rel="seemfa" docgen-href="#fragmentation/1" href="#fragmentation-1"><code>fragmentation/1</code></a>)</p>
 
 <h4 class="function"><a name="sbcs_to_mbcs-1">sbcs_to_mbcs/1</a></h4>
 <div class="spec">
 <p><code>sbcs_to_mbcs(Keyword::max | current) -&gt; [<a href="#type-allocdata">allocdata</a>(term())]</code><br></p>
+<p> </p>
 </div><p><p>compares the amount of single block carriers (<code>sbcs</code>) vs the
   number of multiblock carriers (<code>mbcs</code>) for each individual allocator in
-  <a href="#type-allocator"><code>allocator()</code></a>.</p>
+  <a docgen-rel="seetype" docgen-href="#allocator/0" href="#type-allocator"><code>allocator()</code></a>.</p>
  
   <p>When a specific piece of data is allocated, it is compared to a threshold,
   called the 'single block carrier threshold' (<code>sbct</code>). When the data is
@@ -351,6 +363,7 @@ to pretty much any practical size.</p>
 <h4 class="function"><a name="set_unit-1">set_unit/1</a></h4>
 <div class="spec">
 <p><code>set_unit(X1::byte | kilobyte | megabyte | gigabyte) -&gt; ok</code><br></p>
+<p> </p>
 </div><p><p>set the current unit to be used by recon_alloc. This effects all  
 functions that return bytes.</p>
  
@@ -366,29 +379,33 @@ functions that return bytes.</p>
 <h4 class="function"><a name="snapshot-0">snapshot/0</a></h4>
 <div class="spec">
 <p><code>snapshot() -&gt; <a href="#type-snapshot">snapshot()</a> | undefined</code><br></p>
+<p> </p>
 </div><p>Take a new snapshot of the current memory allocator statistics.
   The snapshot is stored in the process dictionary of the calling process,
   with all the limitations that it implies (i.e. no garbage-collection).
-  To unsert the snapshot, see <a href="#snapshot_clear-1"><code>snapshot_clear/1</code></a>.</p>
+  To unsert the snapshot, see <a docgen-rel="seemfa" docgen-href="#snapshot_clear/1" href="#snapshot_clear-1"><code>snapshot_clear/1</code></a>.</p>
 
 <h4 class="function"><a name="snapshot_clear-0">snapshot_clear/0</a></h4>
 <div class="spec">
 <p><code>snapshot_clear() -&gt; <a href="#type-snapshot">snapshot()</a> | undefined</code><br></p>
+<p> </p>
 </div><p>clear the current snapshot in the process dictionary, if present,
   and return the value it had before being unset.</p>
 
 <h4 class="function"><a name="snapshot_get-0">snapshot_get/0</a></h4>
 <div class="spec">
 <p><code>snapshot_get() -&gt; <a href="#type-snapshot">snapshot()</a> | undefined</code><br></p>
-</div><p>returns the current snapshot stored by <a href="#snapshot-0"><code>snapshot/0</code></a>.
+<p> </p>
+</div><p>returns the current snapshot stored by <a docgen-rel="seemfa" docgen-href="#snapshot/0" href="#snapshot-0"><code>snapshot/0</code></a>.
   Returns <code>undefined</code> if no snapshot has been taken.</p>
 
 <h4 class="function"><a name="snapshot_load-1">snapshot_load/1</a></h4>
 <div class="spec">
 <p><code>snapshot_load(Filename) -&gt; <a href="#type-snapshot">snapshot()</a> | undefined</code>
-<ul class="definitions"><li><code>Filename = <a href="file.html#type-name">file:name()</a></code></li></ul></p>
+<ul class="definitions"><li><code>Filename = <a href="/home/ferd/code/self/kernel/doc/file.html#type-name">file:name()</a></code></li></ul></p>
+<p> </p>
 </div><p><p>load a snapshot from a given file. The format of the data in the
-  file can be either the same as output by <a href="#type-snapshot_save"><code>snapshot_save()</code></a>,
+  file can be either the same as output by <a docgen-rel="seetype" docgen-href="#snapshot_save/0" href="#type-snapshot_save"><code>snapshot_save()</code></a>,
   or the output obtained by calling
    <code>{erlang:memory(),[{A,erlang:system_info({allocator,A})} || A &lt;- erlang:system_info(alloc_util_allocators)++[sys_alloc,mseg_alloc]]}.</code>
   and storing it in a file.
@@ -416,14 +433,16 @@ the file.</p>
 <h4 class="function"><a name="snapshot_print-0">snapshot_print/0</a></h4>
 <div class="spec">
 <p><code>snapshot_print() -&gt; ok</code><br></p>
-</div><p>print a dump of the current snapshot stored by <a href="#snapshot-0"><code>snapshot/0</code></a>
+<p> </p>
+</div><p>print a dump of the current snapshot stored by <a docgen-rel="seemfa" docgen-href="#snapshot/0" href="#snapshot-0"><code>snapshot/0</code></a>
   Prints <code>undefined</code> if no snapshot has been taken.</p>
 
 <h4 class="function"><a name="snapshot_save-1">snapshot_save/1</a></h4>
 <div class="spec">
 <p><code>snapshot_save(Filename) -&gt; ok</code>
-<ul class="definitions"><li><code>Filename = <a href="file.html#type-name">file:name()</a></code></li></ul></p>
-</div><p>save the current snapshot taken by <a href="#snapshot-0"><code>snapshot/0</code></a> to a file.
+<ul class="definitions"><li><code>Filename = <a href="/home/ferd/code/self/kernel/doc/file.html#type-name">file:name()</a></code></li></ul></p>
+<p> </p>
+</div><p>save the current snapshot taken by <a docgen-rel="seemfa" docgen-href="#snapshot/0" href="#snapshot-0"><code>snapshot/0</code></a> to a file.
   If there is no current snapshot, a snaphot of the current allocator
   statistics will be written to the file.</p>
 

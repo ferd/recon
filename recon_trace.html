@@ -50,7 +50,7 @@ spawned at the time of the function call).</p>
    <p>The trace patterns represent functions. Functions can be specified in two
    parts: specifying the modules, functions, and arguments, and then with
    Erlang match specifications to add constraints to arguments (see
-   <a href="#calls-3"><code>calls/3</code></a> for details).</p>
+   <a docgen-rel="seemfa" docgen-href="#calls/3" href="#calls-3"><code>calls/3</code></a> for details).</p>
   
    <p>What defines whether you get traced or not is the intersection of both:</p>
   
@@ -141,7 +141,7 @@ or killing the shell process.</p>
    <p>In doubt, start with the most restrictive tracing possible, with low   
 limits, and progressively increase your scope.</p>
   
-   <p>See <a href="#calls-3"><code>calls/3</code></a> for more details and tracing possibilities.</p>
+   <p>See <a docgen-rel="seemfa" docgen-href="#calls/3" href="#calls-3"><code>calls/3</code></a> for more details and tracing possibilities.</p>
   
    <h4><a name="Structure">Structure</a></h4>
   
@@ -167,7 +167,7 @@ disconnected, the links between the shell and the tracer should make it
 so tracing is automatically turned off once you disconnect.</p>
   
    <p>If sending output to the Group Leader is not desired, you may specify
-   a different pid() via the option <code>io_server</code> in the <a href="#calls-3"><code>calls/3</code></a> function.   
+   a different pid() via the option <code>io_server</code> in the <a docgen-rel="seemfa" docgen-href="#calls/3" href="#calls-3"><code>calls/3</code></a> function.   
 For instance to write the traces to a file you can do something like</p>
   
    <pre>   1&gt; {ok, Dev} = file:open("/tmp/trace",[write]).
@@ -183,7 +183,7 @@ For instance to write the traces to a file you can do something like</p>
   
    <h4><a name="Record_Printing">Record Printing</a></h4>
   
-   Thanks to code contributed by Bartek Górny, record printing can be added
+   Thanks to code contributed by Bartek GÃ³rny, record printing can be added
    to traces by first importing records in an active session with
    <code>recon_rec:import([Module, ...])</code>, after which the records declared in
    the module list will be supported.
@@ -202,7 +202,7 @@ For instance to write the traces to a file you can do something like</p>
 
 
 <h4 class="typedecl"><a name="type-matchspec">matchspec()</a></h4>
-<p><code>matchspec() = [{[term()], [term()], [term()]}]</code></p>
+<p><code>matchspec() = [{[term()] | '_', [term()], [term()]}]</code></p>
 
 
 <h4 class="typedecl"><a name="type-max">max()</a></h4>
@@ -230,11 +230,11 @@ For instance to write the traces to a file you can do something like</p>
 
 
 <h4 class="typedecl"><a name="type-options">options()</a></h4>
-<p><code>options() = [{pid, <a href="#type-pidspec">pidspec()</a> | [<a href="#type-pidspec">pidspec()</a>, ...]} | {timestamp, formatter | trace} | {args, args | arity} | {io_server, pid()} | {formatter, <a href="#type-formatterfun">formatterfun()</a>} | return_to | {return_to, boolean()} | {scope, global | local}]</code></p>
+<p><code>options() = [{pid, <a href="#type-pidspec">pidspec()</a> | [<a href="#type-pidspec">pidspec()</a>, ...]} | {timestamp, formatter | trace} | {args, args | arity} | {io_server, pid() | atom()} | {formatter, <a href="#type-formatterfun">formatterfun()</a>} | return_to | {return_to, boolean()} | {scope, global | local}]</code></p>
 
 
 <h4 class="typedecl"><a name="type-pidspec">pidspec()</a></h4>
-<p><code>pidspec() = all | existing | new | <a href="recon.html#type-pid_term">recon:pid_term()</a></code></p>
+<p><code>pidspec() = all | existing | new | <a href="/home/ferd/code/self/recon/doc/recon.html#type-pid_term">recon:pid_term()</a></code></p>
 
 
 <h4 class="typedecl"><a name="type-shellfun">shellfun()</a></h4>
@@ -262,12 +262,14 @@ function calls.</td></tr>
 <h4 class="function"><a name="calls-2">calls/2</a></h4>
 <div class="spec">
 <p><code>calls(TSpecs::<a href="#type-tspec">tspec()</a> | [<a href="#type-tspec">tspec()</a>, ...], Max::<a href="#type-max">max()</a>) -&gt; <a href="#type-num_matches">num_matches()</a></code><br></p>
+<p> </p>
 </div><p>Equivalent to <a href="#calls-3"><code>calls({Mod, Fun, Args}, Max, [])</code></a>.</p>
 
 
 <h4 class="function"><a name="calls-3">calls/3</a></h4>
 <div class="spec">
 <p><code>calls(TSpecs::<a href="#type-tspec">tspec()</a> | [<a href="#type-tspec">tspec()</a>, ...], Max::<a href="#type-max">max()</a>, Opts::<a href="#type-options">options()</a>) -&gt; <a href="#type-num_matches">num_matches()</a></code><br></p>
+<p> </p>
 </div><p><p>Allows to set trace patterns and pid specifications to trace  
 function calls.</p>
  
@@ -366,22 +368,26 @@ options:</p>
 <h4 class="function"><a name="clear-0">clear/0</a></h4>
 <div class="spec">
 <p><code>clear() -&gt; ok</code><br></p>
+<p> </p>
 </div><p>Stops all tracing at once.</p>
 
 <h4 class="function"><a name="format-1">format/1</a></h4>
 <div class="spec">
 <p><code>format(TraceMsg) -&gt; any()</code></p>
+<p> </p>
 </div>
 
 <h4 class="function"><a name="format_trace_output-1">format_trace_output/1</a></h4>
 <div class="spec">
 <p><code>format_trace_output(Args) -&gt; any()</code></p>
+<p> </p>
 </div><p>formats call arguments and return values - most types are just printed out, except for
   tuples recognised as records, which mimic the source code syntax</p>
 
 <h4 class="function"><a name="format_trace_output-2">format_trace_output/2</a></h4>
 <div class="spec">
 <p><code>format_trace_output(Recs, Args) -&gt; any()</code></p>
+<p> </p>
 </div>
 
     </article>

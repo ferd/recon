@@ -30,13 +30,13 @@
 <h3><a name="types">Data Types</a></h3>
 
 <h4 class="typedecl"><a name="type-diff">diff()</a></h4>
-<p><code>diff() = [<a href="recon.html#type-proc_attrs">recon:proc_attrs()</a> | <a href="recon.html#type-inet_attrs">recon:inet_attrs()</a>]</code></p>
+<p><code>diff() = [<a href="/home/ferd/code/self/recon/doc/recon.html#type-proc_attrs">recon:proc_attrs()</a> | <a href="/home/ferd/code/self/recon/doc/recon.html#type-inet_attrs">recon:inet_attrs()</a>]</code></p>
 
 
 <h3><a name="index">Function Index</a></h3>
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#count-1">count/1</a></td><td>Takes a list of terms, and counts how often each of
   them appears in the list.</td></tr>
-<tr><td valign="top"><a href="#inet_attrs-1">inet_attrs/1</a></td><td>Returns the attributes (<a href="recon.html#type-inet_attrs"><code>recon:inet_attrs()</code></a>) of
+<tr><td valign="top"><a href="#inet_attrs-1">inet_attrs/1</a></td><td>Returns the attributes (<a docgen-rel="seetype" docgen-href="recon#inet_attrs/0" href="recon.html#type-inet_attrs"><code>recon:inet_attrs()</code></a>) of
   all inet ports (UDP, SCTP, TCP) of the node.</td></tr>
 <tr><td valign="top"><a href="#inet_attrs-2">inet_attrs/2</a></td><td>Returns the attributes required for a given inet port (UDP,
   SCTP, TCP).</td></tr>
@@ -44,7 +44,7 @@
   one of the properties desired from <code>erlang:port_info/1-2</code>.</td></tr>
 <tr><td valign="top"><a href="#port_list-2">port_list/2</a></td><td>Returns a list of all the open ports in the VM, but only
   if the <code>Attr</code>'s resulting value matches <code>Val</code>.</td></tr>
-<tr><td valign="top"><a href="#proc_attrs-1">proc_attrs/1</a></td><td>Returns the attributes (<a href="recon.html#type-proc_attrs"><code>recon:proc_attrs()</code></a>) of
+<tr><td valign="top"><a href="#proc_attrs-1">proc_attrs/1</a></td><td>Returns the attributes (<a docgen-rel="seetype" docgen-href="recon#proc_attrs/0" href="recon.html#type-proc_attrs"><code>recon:proc_attrs()</code></a>) of
   all processes of the node, except the caller.</td></tr>
 <tr><td valign="top"><a href="#proc_attrs-2">proc_attrs/2</a></td><td>Returns the attributes of a given process.</td></tr>
 <tr><td valign="top"><a href="#sample-2">sample/2</a></td><td>Runs a fun once, waits <code>Ms</code>, runs the fun again,
@@ -67,20 +67,23 @@
 <h4 class="function"><a name="count-1">count/1</a></h4>
 <div class="spec">
 <p><code>count(Terms::[term()]) -&gt; [{term(), Count::integer()}]</code><br></p>
+<p> </p>
 </div><p>Takes a list of terms, and counts how often each of
   them appears in the list. The list returned is in no
   particular order.</p>
 
 <h4 class="function"><a name="inet_attrs-1">inet_attrs/1</a></h4>
 <div class="spec">
-<p><code>inet_attrs(AttrName::term()) -&gt; [<a href="recon.html#type-inet_attrs">recon:inet_attrs()</a>]</code><br></p>
-</div><p>Returns the attributes (<a href="recon.html#type-inet_attrs"><code>recon:inet_attrs()</code></a>) of
+<p><code>inet_attrs(AttrName::term()) -&gt; [<a href="/home/ferd/code/self/recon/doc/recon.html#type-inet_attrs">recon:inet_attrs()</a>]</code><br></p>
+<p> </p>
+</div><p>Returns the attributes (<a docgen-rel="seetype" docgen-href="recon#inet_attrs/0" href="recon.html#type-inet_attrs"><code>recon:inet_attrs()</code></a>) of
   all inet ports (UDP, SCTP, TCP) of the node.</p>
 
 <h4 class="function"><a name="inet_attrs-2">inet_attrs/2</a></h4>
 <div class="spec">
-<p><code>inet_attrs(AttributeName, Port::port()) -&gt; {ok, <a href="recon.html#type-inet_attrs">recon:inet_attrs()</a>} | {error, term()}</code>
+<p><code>inet_attrs(AttributeName, Port::port()) -&gt; {ok, <a href="/home/ferd/code/self/recon/doc/recon.html#type-inet_attrs">recon:inet_attrs()</a>} | {error, term()}</code>
 <ul class="definitions"><li><code>AttributeName = recv_cnt | recv_oct | send_cnt | send_oct | cnt | oct</code></li></ul></p>
+<p> </p>
 </div><p>Returns the attributes required for a given inet port (UDP,
   SCTP, TCP). This form of attributes is standard for most comparison
   functions for processes in recon.</p>
@@ -88,25 +91,29 @@
 <h4 class="function"><a name="port_list-1">port_list/1</a></h4>
 <div class="spec">
 <p><code>port_list(Attr::atom()) -&gt; [{port(), term()}]</code><br></p>
+<p> </p>
 </div><p>Returns a list of all the open ports in the VM, coupled with
   one of the properties desired from <code>erlang:port_info/1-2</code>.</p>
 
 <h4 class="function"><a name="port_list-2">port_list/2</a></h4>
 <div class="spec">
 <p><code>port_list(Attr::atom(), Val::term()) -&gt; [port()]</code><br></p>
+<p> </p>
 </div><p>Returns a list of all the open ports in the VM, but only
   if the <code>Attr</code>'s resulting value matches <code>Val</code>. <code>Attr</code> must be
   a property accepted by <code>erlang:port_info/2</code>.</p>
 
 <h4 class="function"><a name="proc_attrs-1">proc_attrs/1</a></h4>
 <div class="spec">
-<p><code>proc_attrs(AttrName::term()) -&gt; [<a href="recon.html#type-proc_attrs">recon:proc_attrs()</a>]</code><br></p>
-</div><p>Returns the attributes (<a href="recon.html#type-proc_attrs"><code>recon:proc_attrs()</code></a>) of
+<p><code>proc_attrs(AttrName::term()) -&gt; [<a href="/home/ferd/code/self/recon/doc/recon.html#type-proc_attrs">recon:proc_attrs()</a>]</code><br></p>
+<p> </p>
+</div><p>Returns the attributes (<a docgen-rel="seetype" docgen-href="recon#proc_attrs/0" href="recon.html#type-proc_attrs"><code>recon:proc_attrs()</code></a>) of
   all processes of the node, except the caller.</p>
 
 <h4 class="function"><a name="proc_attrs-2">proc_attrs/2</a></h4>
 <div class="spec">
-<p><code>proc_attrs(AttrName::term(), Pid::pid()) -&gt; {ok, <a href="recon.html#type-proc_attrs">recon:proc_attrs()</a>} | {error, term()}</code><br></p>
+<p><code>proc_attrs(AttrName::term(), Pid::pid()) -&gt; {ok, <a href="/home/ferd/code/self/recon/doc/recon.html#type-proc_attrs">recon:proc_attrs()</a>} | {error, term()}</code><br></p>
+<p> </p>
 </div><p><p>Returns the attributes of a given process. This form of attributes  
 is standard for most comparison functions for processes in recon.</p>
  
@@ -116,6 +123,7 @@ is standard for most comparison functions for processes in recon.</p>
 <h4 class="function"><a name="sample-2">sample/2</a></h4>
 <div class="spec">
 <p><code>sample(Ms::non_neg_integer(), Fun::fun(() -&gt; term())) -&gt; {First::term(), Second::term()}</code><br></p>
+<p> </p>
 </div><p>Runs a fun once, waits <code>Ms</code>, runs the fun again,
   and returns both results.</p>
 
@@ -123,36 +131,42 @@ is standard for most comparison functions for processes in recon.</p>
 <div class="spec">
 <p><code>scheduler_usage_diff(SchedTime, SchedTime) -&gt; undefined | [{SchedulerId, Usage}]</code>
 <ul class="definitions"><li><code>SchedTime = [{SchedulerId, ActiveTime, TotalTime}]</code></li><li><code>SchedulerId = pos_integer()</code></li><li><code>Usage = number()</code></li><li><code>ActiveTime = non_neg_integer()</code></li><li><code>TotalTime = non_neg_integer()</code></li></ul></p>
+<p> </p>
 </div><p>Diffs two runs of erlang:statistics(scheduler_wall_time) and
   returns usage metrics in terms of cores and 0..1 percentages.</p>
 
 <h4 class="function"><a name="sliding_window-2">sliding_window/2</a></h4>
 <div class="spec">
 <p><code>sliding_window(First::<a href="#type-diff">diff()</a>, Last::<a href="#type-diff">diff()</a>) -&gt; <a href="#type-diff">diff()</a></code><br></p>
+<p> </p>
 </div><p>Compare two samples and return a list based on some key. The type mentioned
   for the structure is <code>diff()</code> (<code>{Key,Val,Other}</code>), which is compatible with
-  the <a href="recon.html#type-proc_attrs"><code>recon:proc_attrs()</code></a> type.</p>
+  the <a docgen-rel="seetype" docgen-href="recon#proc_attrs/0" href="recon.html#type-proc_attrs"><code>recon:proc_attrs()</code></a> type.</p>
 
 <h4 class="function"><a name="sublist_top_n_attrs-2">sublist_top_n_attrs/2</a></h4>
 <div class="spec">
 <p><code>sublist_top_n_attrs(List::[Attrs], Len::pos_integer()) -&gt; [Attrs]</code>
-<ul class="definitions"><li><code>Attrs = <a href="recon.html#type-proc_attrs">recon:proc_attrs()</a> | <a href="recon.html#type-inet_attrs">recon:inet_attrs()</a></code></li></ul></p>
+<ul class="definitions"><li><code>Attrs = <a href="/home/ferd/code/self/recon/doc/recon.html#type-proc_attrs">recon:proc_attrs()</a> | <a href="/home/ferd/code/self/recon/doc/recon.html#type-inet_attrs">recon:inet_attrs()</a></code></li></ul></p>
+<p> </p>
 </div><p>Returns the top n element of a list of process or inet attributes</p>
 
 <h4 class="function"><a name="term_to_pid-1">term_to_pid/1</a></h4>
 <div class="spec">
-<p><code>term_to_pid(Pid::<a href="recon.html#type-pid_term">recon:pid_term()</a>) -&gt; pid()</code><br></p>
+<p><code>term_to_pid(Pid::<a href="/home/ferd/code/self/recon/doc/recon.html#type-pid_term">recon:pid_term()</a>) -&gt; pid()</code><br></p>
+<p> </p>
 </div><p>Transforms a given term to a pid.</p>
 
 <h4 class="function"><a name="term_to_port-1">term_to_port/1</a></h4>
 <div class="spec">
-<p><code>term_to_port(Port::<a href="recon.html#type-port_term">recon:port_term()</a>) -&gt; port()</code><br></p>
+<p><code>term_to_port(Port::<a href="/home/ferd/code/self/recon/doc/recon.html#type-port_term">recon:port_term()</a>) -&gt; port()</code><br></p>
+<p> </p>
 </div><p>Transforms a given term to a port</p>
 
 <h4 class="function"><a name="time_fold-6">time_fold/6</a></h4>
 <div class="spec">
 <p><code>time_fold(N, Interval, Fun, State, FoldFun, Init) -&gt; [term()]</code>
 <ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Interval = pos_integer()</code></li><li><code>Fun = fun((State) -&gt; {term(), State})</code></li><li><code>State = term()</code></li><li><code>FoldFun = fun((term(), Init) -&gt; Init)</code></li><li><code>Init = term()</code></li></ul></p>
+<p> </p>
 </div><p>Calls a given function every <code>Interval</code> milliseconds and supports
   a fold-like interface (each result is modified and accumulated)</p>
 
@@ -160,6 +174,7 @@ is standard for most comparison functions for processes in recon.</p>
 <div class="spec">
 <p><code>time_map(N, Interval, Fun, State, MapFun) -&gt; [term()]</code>
 <ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Interval = pos_integer()</code></li><li><code>Fun = fun((State) -&gt; {term(), State})</code></li><li><code>State = term()</code></li><li><code>MapFun = fun((term()) -&gt; term())</code></li></ul></p>
+<p> </p>
 </div><p>Calls a given function every <code>Interval</code> milliseconds and supports
   a map-like interface (each result is modified and returned)</p>
 
@@ -167,6 +182,7 @@ is standard for most comparison functions for processes in recon.</p>
 <div class="spec">
 <p><code>triple_to_pid(N, N, N) -&gt; pid()</code>
 <ul class="definitions"><li><code>N = non_neg_integer()</code></li></ul></p>
+<p> </p>
 </div><p>Equivalent of <code>pid(X,Y,Z)</code> in the Erlang shell.</p>
 
     </article>

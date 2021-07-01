@@ -60,16 +60,19 @@
 <h4 class="function"><a name="clear-0">clear/0</a></h4>
 <div class="spec">
 <p><code>clear() -&gt; any()</code></p>
+<p> </p>
 </div><p>remove all imported definitions, destroy the table, clean up</p>
 
 <h4 class="function"><a name="is_active-0">is_active/0</a></h4>
 <div class="spec">
 <p><code>is_active() -&gt; boolean()</code><br></p>
+<p> </p>
 </div><p>quickly check if we want to do any record formatting</p>
 
 <h4 class="function"><a name="limit-3">limit/3</a></h4>
 <div class="spec">
 <p><code>limit(Label::<a href="#type-map_label">map_label()</a>, Pattern::<a href="#type-pattern">pattern()</a>, Limit::<a href="#type-limit">limit()</a>) -&gt; ok | {error, any()}</code><br></p>
+<p> </p>
 </div><p><p>Limit output to selected keys of a map (can be 'none', 'all', a key or a list of keys).  
 Pattern selects maps to process: a "pattern" is just a map, and if all key/value pairs of a pattern  
 are present in a map (in other words, the pattern is a subset), then we say the map matches  
@@ -82,17 +85,20 @@ and we process it accordingly (apply the limit).</p>
 <h4 class="function"><a name="list-0">list/0</a></h4>
 <div class="spec">
 <p><code>list() -&gt; any()</code></p>
+<p> </p>
 </div><p>prints out all "known" map definitions and their limit settings.
   Printout tells a map's name, the matching fields required, and the limit options.</p>
 
 <h4 class="function"><a name="remove-1">remove/1</a></h4>
 <div class="spec">
 <p><code>remove(Label::<a href="#type-map_label">map_label()</a>) -&gt; true</code><br></p>
+<p> </p>
 </div><p>remove a given map entry</p>
 
 <h4 class="function"><a name="rename-2">rename/2</a></h4>
 <div class="spec">
 <p><code>rename(Name::<a href="#type-map_label">map_label()</a>, NewName::<a href="#type-map_label">map_label()</a>) -&gt; renamed | missing</code><br></p>
+<p> </p>
 </div><p>rename a given map entry, which allows to to change priorities for
   matching. The first argument is the current name, and the second
   argument is the new name.</p>

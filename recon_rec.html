@@ -69,21 +69,25 @@
 <h4 class="function"><a name="clear-0">clear/0</a></h4>
 <div class="spec">
 <p><code>clear() -&gt; any()</code></p>
+<p> </p>
 </div><p>remove all imported definitions, destroy the table, clean up</p>
 
 <h4 class="function"><a name="clear-1">clear/1</a></h4>
 <div class="spec">
 <p><code>clear(Module) -&gt; any()</code></p>
+<p> </p>
 </div><p>remove definitions imported from a module.</p>
 
 <h4 class="function"><a name="get_list-0">get_list/0</a></h4>
 <div class="spec">
 <p><code>get_list() -&gt; [<a href="#type-listentry">listentry()</a>]</code><br></p>
+<p> </p>
 </div><p>returns a list of active record definitions</p>
 
 <h4 class="function"><a name="import-1">import/1</a></h4>
 <div class="spec">
 <p><code>import(Modules::module() | [module()]) -&gt; <a href="#type-import_result">import_result()</a> | [<a href="#type-import_result">import_result()</a>]</code><br></p>
+<p> </p>
 </div><p>import record definitions from a module. If a record definition of the same name
   and arity has already been imported from another module then the new
   definition is ignored (returned info tells you from which module the existing definition was imported).
@@ -94,11 +98,13 @@
 <h4 class="function"><a name="is_active-0">is_active/0</a></h4>
 <div class="spec">
 <p><code>is_active() -&gt; boolean()</code><br></p>
+<p> </p>
 </div><p>quickly check if we want to do any record formatting</p>
 
 <h4 class="function"><a name="limit-3">limit/3</a></h4>
 <div class="spec">
 <p><code>limit(Name::<a href="#type-record_name">record_name()</a>, Arity::arity(), Limit::<a href="#type-limit">limit()</a>) -&gt; ok | {error, any()}</code><br></p>
+<p> </p>
 </div><p>Limit output to selected fields of a record (can be 'none', 'all', a field or a list of fields).
   Limit set to 'none' means there is no limit, and all fields are displayed; limit 'all' means that
   all fields are squashed and only record name will be shown.</p>
@@ -106,6 +112,7 @@
 <h4 class="function"><a name="list-0">list/0</a></h4>
 <div class="spec">
 <p><code>list() -&gt; any()</code></p>
+<p> </p>
 </div><p>prints out all "known" (imported) record definitions and their limit settings.
   Printout tells module a record originates from, its name and a list of field names,
   plus the record's arity (may be handy if handling big records) and a list of field it
