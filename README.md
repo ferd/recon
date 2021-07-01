@@ -16,7 +16,7 @@ Current Status
 
 [![Build Status](https://github.com/ferd/recon/workflows/build/badge.svg)](https://github.com/ferd/recon)
 
-Versions supported: OTP-17 and up. Support of R16B03-1 down to R15B02 is best effort. Builds with Rebar3 require OTP-17.1 and up because that's what the tool supports.
+Versions supported: OTP-18 and up. Support of OTP-17 down to R15B02 is best effort. Builds with Rebar3 require OTP-18.3 and up because that's what the build tools support. Testing may eventually clamp up to OTP-supported releases (current and the two prior).
 
 Changelog
 ---------
@@ -27,6 +27,10 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.5.2
+  - [Increase Dialyzer strictness](https://github.com/ferd/recon/pull/88)
+  - [Accumulate all block entries in `format_blocks`](https://github.com/ferd/recon/pull/83)
+  - [option `io_server` can also be an `atom()` in traces doc](https://github.com/ferd/recon/pull/80)
 - 2.5.1
   - Fix support for extra messages in traces (thanks to Péter Gömöri)
   - Fix some typespecs for match specs (thanks to @chenduo)
