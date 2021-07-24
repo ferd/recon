@@ -383,7 +383,7 @@ node_stats_list(N, Interval) ->
 %%
 %% Increments are values that are mostly useful when compared to a previous
 %% one to have an idea what they're doing, because otherwise they'd never
-%% stop increasing: bytes in and out of the node, number of garbage colelctor
+%% stop increasing: bytes in and out of the node, number of garbage collector
 %% runs, words of memory that were garbage collected, and the global reductions
 %% count for the node.
 -spec node_stats(N, Interval, FoldFun, Acc) -> Acc when
