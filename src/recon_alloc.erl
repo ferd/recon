@@ -535,7 +535,7 @@ snapshot_get() ->
     get(recon_alloc_snapshot).
 
 %% @doc save the current snapshot taken by {@link snapshot/0} to a file.
-%% If there is no current snapshot, a snaphot of the current allocator
+%% If there is no current snapshot, a snapshot of the current allocator
 %% statistics will be written to the file.
 -spec snapshot_save(Filename) -> ok when
       Filename :: file:name().

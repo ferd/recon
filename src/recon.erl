@@ -377,7 +377,7 @@ node_stats_list(N, Interval) ->
 %%
 %% Absolutes are values that keep changing with time, and are useful to know
 %% about as a datapoint: process count, size of the run queue, error_logger
-%% queue length in versions before OTP-21 or those thar run it explicitely,
+%% queue length in versions before OTP-21 or those thar run it explicitly,
 %% and the memory of the node (total, processes, atoms, binaries,
 %% and ets tables).
 %%
