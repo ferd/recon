@@ -21,7 +21,7 @@ all() -> [{group,info}, proc_count, proc_window, bin_leak,
           node_stats_list, get_state, source, tcp, udp, files, port_types,
           inet_count, inet_window, binary_memory, scheduler_usage].
 
-groups() -> [{info, [], [info3, info4, info1, info2,
+groups() -> [{info, [], [info3, info4, info1, info2, info_dead,
                          port_info1, port_info2]}].
 
 init_per_group(info, Config) ->
@@ -143,6 +143,31 @@ info2(Config) ->
            length([1 || K1 <- Keys, {K2,_} <- [recon:info(Pid, K1)],
                         K1 == K2]),
     unregister(info2).
+
+info_dead(_Config) ->
+    Pid = spawn(fun() -> ok end),
+    timer:sleep(10),
+    Categories = [{meta, [registered_name, dictionary, group_leader, status]},
+                  {signals, [links, monitors, monitored_by, trap_exit]},
+                  {location, [initial_call, current_stacktrace]},
+                  {memory_used, [memory, message_queue_len, heap_size,
+                                 total_heap_size, garbage_collection]},
+                  {work, [reductions]}],
+    undefined = recon:info(Pid, registered_name),
+    Keys = lists:flatten([K || {_,L} <- Categories, K <- L]),
+    %% check that individual category calls return undefined values
+    [] = lists:flatten(
+        [GetCat || {Cat, _List} <- Categories,
+                   {GetCat,Info} <- [recon:info(Pid, Cat)],
+                   Cat =:= GetCat,
+                   undefined =/= Info]
+    ),
+    true = lists:all(fun(X) -> X == undefined end,
+                     [recon:info(Pid, K) || K <- Keys]),
+    undefined = recon:info(Pid, Keys),
+    %% Special virtual record.
+    undefined = recon:info(Pid, binary_memory),
+    ok.
 
 proc_count(_Config) ->
     Res = recon:proc_count(memory, 10),
