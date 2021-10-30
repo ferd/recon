@@ -174,6 +174,7 @@ info(A,B,C, Key) -> info(recon_lib:triple_to_pid(A,B,C), Key).
 %% another registry supported in the `{via, Module, Name}' syntax (must have a
 %% `Module:whereis_name/1' function). Pids can also be passed in as a string
 %% (`"<0.39.0>"') or a triple (`{0,39,0}') and will be converted to be used.
+%% Returns `undefined' as a value when a process died.
 -spec info(pid_term()) -> [{info_type(), [{info_key(), Value}]},...] when
       Value :: term().
 info(PidTerm) ->
@@ -198,9 +199,9 @@ info(PidTerm) ->
 %% A fake attribute `binary_memory' is also available to return the
 %% amount of memory used by refc binaries for a process.
 -dialyzer({no_contracts, info/2}). % ... Overloaded contract for recon:info/2 has overlapping domains
--spec info(pid_term(), info_type()) -> {info_type(), [{info_key(), term()}]}
-    ;     (pid_term(), [atom()]) -> [{atom(), term()}]
-    ;     (pid_term(), atom()) -> {atom(), term()}.
+-spec info(pid_term(), info_type()) -> {info_type(), [{info_key(), term()}] | undefined}
+    ;     (pid_term(), [atom()]) -> [{atom(), term()}] | undefined
+    ;     (pid_term(), atom()) -> {atom(), term()} | undefined.
 info(PidTerm, meta) ->
     info_type(PidTerm, meta, [registered_name, dictionary, group_leader,
                               status]);
@@ -226,8 +227,12 @@ info_type(PidTerm, Type, Keys) ->
 %% @private wrapper around `erlang:process_info/2' that allows special
 %% attribute handling for items like `binary_memory'.
 proc_info(Pid, binary_memory) ->
-    {binary, Bins} = erlang:process_info(Pid, binary),
-    {binary_memory, recon_lib:binary_memory(Bins)};
+    case erlang:process_info(Pid, binary) of
+        undefined ->
+            undefined;
+        {binary, Bins} ->
+            {binary_memory, recon_lib:binary_memory(Bins)}
+    end;
 proc_info(Pid, Term) when is_atom(Term) ->
     erlang:process_info(Pid, Term);
 proc_info(Pid, List) when is_list(List) ->

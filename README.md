@@ -27,6 +27,8 @@ all stable changes of the first version of Recon.
 
 *2.x*
 
+- 2.5.3 (unpublished)
+  - [Handle dead processes in `recon:info/2` types and edge cases](https://github.com/ferd/recon/pull/97)
 - 2.5.2
   - [Increase Dialyzer strictness](https://github.com/ferd/recon/pull/88)
   - [Accumulate all block entries in `format_blocks`](https://github.com/ferd/recon/pull/83)
