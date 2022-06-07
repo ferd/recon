@@ -168,17 +168,24 @@ term_to_port("#Port<0."++Id) ->
     term_to_port(N);
 term_to_port(N) when is_integer(N) ->
     %% We rebuild the term from the int received:
-    %% http://www.erlang.org/doc/apps/erts/erl_ext_dist.html#id86892
+    %% https://www.erlang.org/doc/apps/erts/erl_ext_dist.html#port_ext
+    %% https://www.erlang.org/doc/apps/erts/erl_ext_dist.html#new_port_ext
     Name = iolist_to_binary(atom_to_list(node())),
     NameLen = iolist_size(Name),
     Vsn = binary:last(term_to_binary(self())),
+    {PortTag, VsnSize} = if
+                             Vsn > 3 ->
+                                 {89, 4};
+                             true ->
+                                 {102, 1}
+                         end,
     Bin = <<131, % term encoding value
-            102, % port tag
+            PortTag, % port tag, 102 or 89
             100, % atom ext tag, used for node name
             NameLen:2/unit:8,
             Name:NameLen/binary,
             N:4/unit:8, % actual counter value
-            Vsn:8>>, % version
+            Vsn:VsnSize/unit:8>>, % version
     binary_to_term(Bin).
 
 %% @doc Calls a given function every `Interval' milliseconds and supports
