@@ -8,31 +8,31 @@ grep Slogan: $DUMP -m 1
 
 ### MEMORY ###
 echo -e "\nMemory:\n==="
-M=`grep -m 1 'processes' $DUMP | sed "s/processes: //"`
+M=`grep -m 1 '^processes' $DUMP | sed "s/processes: //"`
 let "m=$M/(1024*1024)"
 echo "  processes: $m Mb"
-M=`grep -m 1 'processes_used' $DUMP | sed "s/processes_used: //"`
+M=`grep -m 1 '^processes_used' $DUMP | sed "s/processes_used: //"`
 let "m=$M/(1024*1024)"
 echo "  processes_used: $m Mb"
-M=`grep -m 1 'system' $DUMP | sed "s/system: //"`
+M=`grep -m 1 '^system' $DUMP | sed "s/system: //"`
 let "m=$M/(1024*1024)"
 echo "  system: $m Mb"
-M=`grep -m 1 'atom' $DUMP | sed "s/atom: //"`
+M=`grep -m 1 '^atom' $DUMP | sed "s/atom: //"`
 let "m=$M/(1024*1024)"
 echo "  atom: $m Mb"
-M=`grep -m 1 'atom_used' $DUMP | sed "s/atom_used: //"`
+M=`grep -m 1 '^atom_used' $DUMP | sed "s/atom_used: //"`
 let "m=$M/(1024*1024)"
 echo "  atom_used: $m Mb"
-M=`grep -m 1 'binary' $DUMP | sed "s/binary: //"`
+M=`grep -m 1 '^binary' $DUMP | sed "s/binary: //"`
 let "m=$M/(1024*1024)"
 echo "  binary: $m Mb"
-M=`grep -m 1 'code' $DUMP | sed "s/code: //"`
+M=`grep -m 1 '^code' $DUMP | sed "s/code: //"`
 let "m=$M/(1024*1024)"
 echo "  code: $m Mb"
-M=`grep -m 1 'ets' $DUMP | sed "s/ets: //"`
+M=`grep -m 1 '^ets' $DUMP | sed "s/ets: //"`
 let "m=$M/(1024*1024)"
 echo "  ets: $m Mb"
-M=`grep -m 1 'total' $DUMP | sed "s/total: //"`
+M=`grep -m 1 '^total' $DUMP | sed "s/total: //"`
 let "m=$M/(1024*1024)"
 echo -e "  ---\n  total: $m Mb"
 
