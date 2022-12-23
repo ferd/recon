@@ -1,395 +1,986 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-    <link href='http://fonts.googleapis.com/css?family=Titillium+Web:400,300italic,600italic,700,600,700italic' rel='stylesheet' type='text/css'>
-    <link href='http://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,700italic,400italic' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" href="screen.css" media="screen, projection" />
-    <title>Recon Library</title>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.29.0">
+    <meta name="project" content="recon v2.5.3">
+
+    <title>recon_trace — recon v2.5.3</title>
+    <link rel="stylesheet" href="dist/html-erlang-4XYKNH4U.css" />
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-X7YVL3G2.js"></script>
+    <script src="dist/sidebar_items-BD2EFCFF.js"></script>
+
+      <script src="docs_config.js"></script>
+
+    <script async src="dist/html-XN2TSG4M.js"></script>
+
+
   </head>
-  <body>
-    <header>
-        <h1>Recon</h1>
-        <nav>
-          <ul>
-<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a><li><a href="recon_map.html">recon_map</a><li><a href="recon_rec.html">recon_rec</a><li><a href="recon_trace.html">recon_trace</a>
-          </ul>
-        </nav>
-    </header>
-    <article>
-    <h2>Module recon_trace</h2>
-<ul class="index"><li><a href="#description">Description</a></li><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
-   <code>recon_trace</code> is a module that handles tracing in a safe manner for single   
-Erlang nodes, currently for function calls only.
+  <body data-type="modules" class="page-module">
+    <script>
 
-<p><strong>Authors:</strong> Fred Hebert (<a href="mailto:mononcqc@ferd.ca"><code>mononcqc@ferd.ca</code></a>) [<em>web site:</em> <code><a href="http://ferd.ca/" target="_top">http://ferd.ca/</a></code>].</p>
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
 
-<h3><a name="description">Description</a></h3><p>
-   <code>recon_trace</code> is a module that handles tracing in a safe manner for single   
-Erlang nodes, currently for function calls only. Functionality includes:</p>
-  
-   <ul>
-       <li>Nicer to use interface (arguably) than <code>dbg</code> or trace BIFs.</li>
-       <li>Protection against dumb decisions (matching all calls on a node
-           being traced, for example)</li>
-       <li>Adding safe guards in terms of absolute trace count or
-           rate-limitting</li>
-       <li>Nicer formatting than default traces</li>
-   </ul>
-  
-   <h4><a name="Tracing_Erlang_Code">Tracing Erlang Code</a></h4>
-  
-   <p>The Erlang Trace BIFs allow to trace any Erlang code at all. They work in   
-two parts: pid specifications, and trace patterns.</p>
-  
-   <p>Pid specifications let you decide which processes to target. They can be
-   specific pids, <code>all</code> pids, <code>existing</code> pids, or <code>new</code> pids (those not   
-spawned at the time of the function call).</p>
-  
-   <p>The trace patterns represent functions. Functions can be specified in two
-   parts: specifying the modules, functions, and arguments, and then with
-   Erlang match specifications to add constraints to arguments (see
-   <a docgen-rel="seemfa" docgen-href="#calls/3" href="#calls-3"><code>calls/3</code></a> for details).</p>
-  
-   <p>What defines whether you get traced or not is the intersection of both:</p>
-  
-   <pre>           _,--------,_      _,--------,_
-        ,-'            `-,,-'            `-,
-     ,-'              ,-'  '-,              `-,
-    |   Matching    -'        '-   Matching    |
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
+    </button>
+    <label class="search-label">
+      <p class="sr-only">Search</p>
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+
+    <div class="sidebar-projectDetails">
+      <a href="https://ferd.github.io/recon/" class="sidebar-projectName" translate="no">
+recon
+      </a>
+      <strong class="sidebar-projectVersion" translate="no">
+        v2.5.3
+      </strong>
+    </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
+
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+    </ul>
+  </div>
+
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <output role="status" id="toast"></output>
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
+
+
+    <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L180" title="View Source" class="view-source" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+  <span translate="no">recon_trace</span> 
+  <small class="app-vsn" translate="no">(recon v2.5.3)</small>
+
+</h1>
+
+
+  <section id="moduledoc">
+<p><code>recon_trace</code> is a module that handles tracing in a safe manner for single Erlang nodes, currently for function calls only. Functionality includes:</p><ul><li>Nicer to use interface (arguably) than <code>dbg</code> or trace BIFs.</li><li>Protection against dumb decisions (matching all calls on a node being traced, for example)</li><li>Adding safe guards in terms of absolute trace count or rate-limitting</li><li>Nicer formatting than default traces</li></ul><h3 id="module-tracing-erlang-code" class="section-heading">
+  <a href="#module-tracing-erlang-code" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">tracing-erlang-code</p>
+  </a>
+  <a name="Tracing_Erlang_Code">Tracing Erlang Code</a>
+</h3>
+<p>The Erlang Trace BIFs allow to trace any Erlang code at all. They work in two parts: pid specifications, and trace patterns.</p><p>Pid specifications let you decide which processes to target. They can be specific pids, <code>all</code> pids, <code>existing</code> pids, or <code>new</code> pids (those not spawned at the time of the function call).</p><p>The trace patterns represent functions. Functions can be specified in two parts: specifying the modules, functions, and arguments, and then with Erlang match specifications to add constraints to arguments (see <a href="#calls/3"><code>calls/3</code></a> for details).</p><p>What defines whether you get traced or not is the intersection of both:</p><pre><code class="makeup erlang" translate="no"><span class="w">           </span><span class="p">_</span><span class="p">,</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="p">,</span><span class="p">_</span><span class="w">      </span><span class="p">_</span><span class="p">,</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="p">,</span><span class="p">_</span><span class="w">
+        </span><span class="p">,</span><span class="o">-</span><span class="ss">&#39;            `-,,-&#39;</span><span class="w">            </span><span class="err">`</span><span class="o">-</span><span class="p">,</span><span class="w">
+     </span><span class="p">,</span><span class="o">-</span><span class="ss">&#39;              ,-&#39;</span><span class="w">  </span><span class="ss">&#39;-,              `-,
+    |   Matching    -&#39;</span><span class="w">        </span><span class="ss">&#39;-   Matching    |
     |     Pids     |  Getting   |    Trace     |
     |              |   Traced   |  Patterns    |
     |               -,        ,-               |
-     '-,              '-,  ,-'              ,-'
-        '-,_          _,-''-,_          _,-'
-            '--------'        '--------'</pre>
+     &#39;</span><span class="o">-</span><span class="p">,</span><span class="w">              </span><span class="ss">&#39;-,  ,-&#39;</span><span class="w">              </span><span class="p">,</span><span class="o">-</span><span class="ss">&#39;
+        &#39;</span><span class="o">-</span><span class="p">,</span><span class="p">_</span><span class="w">          </span><span class="p">_</span><span class="p">,</span><span class="o">-</span><span class="ss">&#39;&#39;</span><span class="o">-</span><span class="p">,</span><span class="p">_</span><span class="w">          </span><span class="p">_</span><span class="p">,</span><span class="o">-</span><span class="ss">&#39;
+            &#39;</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="ss">&#39;        &#39;</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="err">&#39;</span></code></pre><p>If either the pid specification excludes a process or a trace pattern excludes a given call, no trace will be received.</p><h3 id="module-example-session" class="section-heading">
+  <a href="#module-example-session" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">example-session</p>
+  </a>
+  <a name="Example_Session">Example Session</a>
+</h3>
+<p>First let's trace the <code>queue:new</code> functions in any process:</p><pre><code class="makeup erlang" translate="no"><span class="w">   </span><span class="mi">1</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">recon_trace</span><span class="p">:</span><span class="nf">calls</span><span class="p" data-group-id="3069975542-1">(</span><span class="p" data-group-id="3069975542-2">{</span><span class="ss">queue</span><span class="p">,</span><span class="w"> </span><span class="ss">new</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;_&#39;</span><span class="p" data-group-id="3069975542-2">}</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="3069975542-1">)</span><span class="p">.</span><span class="w">
+   </span><span class="mi">1</span><span class="w">
+   </span><span class="mi">13</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mf">34.086078</span><span class="w"> </span><span class="o">&lt;</span><span class="mf">0.44</span><span class="p">.</span><span class="mi">0</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">queue</span><span class="p">:</span><span class="nf">new</span><span class="p" data-group-id="3069975542-3">(</span><span class="p" data-group-id="3069975542-3">)</span><span class="w">
+   </span><span class="n">Recon</span><span class="w"> </span><span class="ss">tracer</span><span class="w"> </span><span class="ss">rate</span><span class="w"> </span><span class="ss">limit</span><span class="w"> </span><span class="ss">tripped</span><span class="p">.</span></code></pre><p>The limit was set to <code>1</code> trace message at most, and <code>recon</code> let us know when that limit was reached.</p><p>Let's instead look for all the <code>queue:in/2</code> calls, to see what it is we're inserting in queues:</p><pre><code class="makeup erlang" translate="no"><span class="w">   </span><span class="mi">2</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">recon_trace</span><span class="p">:</span><span class="nf">calls</span><span class="p" data-group-id="0150714603-1">(</span><span class="p" data-group-id="0150714603-2">{</span><span class="ss">queue</span><span class="p">,</span><span class="w"> </span><span class="ss">in</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p" data-group-id="0150714603-2">}</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="0150714603-1">)</span><span class="p">.</span><span class="w">
+   </span><span class="mi">1</span><span class="w">
+   </span><span class="mi">13</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mf">55.365157</span><span class="w"> </span><span class="o">&lt;</span><span class="mf">0.44</span><span class="p">.</span><span class="mi">0</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">queue</span><span class="p">:</span><span class="nf">in</span><span class="p" data-group-id="0150714603-3">(</span><span class="ss">a</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0150714603-4">{</span><span class="p" data-group-id="0150714603-5">[</span><span class="p" data-group-id="0150714603-5">]</span><span class="p">,</span><span class="p" data-group-id="0150714603-6">[</span><span class="p" data-group-id="0150714603-6">]</span><span class="p" data-group-id="0150714603-4">}</span><span class="p" data-group-id="0150714603-3">)</span><span class="w">
+   </span><span class="n">Recon</span><span class="w"> </span><span class="ss">tracer</span><span class="w"> </span><span class="ss">rate</span><span class="w"> </span><span class="ss">limit</span><span class="w"> </span><span class="ss">tripped</span><span class="p">.</span></code></pre><p>In order to see the content we want, we should change the trace patterns to use a <code>fun</code> that matches on all arguments in a list (<code>_</code>) and returns <code>return_trace()</code>. This last part will generate a second trace for each call that includes the return value:</p><pre><code class="makeup erlang" translate="no"><span class="w">   </span><span class="mi">3</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">recon_trace</span><span class="p">:</span><span class="nf">calls</span><span class="p" data-group-id="3700320258-1">(</span><span class="p" data-group-id="3700320258-2">{</span><span class="ss">queue</span><span class="p">,</span><span class="w"> </span><span class="ss">in</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="3700320258-3">(</span><span class="p">_</span><span class="p" data-group-id="3700320258-3">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">return_trace</span><span class="p" data-group-id="3700320258-4">(</span><span class="p" data-group-id="3700320258-4">)</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="3700320258-2">}</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="3700320258-1">)</span><span class="p">.</span><span class="w">
+   </span><span class="mi">1</span><span class="w">
   
-   <p>If either the pid specification excludes a process or a trace pattern   
-excludes a given call, no trace will be received.</p>
+   </span><span class="mi">13</span><span class="p">:</span><span class="mi">15</span><span class="p">:</span><span class="mf">27.655132</span><span class="w"> </span><span class="o">&lt;</span><span class="mf">0.44</span><span class="p">.</span><span class="mi">0</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">queue</span><span class="p">:</span><span class="nf">in</span><span class="p" data-group-id="3700320258-5">(</span><span class="ss">a</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3700320258-6">{</span><span class="p" data-group-id="3700320258-7">[</span><span class="p" data-group-id="3700320258-7">]</span><span class="p">,</span><span class="p" data-group-id="3700320258-8">[</span><span class="p" data-group-id="3700320258-8">]</span><span class="p" data-group-id="3700320258-6">}</span><span class="p" data-group-id="3700320258-5">)</span><span class="w">
   
-   <h4><a name="Example_Session">Example Session</a></h4>
+   </span><span class="mi">13</span><span class="p">:</span><span class="mi">15</span><span class="p">:</span><span class="mf">27.655467</span><span class="w"> </span><span class="o">&lt;</span><span class="mf">0.44</span><span class="p">.</span><span class="mi">0</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">queue</span><span class="p">:</span><span class="ss">in</span><span class="p">/</span><span class="mi">2</span><span class="w"> </span><span class="o">--</span><span class="o">&gt;</span><span class="w"> </span><span class="p" data-group-id="3700320258-9">{</span><span class="p" data-group-id="3700320258-10">[</span><span class="ss">a</span><span class="p" data-group-id="3700320258-10">]</span><span class="p">,</span><span class="p" data-group-id="3700320258-11">[</span><span class="p" data-group-id="3700320258-11">]</span><span class="p" data-group-id="3700320258-9">}</span><span class="w">
   
-   <p>First let's trace the <code>queue:new</code> functions in any process:</p>
+   </span><span class="mi">13</span><span class="p">:</span><span class="mi">15</span><span class="p">:</span><span class="mf">27.757921</span><span class="w"> </span><span class="o">&lt;</span><span class="mf">0.44</span><span class="p">.</span><span class="mi">0</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">queue</span><span class="p">:</span><span class="nf">in</span><span class="p" data-group-id="3700320258-12">(</span><span class="ss">a</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3700320258-13">{</span><span class="p" data-group-id="3700320258-14">[</span><span class="p" data-group-id="3700320258-14">]</span><span class="p">,</span><span class="p" data-group-id="3700320258-15">[</span><span class="p" data-group-id="3700320258-15">]</span><span class="p" data-group-id="3700320258-13">}</span><span class="p" data-group-id="3700320258-12">)</span><span class="w">
+   </span><span class="n">Recon</span><span class="w"> </span><span class="ss">tracer</span><span class="w"> </span><span class="ss">rate</span><span class="w"> </span><span class="ss">limit</span><span class="w"> </span><span class="ss">tripped</span><span class="p">.</span></code></pre><p>Matching on argument lists can be done in a more complex manner:</p><pre><code class="makeup erlang" translate="no"><span class="w">   </span><span class="mi">4</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">recon_trace</span><span class="p">:</span><span class="nf">calls</span><span class="p" data-group-id="2450817752-1">(</span><span class="w">
+   </span><span class="mi">4</span><span class="o">&gt;</span><span class="w">   </span><span class="p" data-group-id="2450817752-2">{</span><span class="ss">queue</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="2450817752-3">(</span><span class="p" data-group-id="2450817752-4">[</span><span class="n">A</span><span class="p">,</span><span class="p">_</span><span class="p" data-group-id="2450817752-4">]</span><span class="p" data-group-id="2450817752-3">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="nf">is_list</span><span class="p" data-group-id="2450817752-5">(</span><span class="n">A</span><span class="p" data-group-id="2450817752-5">)</span><span class="p">;</span><span class="w"> </span><span class="nf">is_integer</span><span class="p" data-group-id="2450817752-6">(</span><span class="n">A</span><span class="p" data-group-id="2450817752-6">)</span><span class="w"> </span><span class="ow">andalso</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">return_trace</span><span class="p" data-group-id="2450817752-7">(</span><span class="p" data-group-id="2450817752-7">)</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="2450817752-2">}</span><span class="p">,</span><span class="w">
+   </span><span class="mi">4</span><span class="o">&gt;</span><span class="w">   </span><span class="p" data-group-id="2450817752-8">{</span><span class="mi">10</span><span class="p">,</span><span class="mi">100</span><span class="p" data-group-id="2450817752-8">}</span><span class="w">
+   </span><span class="mi">4</span><span class="o">&gt;</span><span class="w"> </span><span class="p" data-group-id="2450817752-1">)</span><span class="p">.</span><span class="w">
+   </span><span class="mi">32</span><span class="w">
   
-   <pre>   1&gt; recon_trace:calls({queue, new, '_'}, 1).
-   1
-   13:14:34.086078 &lt;0.44.0&gt; queue:new()
-   Recon tracer rate limit tripped.</pre>
+   </span><span class="mi">13</span><span class="p">:</span><span class="mi">24</span><span class="p">:</span><span class="mf">21.324309</span><span class="w"> </span><span class="o">&lt;</span><span class="mf">0.38</span><span class="p">.</span><span class="mi">0</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">queue</span><span class="p">:</span><span class="nf">in</span><span class="p" data-group-id="2450817752-9">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2450817752-10">{</span><span class="p" data-group-id="2450817752-11">[</span><span class="p" data-group-id="2450817752-11">]</span><span class="p">,</span><span class="p" data-group-id="2450817752-12">[</span><span class="p" data-group-id="2450817752-12">]</span><span class="p" data-group-id="2450817752-10">}</span><span class="p" data-group-id="2450817752-9">)</span><span class="w">
   
-   <p>The limit was set to <code>1</code> trace message at most, and <code>recon</code> let us   
-know when that limit was reached.</p>
+   </span><span class="mi">13</span><span class="p">:</span><span class="mi">24</span><span class="p">:</span><span class="mf">21.371473</span><span class="w"> </span><span class="o">&lt;</span><span class="mf">0.38</span><span class="p">.</span><span class="mi">0</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">queue</span><span class="p">:</span><span class="ss">in</span><span class="p">/</span><span class="mi">2</span><span class="w"> </span><span class="o">--</span><span class="o">&gt;</span><span class="w"> </span><span class="p" data-group-id="2450817752-13">{</span><span class="p" data-group-id="2450817752-14">[</span><span class="mi">3</span><span class="p" data-group-id="2450817752-14">]</span><span class="p">,</span><span class="p" data-group-id="2450817752-15">[</span><span class="p" data-group-id="2450817752-15">]</span><span class="p" data-group-id="2450817752-13">}</span><span class="w">
   
-   <p>Let's instead look for all the <code>queue:in/2</code> calls, to see what it is   
-we're inserting in queues:</p>
+   </span><span class="mi">13</span><span class="p">:</span><span class="mi">25</span><span class="p">:</span><span class="mf">14.694865</span><span class="w"> </span><span class="o">&lt;</span><span class="mf">0.53</span><span class="p">.</span><span class="mi">0</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">queue</span><span class="p">:</span><span class="nf">split</span><span class="p" data-group-id="2450817752-16">(</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2450817752-17">{</span><span class="p" data-group-id="2450817752-18">[</span><span class="mi">10</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">7</span><span class="p" data-group-id="2450817752-18">]</span><span class="p">,</span><span class="p" data-group-id="2450817752-19">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p" data-group-id="2450817752-19">]</span><span class="p" data-group-id="2450817752-17">}</span><span class="p" data-group-id="2450817752-16">)</span><span class="w">
   
-   <pre>   2&gt; recon_trace:calls({queue, in, 2}, 1).
-   1
-   13:14:55.365157 &lt;0.44.0&gt; queue:in(a, {[],[]})
-   Recon tracer rate limit tripped.</pre>
+   </span><span class="mi">13</span><span class="p">:</span><span class="mi">25</span><span class="p">:</span><span class="mf">14.695194</span><span class="w"> </span><span class="o">&lt;</span><span class="mf">0.53</span><span class="p">.</span><span class="mi">0</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">queue</span><span class="p">:</span><span class="ss">split</span><span class="p">/</span><span class="mi">2</span><span class="w"> </span><span class="o">--</span><span class="o">&gt;</span><span class="w"> </span><span class="p" data-group-id="2450817752-20">{</span><span class="p" data-group-id="2450817752-21">{</span><span class="p" data-group-id="2450817752-22">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p" data-group-id="2450817752-22">]</span><span class="p">,</span><span class="p" data-group-id="2450817752-23">[</span><span class="mi">1</span><span class="p" data-group-id="2450817752-23">]</span><span class="p" data-group-id="2450817752-21">}</span><span class="p">,</span><span class="p" data-group-id="2450817752-24">{</span><span class="p" data-group-id="2450817752-25">[</span><span class="mi">10</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">7</span><span class="p" data-group-id="2450817752-25">]</span><span class="p">,</span><span class="p" data-group-id="2450817752-26">[</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p" data-group-id="2450817752-26">]</span><span class="p" data-group-id="2450817752-24">}</span><span class="p" data-group-id="2450817752-20">}</span><span class="w">
   
-   <p>In order to see the content we want, we should change the trace patterns
-   to use a <code>fun</code> that matches on all arguments in a list (<code>_</code>) and returns
-   <code>return_trace()</code>. This last part will generate a second trace for each   
-call that includes the return value:</p>
-  
-   <pre>   3&gt; recon_trace:calls({queue, in, fun(_) -&gt; return_trace() end}, 3).
-   1
-  
-   13:15:27.655132 &lt;0.44.0&gt; queue:in(a, {[],[]})
-  
-   13:15:27.655467 &lt;0.44.0&gt; queue:in/2 --&gt; {[a],[]}
-  
-   13:15:27.757921 &lt;0.44.0&gt; queue:in(a, {[],[]})
-   Recon tracer rate limit tripped.</pre>
-  
-   <p>Matching on argument lists can be done in a more complex manner:</p>
-  
-   <pre>   4&gt; recon_trace:calls(
-   4&gt;   {queue, '_', fun([A,_]) when is_list(A); is_integer(A) andalso A &gt; 1 -&gt; return_trace() end},
-   4&gt;   {10,100}
-   4&gt; ).
-   32
-  
-   13:24:21.324309 &lt;0.38.0&gt; queue:in(3, {[],[]})
-  
-   13:24:21.371473 &lt;0.38.0&gt; queue:in/2 --&gt; {[3],[]}
-  
-   13:25:14.694865 &lt;0.53.0&gt; queue:split(4, {[10,9,8,7],[1,2,3,4,5,6]})
-  
-   13:25:14.695194 &lt;0.53.0&gt; queue:split/2 --&gt; {{[4,3,2],[1]},{[10,9,8,7],[5,6]}}
-  
-   5&gt; recon_trace:clear().
-   ok</pre>
-  
-   <p>Note that in the pattern above, no specific function (<code>'_'</code>) was
-   matched against. Instead, the <code>fun</code> used restricted functions to those
-   having two arguments, the first of which is either a list or an integer
-   greater than <code>1</code>.</p>
-  
-   <p>The limit was also set using <code>{10,100}</code> instead of an integer, making the   
-rate-limitting at 10 messages per 100 milliseconds, instead of an absolute   
-value.</p>
-  
-   <p>Any tracing can be manually interrupted by calling <code>recon_trace:clear()</code>,   
-or killing the shell process.</p>
-  
-   <p>Be aware that extremely broad patterns with lax rate-limitting (or very
-   high absolute limits) may impact your node's stability in ways
-   <code>recon_trace</code> cannot easily help you with.</p>
-  
-   <p>In doubt, start with the most restrictive tracing possible, with low   
-limits, and progressively increase your scope.</p>
-  
-   <p>See <a docgen-rel="seemfa" docgen-href="#calls/3" href="#calls-3"><code>calls/3</code></a> for more details and tracing possibilities.</p>
-  
-   <h4><a name="Structure">Structure</a></h4>
-  
-   <p>This library is production-safe due to taking the following structure for   
-tracing:</p>
-  
-   <pre>   [IO/Group leader] &lt;---------------------,
-     |                                     |
-   [shell] ---&gt; [tracer process] ----&gt; [formatter]</pre>
-  
-   <p>The tracer process receives trace messages from the node, and enforces   
-limits in absolute terms or trace rates, before forwarding the messages   
-to the formatter. This is done so the tracer can do as little work as   
-possible and never block while building up a large mailbox.</p>
-  
-   <p>The tracer process is linked to the shell, and the formatter to the   
-tracer process. The formatter also traps exits to be able to handle   
-all received trace messages until the tracer termination, but will then   
-shut down as soon as possible.</p>
-  
-   <p>In case the operator is tracing from a remote shell which gets   
-disconnected, the links between the shell and the tracer should make it   
-so tracing is automatically turned off once you disconnect.</p>
-  
-   <p>If sending output to the Group Leader is not desired, you may specify
-   a different pid() via the option <code>io_server</code> in the <a docgen-rel="seemfa" docgen-href="#calls/3" href="#calls-3"><code>calls/3</code></a> function.   
-For instance to write the traces to a file you can do something like</p>
-  
-   <pre>   1&gt; {ok, Dev} = file:open("/tmp/trace",[write]).
-   2&gt; recon_trace:calls({queue, in, fun(_) -&gt; return_trace() end}, 3, [{io_server, Dev}]).
-   1
-   3&gt;
-   Recon tracer rate limit tripped.
-   4&gt; file:close(Dev).</pre>
-  
-   <p>The only output still sent to the Group Leader is the rate limit being
-   tripped, and any errors. The rest will be sent to the other IO
-   server (see <a href="http://erlang.org/doc/apps/stdlib/io_protocol.html" target="_top"><code>http://erlang.org/doc/apps/stdlib/io_protocol.html</code></a>).</p>
-  
-   <h4><a name="Record_Printing">Record Printing</a></h4>
-  
-   Thanks to code contributed by Bartek GÃ³rny, record printing can be added
-   to traces by first importing records in an active session with
-   <code>recon_rec:import([Module, ...])</code>, after which the records declared in
-   the module list will be supported.
-<h3><a name="types">Data Types</a></h3>
-
-<h4 class="typedecl"><a name="type-args">args()</a></h4>
-<p><code>args() = '_' | 0..255 | return_trace | <a href="#type-matchspec">matchspec()</a> | <a href="#type-shellfun">shellfun()</a></code></p>
+   </span><span class="mi">5</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">recon_trace</span><span class="p">:</span><span class="nf">clear</span><span class="p" data-group-id="2450817752-27">(</span><span class="p" data-group-id="2450817752-27">)</span><span class="p">.</span><span class="w">
+   </span><span class="ss">ok</span></code></pre><p>Note that in the pattern above, no specific function (<code>'_'</code>) was matched against. Instead, the <code>fun</code> used restricted functions to those having two arguments, the first of which is either a list or an integer greater than <code>1</code>.</p><p>The limit was also set using <code>{10,100}</code> instead of an integer, making the rate-limitting at 10 messages per 100 milliseconds, instead of an absolute value.</p><p>Any tracing can be manually interrupted by calling <code>recon_trace:clear()</code>, or killing the shell process.</p><p>Be aware that extremely broad patterns with lax rate-limitting (or very high absolute limits) may impact your node's stability in ways <code>recon_trace</code> cannot easily help you with.</p><p>In doubt, start with the most restrictive tracing possible, with low limits, and progressively increase your scope.</p><p>See <a href="#calls/3"><code>calls/3</code></a> for more details and tracing possibilities.</p><h3 id="module-structure" class="section-heading">
+  <a href="#module-structure" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">structure</p>
+  </a>
+  <a name="Structure">Structure</a>
+</h3>
+<p>This library is production-safe due to taking the following structure for tracing:</p><pre><code class="makeup erlang" translate="no"><span class="w">   </span><span class="p" data-group-id="2641312318-1">[</span><span class="n">IO</span><span class="o">/</span><span class="n">Group</span><span class="w"> </span><span class="ss">leader</span><span class="p" data-group-id="2641312318-1">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="o">--</span><span class="p">,</span><span class="w">
+     </span><span class="p">|</span><span class="w">                                     </span><span class="p">|</span><span class="w">
+   </span><span class="p" data-group-id="2641312318-2">[</span><span class="ss">shell</span><span class="p" data-group-id="2641312318-2">]</span><span class="w"> </span><span class="o">--</span><span class="p">-&gt;</span><span class="w"> </span><span class="p" data-group-id="2641312318-3">[</span><span class="ss">tracer</span><span class="w"> </span><span class="ss">process</span><span class="p" data-group-id="2641312318-3">]</span><span class="w"> </span><span class="o">--</span><span class="o">--</span><span class="o">&gt;</span><span class="w"> </span><span class="p" data-group-id="2641312318-4">[</span><span class="ss">formatter</span><span class="p" data-group-id="2641312318-4">]</span></code></pre><p>The tracer process receives trace messages from the node, and enforces limits in absolute terms or trace rates, before forwarding the messages to the formatter. This is done so the tracer can do as little work as possible and never block while building up a large mailbox.</p><p>The tracer process is linked to the shell, and the formatter to the tracer process. The formatter also traps exits to be able to handle all received trace messages until the tracer termination, but will then shut down as soon as possible.</p><p>In case the operator is tracing from a remote shell which gets disconnected, the links between the shell and the tracer should make it so tracing is automatically turned off once you disconnect.</p><p>If sending output to the Group Leader is not desired, you may specify a different pid() via the option <code>io_server</code> in the <a href="#calls/3"><code>calls/3</code></a> function. For instance to write the traces to a file you can do something like</p><pre><code class="makeup erlang" translate="no"><span class="w">   </span><span class="mi">1</span><span class="o">&gt;</span><span class="w"> </span><span class="p" data-group-id="5181872399-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Dev</span><span class="p" data-group-id="5181872399-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">file</span><span class="p">:</span><span class="nf">open</span><span class="p" data-group-id="5181872399-2">(</span><span class="s">&quot;/tmp/trace&quot;</span><span class="p">,</span><span class="p" data-group-id="5181872399-3">[</span><span class="ss">write</span><span class="p" data-group-id="5181872399-3">]</span><span class="p" data-group-id="5181872399-2">)</span><span class="p">.</span><span class="w">
+   </span><span class="mi">2</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">recon_trace</span><span class="p">:</span><span class="nf">calls</span><span class="p" data-group-id="5181872399-4">(</span><span class="p" data-group-id="5181872399-5">{</span><span class="ss">queue</span><span class="p">,</span><span class="w"> </span><span class="ss">in</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="5181872399-6">(</span><span class="p">_</span><span class="p" data-group-id="5181872399-6">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">return_trace</span><span class="p" data-group-id="5181872399-7">(</span><span class="p" data-group-id="5181872399-7">)</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="5181872399-5">}</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5181872399-8">[</span><span class="p" data-group-id="5181872399-9">{</span><span class="ss">io_server</span><span class="p">,</span><span class="w"> </span><span class="n">Dev</span><span class="p" data-group-id="5181872399-9">}</span><span class="p" data-group-id="5181872399-8">]</span><span class="p" data-group-id="5181872399-4">)</span><span class="p">.</span><span class="w">
+   </span><span class="mi">1</span><span class="w">
+   </span><span class="mi">3</span><span class="o">&gt;</span><span class="w">
+   </span><span class="n">Recon</span><span class="w"> </span><span class="ss">tracer</span><span class="w"> </span><span class="ss">rate</span><span class="w"> </span><span class="ss">limit</span><span class="w"> </span><span class="ss">tripped</span><span class="p">.</span><span class="w">
+   </span><span class="mi">4</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">file</span><span class="p">:</span><span class="nf">close</span><span class="p" data-group-id="5181872399-10">(</span><span class="n">Dev</span><span class="p" data-group-id="5181872399-10">)</span><span class="p">.</span></code></pre><p>The only output still sent to the Group Leader is the rate limit being tripped, and any errors. The rest will be sent to the other IO server (see <a href="http://erlang.org/doc/apps/stdlib/io_protocol.html" target="_top">http://erlang.org/doc/apps/stdlib/io_protocol.html</a>).</p><h3 id="module-record-printing" class="section-heading">
+  <a href="#module-record-printing" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">record-printing</p>
+  </a>
+  <a name="Record_Printing">Record Printing</a>
+</h3>
+Thanks to code contributed by Bartek Górny, record printing can be added to traces by first importing records in an active session with <code>recon_rec:import([Module, ...])</code>, after which the records declared in the module list will be supported.
+  </section>
 
 
-<h4 class="typedecl"><a name="type-fn">fn()</a></h4>
-<p><code>fn() = '_' | atom()</code></p>
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+      Summary
+    </h1>
+
+  <div class="summary-types summary">
+    <h2>
+      <a href="#types">Types</a>
+    </h2>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:args/0" translate="no">args/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:fn/0" translate="no">fn/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:formatterfun/0" translate="no">formatterfun/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:matchspec/0" translate="no">matchspec/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:max/0" translate="no">max/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:max_rate/0" translate="no">max_rate/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:max_traces/0" translate="no">max_traces/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:millisecs/0" translate="no">millisecs/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:mod/0" translate="no">mod/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:num_matches/0" translate="no">num_matches/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:options/0" translate="no">options/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:pidspec/0" translate="no">pidspec/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:shellfun/0" translate="no">shellfun/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:tspec/0" translate="no">tspec/0</a>
+
+        </div>
+
+      </div>
+
+  </div>
+
+  <div class="summary-functions summary">
+    <h2>
+      <a href="#functions">Functions</a>
+    </h2>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#calls/2" translate="no">calls(TSpecs, Max)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Equivalent to <a href="#calls/3">calls({Mod, Fun, Args}, Max, [])</a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#calls/3" translate="no">calls(TSpecs, Max, Opts)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Allows to set trace patterns and pid specifications to trace function calls.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#clear/0" translate="no">clear()</a>
+
+        </div>
+
+          <div class="summary-synopsis">Stops all tracing at once.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#format/1" translate="no">format(TraceMsg)</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#format_trace_output/1" translate="no">format_trace_output(Args)</a>
+
+        </div>
+
+          <div class="summary-synopsis">formats call arguments and return values - most types are just printed out, except for tuples recognised as records, which mimic the source code syntax</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#format_trace_output/2" translate="no">format_trace_output(Recs, Args)</a>
+
+        </div>
+
+      </div>
+
+  </div>
+
+  </section>
 
 
-<h4 class="typedecl"><a name="type-formatterfun">formatterfun()</a></h4>
-<p><code>formatterfun() = fun((term()) -&gt; iodata())</code></p>
+  <section id="types" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+Types
+    </h1>
+    <div class="types-list">
+<section class="detail" id="t:args/0">
+
+  <div class="detail-header">
+    <a href="#t:args/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">args/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L211" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
 
 
-<h4 class="typedecl"><a name="type-matchspec">matchspec()</a></h4>
-<p><code>matchspec() = [{[term()] | '_', [term()], [term()]}]</code></p>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> args() :: '_' | 0..255 | return_trace | <a href="#t:matchspec/0">matchspec</a>() | <a href="#t:shellfun/0">shellfun</a>().</pre>
+
+      </div>
 
 
-<h4 class="typedecl"><a name="type-max">max()</a></h4>
-<p><code>max() = <a href="#type-max_traces">max_traces()</a> | <a href="#type-max_rate">max_rate()</a></code></p>
+  </section>
+</section>
+<section class="detail" id="t:fn/0">
+
+  <div class="detail-header">
+    <a href="#t:fn/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">fn/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L210" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
 
 
-<h4 class="typedecl"><a name="type-max_rate">max_rate()</a></h4>
-<p><code>max_rate() = {<a href="#type-max_traces">max_traces()</a>, <a href="#type-millisecs">millisecs()</a>}</code></p>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> fn() :: '_' | atom().</pre>
+
+      </div>
 
 
-<h4 class="typedecl"><a name="type-max_traces">max_traces()</a></h4>
-<p><code>max_traces() = non_neg_integer()</code></p>
+  </section>
+</section>
+<section class="detail" id="t:formatterfun/0">
+
+  <div class="detail-header">
+    <a href="#t:formatterfun/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">formatterfun/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L192" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
 
 
-<h4 class="typedecl"><a name="type-millisecs">millisecs()</a></h4>
-<p><code>millisecs() = non_neg_integer()</code></p>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> formatterfun() :: fun((_) -> iodata()).</pre>
+
+      </div>
 
 
-<h4 class="typedecl"><a name="type-mod">mod()</a></h4>
-<p><code>mod() = '_' | module()</code></p>
+  </section>
+</section>
+<section class="detail" id="t:matchspec/0">
+
+  <div class="detail-header">
+    <a href="#t:matchspec/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">matchspec/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L190" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
 
 
-<h4 class="typedecl"><a name="type-num_matches">num_matches()</a></h4>
-<p><code>num_matches() = non_neg_integer()</code></p>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> matchspec() :: [{[term()] | '_', [term()], [term()]}].</pre>
+
+      </div>
 
 
-<h4 class="typedecl"><a name="type-options">options()</a></h4>
-<p><code>options() = [{pid, <a href="#type-pidspec">pidspec()</a> | [<a href="#type-pidspec">pidspec()</a>, ...]} | {timestamp, formatter | trace} | {args, args | arity} | {io_server, pid() | atom()} | {formatter, <a href="#type-formatterfun">formatterfun()</a>} | return_to | {return_to, boolean()} | {scope, global | local}]</code></p>
+  </section>
+</section>
+<section class="detail" id="t:max/0">
+
+  <div class="detail-header">
+    <a href="#t:max/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">max/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L213" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
 
 
-<h4 class="typedecl"><a name="type-pidspec">pidspec()</a></h4>
-<p><code>pidspec() = all | existing | new | <a href="/home/ferd/code/self/recon/doc/recon.html#type-pid_term">recon:pid_term()</a></code></p>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> max() :: <a href="#t:max_traces/0">max_traces</a>() | <a href="#t:max_rate/0">max_rate</a>().</pre>
+
+      </div>
 
 
-<h4 class="typedecl"><a name="type-shellfun">shellfun()</a></h4>
-<p><code>shellfun() = fun((term()) -&gt; term())</code></p>
+  </section>
+</section>
+<section class="detail" id="t:max_rate/0">
+
+  <div class="detail-header">
+    <a href="#t:max_rate/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">max_rate/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L196" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
 
 
-<h4 class="typedecl"><a name="type-tspec">tspec()</a></h4>
-<p><code>tspec() = {<a href="#type-mod">mod()</a>, <a href="#type-fn">fn()</a>, <a href="#type-args">args()</a>}</code></p>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> max_rate() :: {<a href="#t:max_traces/0">max_traces</a>(), <a href="#t:millisecs/0">millisecs</a>()}.</pre>
+
+      </div>
 
 
-<h3><a name="index">Function Index</a></h3>
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#calls-2">calls/2</a></td><td>Equivalent to <a href="#calls-3"><code>calls({Mod, Fun, Args}, Max, [])</code></a>.
-</td></tr>
-<tr><td valign="top"><a href="#calls-3">calls/3</a></td><td>Allows to set trace patterns and pid specifications to trace  
-function calls.</td></tr>
-<tr><td valign="top"><a href="#clear-0">clear/0</a></td><td>Stops all tracing at once.</td></tr>
-<tr><td valign="top"><a href="#format-1">format/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#format_trace_output-1">format_trace_output/1</a></td><td>formats call arguments and return values - most types are just printed out, except for
-  tuples recognised as records, which mimic the source code syntax.</td></tr>
-<tr><td valign="top"><a href="#format_trace_output-2">format_trace_output/2</a></td><td></td></tr>
-</table>
+  </section>
+</section>
+<section class="detail" id="t:max_traces/0">
 
-<h3><a name="functions">Function Details</a></h3>
+  <div class="detail-header">
+    <a href="#t:max_traces/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">max_traces/0</h1>
 
-<h4 class="function"><a name="calls-2">calls/2</a></h4>
-<div class="spec">
-<p><code>calls(TSpecs::<a href="#type-tspec">tspec()</a> | [<a href="#type-tspec">tspec()</a>, ...], Max::<a href="#type-max">max()</a>) -&gt; <a href="#type-num_matches">num_matches()</a></code><br></p>
-<p> </p>
-</div><p>Equivalent to <a href="#calls-3"><code>calls({Mod, Fun, Args}, Max, [])</code></a>.</p>
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L195" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
 
 
-<h4 class="function"><a name="calls-3">calls/3</a></h4>
-<div class="spec">
-<p><code>calls(TSpecs::<a href="#type-tspec">tspec()</a> | [<a href="#type-tspec">tspec()</a>, ...], Max::<a href="#type-max">max()</a>, Opts::<a href="#type-options">options()</a>) -&gt; <a href="#type-num_matches">num_matches()</a></code><br></p>
-<p> </p>
-</div><p><p>Allows to set trace patterns and pid specifications to trace  
-function calls.</p>
- 
-  <p>The basic calls take the trace patterns as tuples of the form
-  <code>{Module, Function, Args}</code> where:</p>
- 
-  <ul>
-   <li><code>Module</code> is any atom representing a module</li>
-   <li><code>Function</code> is any atom representing a function, or the wildcard
-       <code>'_'</code></li>
-   <li><code>Args</code> is either the arity of a function (<code>0..255</code>), a wildcard
-       pattern (<code>'_'</code>), a
-       <a href="http://learnyousomeerlang.com/ets#you-have-been-selected">match specification</a>,
-       or a function from a shell session that can be transformed into
-       a match specification</li>
-  </ul>
- 
-  <p>There is also an argument specifying either a maximal count (a number)
-  of trace messages to be received, or a maximal frequency (<code>{Num, Millisecs}</code>).</p>
- 
-  <p>Here are examples of things to trace:</p>
- 
-  <ul>
-   <li>All calls from the <code>queue</code> module, with 10 calls printed at most:
-       <code>recon_trace:calls({queue, '_', '_'}, 10)</code></li>
-   <li>All calls to <code>lists:seq(A,B)</code>, with 100 calls printed at most:
-       <code>recon_trace:calls({lists, seq, 2}, 100)</code></li>
-   <li>All calls to <code>lists:seq(A,B)</code>, with 100 calls per second at most:
-       <code>recon_trace:calls({lists, seq, 2}, {100, 1000})</code></li>
-   <li>All calls to <code>lists:seq(A,B,2)</code> (all sequences increasing by two)
-       with 100 calls at most:
-       <code>recon_trace:calls({lists, seq, fun([_,_,2]) -&gt; ok end}, 100)</code></li>
-   <li>All calls to <code>iolist_to_binary/1</code> made with a binary as an argument
-       already (kind of useless conversion!):
-       <code>recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -&gt; ok end}, 10)</code></li>
-   <li>Calls to the queue module only in a given process <code>Pid</code>, at a rate
-       of 50 per second at most:
-       <code>recon_trace:calls({queue, '_', '_'}, {50,1000}, [{pid, Pid}])</code></li>
-   <li>Print the traces with the function arity instead of literal arguments:
-       <code>recon_trace:calls(TSpec, Max, [{args, arity}])</code></li>
-   <li>Matching the <code>filter/2</code> functions of both <code>dict</code> and <code>lists</code> modules,
-       across new processes only:
-       <code>recon_trace:calls([{dict,filter,2},{lists,filter,2}], 10, [{pid, new}])</code></li>
-   <li>Tracing the <code>handle_call/3</code> functions of a given module for all new processes,
-       and those of an existing one registered with <code>gproc</code>:
-       <code>recon_trace:calls({Mod,handle_call,3}, {10,100}, [{pid, [{via, gproc, Name}, new]}</code></li>
-   <li>Show the result of a given function call:
-       <code>recon_trace:calls({Mod,Fun,fun(_) -&gt; return_trace() end}, Max, Opts)</code>
-       or
-       <code>recon_trace:calls({Mod,Fun,[{'_', [], [{return_trace}]}]}, Max, Opts)</code>,
-       the important bit being the <code>return_trace()</code> call or the
-       <code>{return_trace}</code> match spec value.
-       A short-hand version for this pattern of 'match anything, trace everything'
-       for a function is <code>recon_trace:calls({Mod, Fun, return_trace})</code>. </li>
-  </ul>
- 
-  <p>There's a few more combination possible, with multiple trace patterns per call, and more  
-options:</p>
- 
-  <ul>
-   <li><code>{pid, PidSpec}</code>: which processes to trace. Valid options is any of
-       <code>all</code>, <code>new</code>, <code>existing</code>, or a process descriptor (<code>{A,B,C}</code>,
-       <code>"&lt;A.B.C&gt;"</code>, an atom representing a name, <code>{global, Name}</code>,
-       <code>{via, Registrar, Name}</code>, or a pid). It's also possible to specify
-       more than one by putting them in a list.</li>
-   <li><code>{timestamp, formatter | trace}</code>: by default, the formatter process
-       adds timestamps to messages received. If accurate timestamps are
-       required, it's possible to force the usage of timestamps within
-       trace messages by adding the option <code>{timestamp, trace}</code>.</li>
-   <li><code>{args, arity | args}</code>: whether to print arity in function calls
-       or their (by default) literal representation.</li>
-   <li><code>{scope, global | local}</code>: by default, only 'global' (fully qualified
-       function calls) are traced, not calls made internally. To force tracing
-       of local calls, pass in <code>{scope, local}</code>. This is useful whenever
-       you want to track the changes of code in a process that isn't called
-       with <code>Module:Fun(Args)</code>, but just <code>Fun(Args)</code>.</li>
-   <li><code>{formatter, fun(Term) -&gt; io_data() end}</code>: override the default
-        formatting functionality provided by recon.</li>
-   <li><code>{io_server, pid() | atom()}</code>: by default, recon logs to the current
-       group leader, usually the shell. This option allows to redirect
-       trace output to a different IO server (such as a file handle).</li>
-   <li><code>return_to</code>: If this option is set (in conjunction with the match
-       option <code>{scope, local}</code>), the function to which the value is returned
-       is output in a trace. Note that this is distinct from giving the
-       *caller* since exception handling or calls in tail position may
-       hide the original caller.</li>
-  </ul>
- 
-  Also note that putting extremely large <code>Max</code> values (i.e. <code>99999999</code> or
-  <code>{10000,1}</code>) will probably negate most of the safe-guarding this library
-  does and be dangerous to your node. Similarly, tracing extremely large
-  amounts of function calls (all of them, or all of <code>io</code> for example)
-  can be risky if more trace messages are generated than any process on
-  the node could ever handle, despite the precautions taken by this library.</p>
+  </div>
 
-<h4 class="function"><a name="clear-0">clear/0</a></h4>
-<div class="spec">
-<p><code>clear() -&gt; ok</code><br></p>
-<p> </p>
-</div><p>Stops all tracing at once.</p>
+  <section class="docstring">
 
-<h4 class="function"><a name="format-1">format/1</a></h4>
-<div class="spec">
-<p><code>format(TraceMsg) -&gt; any()</code></p>
-<p> </p>
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> max_traces() :: non_neg_integer().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:millisecs/0">
+
+  <div class="detail-header">
+    <a href="#t:millisecs/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">millisecs/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L193" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> millisecs() :: non_neg_integer().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:mod/0">
+
+  <div class="detail-header">
+    <a href="#t:mod/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">mod/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L209" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> mod() :: '_' | module().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:num_matches/0">
+
+  <div class="detail-header">
+    <a href="#t:num_matches/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">num_matches/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L214" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> num_matches() :: non_neg_integer().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:options/0">
+
+  <div class="detail-header">
+    <a href="#t:options/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">options/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L199" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> options() ::
+    [{pid, <a href="#t:pidspec/0">pidspec</a>() | [<a href="#t:pidspec/0">pidspec</a>(), ...]} |
+     {timestamp, formatter | trace} |
+     {args, args | arity} |
+     {io_server, pid() | atom()} |
+     {formatter, <a href="#t:formatterfun/0">formatterfun</a>()} |
+     return_to |
+     {return_to, boolean()} |
+     {scope, global | local}].</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:pidspec/0">
+
+  <div class="detail-header">
+    <a href="#t:pidspec/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">pidspec/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L194" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> pidspec() :: all | existing | new | <a href="recon.html#t:pid_term/0">recon:pid_term</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:shellfun/0">
+
+  <div class="detail-header">
+    <a href="#t:shellfun/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">shellfun/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L191" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> shellfun() :: fun((_) -> term()).</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:tspec/0">
+
+  <div class="detail-header">
+    <a href="#t:tspec/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">tspec/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L212" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> tspec() :: {<a href="#t:mod/0">mod</a>(), <a href="#t:fn/0">fn</a>(), <a href="#t:args/0">args</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+Functions
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="calls/2">
+
+  <div class="detail-header">
+    <a href="#calls/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">calls(TSpecs, Max)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L235" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> calls(<a href="#t:tspec/0">tspec</a>() | [<a href="#t:tspec/0">tspec</a>(), ...], <a href="#t:max/0">max</a>()) -> <a href="#t:num_matches/0">num_matches</a>().</pre>
+
+      </div>
+
+<p>Equivalent to <a href="#calls/3">calls({Mod, Fun, Args}, Max, [])</a>.</p>
+  </section>
+</section>
+<section class="detail" id="calls/3">
+
+  <div class="detail-header">
+    <a href="#calls/3" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">calls(TSpecs, Max, Opts)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L337" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> calls(<a href="#t:tspec/0">tspec</a>() | [<a href="#t:tspec/0">tspec</a>(), ...], <a href="#t:max/0">max</a>(), <a href="#t:options/0">options</a>()) -> <a href="#t:num_matches/0">num_matches</a>().</pre>
+
+      </div>
+
+<p>Allows to set trace patterns and pid specifications to trace function calls.</p><p>The basic calls take the trace patterns as tuples of the form <code>{Module, Function, Args}</code> where:</p><ul><li><code>Module</code> is any atom representing a module</li><li><code>Function</code> is any atom representing a function, or the wildcard <code>'_'</code></li><li><code>Args</code> is either the arity of a function (<code>0..255</code>), a wildcard pattern (<code>'_'</code>), a <a href="http://learnyousomeerlang.com/ets#you-have-been-selected">match specification</a>, or a function from a shell session that can be transformed into a match specification</li></ul><p>There is also an argument specifying either a maximal count (a number) of trace messages to be received, or a maximal frequency (<code>{Num, Millisecs}</code>).</p><p>Here are examples of things to trace:</p><ul><li>All calls from the <code>queue</code> module, with 10 calls printed at most: <code>recon_trace:calls({queue, '_', '_'}, 10)</code></li><li>All calls to <code>lists:seq(A,B)</code>, with 100 calls printed at most: <code>recon_trace:calls({lists, seq, 2}, 100)</code></li><li>All calls to <code>lists:seq(A,B)</code>, with 100 calls per second at most: <code>recon_trace:calls({lists, seq, 2}, {100, 1000})</code></li><li>All calls to <code>lists:seq(A,B,2)</code> (all sequences increasing by two) with 100 calls at most: <code>recon_trace:calls({lists, seq, fun([_,_,2]) -&gt; ok end}, 100)</code></li><li>All calls to <code>iolist_to_binary/1</code> made with a binary as an argument already (kind of useless conversion!): <code>recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -&gt; ok end}, 10)</code></li><li>Calls to the queue module only in a given process <code>Pid</code>, at a rate of 50 per second at most: <code>recon_trace:calls({queue, '_', '_'}, {50,1000}, [{pid, Pid}])</code></li><li>Print the traces with the function arity instead of literal arguments: <code>recon_trace:calls(TSpec, Max, [{args, arity}])</code></li><li>Matching the <code>filter/2</code> functions of both <code>dict</code> and <code>lists</code> modules, across new processes only: <code>recon_trace:calls([{dict,filter,2},{lists,filter,2}], 10, [{pid, new}])</code></li><li>Tracing the <code>handle_call/3</code> functions of a given module for all new processes, and those of an existing one registered with <code>gproc</code>: <code>recon_trace:calls({Mod,handle_call,3}, {10,100}, [{pid, [{via, gproc, Name}, new]}</code></li><li>Show the result of a given function call: <code>recon_trace:calls({Mod,Fun,fun(_) -&gt; return_trace() end}, Max, Opts)</code> or <code>recon_trace:calls({Mod,Fun,[{'_', [], [{return_trace}]}]}, Max, Opts)</code>, the important bit being the <code>return_trace()</code> call or the <code>{return_trace}</code> match spec value. A short-hand version for this pattern of 'match anything, trace everything' for a function is <code>recon_trace:calls({Mod, Fun, return_trace})</code>.</li></ul><p>There's a few more combination possible, with multiple trace patterns per call, and more options:</p><ul><li><code>{pid, PidSpec}</code>: which processes to trace. Valid options is any of <code>all</code>, <code>new</code>, <code>existing</code>, or a process descriptor (<code>{A,B,C}</code>, <code>&quot;&lt;A.B.C&gt;&quot;</code>, an atom representing a name, <code>{global, Name}</code>, <code>{via, Registrar, Name}</code>, or a pid). It's also possible to specify more than one by putting them in a list.</li><li><code>{timestamp, formatter | trace}</code>: by default, the formatter process adds timestamps to messages received. If accurate timestamps are required, it's possible to force the usage of timestamps within trace messages by adding the option <code>{timestamp, trace}</code>.</li><li><code>{args, arity | args}</code>: whether to print arity in function calls or their (by default) literal representation.</li><li><code>{scope, global | local}</code>: by default, only 'global' (fully qualified function calls) are traced, not calls made internally. To force tracing of local calls, pass in <code>{scope, local}</code>. This is useful whenever you want to track the changes of code in a process that isn't called with <code>Module:Fun(Args)</code>, but just <code>Fun(Args)</code>.</li><li><code>{formatter, fun(Term) -&gt; io_data() end}</code>: override the default formatting functionality provided by recon.</li><li><code>{io_server, pid() | atom()}</code>: by default, recon logs to the current group leader, usually the shell. This option allows to redirect trace output to a different IO server (such as a file handle).</li><li><code>return_to</code>: If this option is set (in conjunction with the match option <code>{scope, local}</code>), the function to which the value is returned is output in a trace. Note that this is distinct from giving the *caller* since exception handling or calls in tail position may hide the original caller.</li></ul>Also note that putting extremely large <code>Max</code> values (i.e. <code>99999999</code> or <code>{10000,1}</code>) will probably negate most of the safe-guarding this library does and be dangerous to your node. Similarly, tracing extremely large amounts of function calls (all of them, or all of <code>io</code> for example) can be risky if more trace messages are generated than any process on the node could ever handle, despite the precautions taken by this library.
+  </section>
+</section>
+<section class="detail" id="clear/0">
+
+  <div class="detail-header">
+    <a href="#clear/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">clear()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L225" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> clear() -> ok.</pre>
+
+      </div>
+
+Stops all tracing at once.
+  </section>
+</section>
+<section class="detail" id="format/1">
+
+  <div class="detail-header">
+    <a href="#format/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">format(TraceMsg)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L513" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="format_trace_output/1">
+
+  <div class="detail-header">
+    <a href="#format_trace_output/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">format_trace_output(Args)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L619" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+formats call arguments and return values - most types are just printed out, except for tuples recognised as records, which mimic the source code syntax
+  </section>
+</section>
+<section class="detail" id="format_trace_output/2">
+
+  <div class="detail-header">
+    <a href="#format_trace_output/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">format_trace_output(Recs, Args)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_trace.erl#L622" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+      <footer class="footer">
+
+          <p>
+            On Hex.pm:
+
+            <span class="line">
+              <a href="https://hex.pm/packages/recon/2.5.3" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/recon/2.5.3" class="line">Preview</a>
+
+                <a href="https://preview.hex.pm/preview/recon/2.5.3/show/src/recon_trace.erl">(current file)</a>
+
+            </span>
+
+            <button class="a-main line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.29.0) for the
+
+            <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
 </div>
 
-<h4 class="function"><a name="format_trace_output-1">format_trace_output/1</a></h4>
-<div class="spec">
-<p><code>format_trace_output(Args) -&gt; any()</code></p>
-<p> </p>
-</div><p>formats call arguments and return values - most types are just printed out, except for
-  tuples recognised as records, which mimic the source code syntax</p>
 
-<h4 class="function"><a name="format_trace_output-2">format_trace_output/2</a></h4>
-<div class="spec">
-<p><code>format_trace_output(Recs, Args) -&gt; any()</code></p>
-<p> </p>
-</div>
-
-    </article>
   </body>
 </html>

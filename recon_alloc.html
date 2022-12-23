@@ -1,451 +1,1010 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-    <link href='http://fonts.googleapis.com/css?family=Titillium+Web:400,300italic,600italic,700,600,700italic' rel='stylesheet' type='text/css'>
-    <link href='http://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,700italic,400italic' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" href="screen.css" media="screen, projection" />
-    <title>Recon Library</title>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.29.0">
+    <meta name="project" content="recon v2.5.3">
+
+    <title>recon_alloc — recon v2.5.3</title>
+    <link rel="stylesheet" href="dist/html-erlang-4XYKNH4U.css" />
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-X7YVL3G2.js"></script>
+    <script src="dist/sidebar_items-BD2EFCFF.js"></script>
+
+      <script src="docs_config.js"></script>
+
+    <script async src="dist/html-XN2TSG4M.js"></script>
+
+
   </head>
-  <body>
-    <header>
-        <h1>Recon</h1>
-        <nav>
-          <ul>
-<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a><li><a href="recon_map.html">recon_map</a><li><a href="recon_rec.html">recon_rec</a><li><a href="recon_trace.html">recon_trace</a>
-          </ul>
-        </nav>
-    </header>
-    <article>
-    <h2>Module recon_alloc</h2>
-<ul class="index"><li><a href="#description">Description</a></li><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>Functions to deal with
-   <a href="http://www.erlang.org/doc/man/erts_alloc.html">Erlang's memory
-   allocators</a>, or particularly, to try to present the allocator data   
-in a way that makes it simpler to discover possible problems.
+  <body data-type="modules" class="page-module">
+    <script>
 
-<p><strong>Authors:</strong> Fred Hebert (<a href="mailto:mononcqc@ferd.ca"><code>mononcqc@ferd.ca</code></a>) [<em>web site:</em> <code><a href="http://ferd.ca/" target="_top">http://ferd.ca/</a></code>], Lukas Larsson (<a href="mailto:lukas@erlang.org"><code>lukas@erlang.org</code></a>).</p>
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
 
-<h3><a name="description">Description</a></h3><p>Functions to deal with
-   <a href="http://www.erlang.org/doc/man/erts_alloc.html">Erlang's memory
-   allocators</a>, or particularly, to try to present the allocator data   
-in a way that makes it simpler to discover possible problems.</p>
-  
-   <p>Tweaking Erlang memory allocators and their behaviour is a very tricky   
-ordeal whenever you have to give up the default settings. This module   
-(and its documentation) will try and provide helpful pointers to help   
-in this task.</p>
-  
-   <p>This module should mostly be helpful to figure out <em>if</em> there is
-   a problem, but will offer little help to figure out <em>what</em> is wrong.</p>
-  
-   <p>To figure this out, you need to dig deeper into the allocator data
-   (obtainable with <a docgen-rel="seemfa" docgen-href="#allocators/0" href="#allocators-0"><code>allocators/0</code></a>), and/or have some precise knowledge   
-about the type of load and work done by the VM to be able to assess what   
-each reaction to individual tweak should be.</p>
-  
-   <p>A lot of trial and error might be required to figure out if tweaks have   
-helped or not, ultimately.</p>
-  
-   <p>In order to help do offline debugging of memory allocator problems
-   recon_alloc also has a few functions that store snapshots of the
-   memory statistics.
-   These snapshots can be used to freeze the current allocation values so that
-   they do not change during analysis while using the regular functionality of
-   this module, so that the allocator values can be saved, or that
-   they can be shared, dumped, and reloaded for further analysis using files.
-   See <a docgen-rel="seemfa" docgen-href="#snapshot_load/1" href="#snapshot_load-1"><code>snapshot_load/1</code></a> for a simple use-case.</p>
-  
-   Glossary:
-   <dl>
-     <dt>sys_alloc</dt>
-     <dd>System allocator, usually just malloc</dd>
-  
-     <dt>mseg_alloc</dt>
-     <dd>Used by other allocators, can do mmap. Caches allocations</dd>
-  
-     <dt>temp_alloc</dt>
-     <dd>Used for temporary allocations</dd>
-  
-     <dt>eheap_alloc</dt>
-     <dd>Heap data (i.e. process heaps) allocator</dd>
-  
-     <dt>binary_alloc</dt>
-     <dd>Global binary heap allocator</dd>
-  
-     <dt>ets_alloc</dt>
-     <dd>ETS data allocator</dd>
-  
-     <dt>driver_alloc</dt>
-     <dd>Driver data allocator</dd>
-  
-     <dt>sl_alloc</dt>
-     <dd>Short-lived memory blocks allocator</dd>
-  
-     <dt>ll_alloc</dt>
-     <dd>Long-lived data (i.e. Erlang code itself) allocator</dd>
-  
-     <dt>fix_alloc</dt>
-     <dd>Frequently used fixed-size data allocator</dd>
-  
-    <dt>std_alloc</dt>
-    <dd>Allocator for other memory blocks</dd>
-  
-    <dt>carrier</dt>
-    <dd><p>When a given area of memory is allocated by the OS to the
-      VM (through sys_alloc or mseg_alloc), it is put into a 'carrier'. There
-      are two kinds of carriers: multiblock and single block. The default
-      carriers data is sent to are multiblock carriers, owned by a specific
-      allocator (ets_alloc, binary_alloc, etc.). The specific allocator can
-      thus do allocation for specific Erlang requirements within bits of
-      memory that has been preallocated before. This allows more reuse,
-      and we can even measure the cache hit rates <a docgen-rel="seemfa" docgen-href="#cache_hit_rates/0" href="#cache_hit_rates-0"><code>cache_hit_rates/0</code></a>.</p>
-  
-      <p>There is however a threshold above which an item in memory won't fit      
-a multiblock carrier. When that happens, the specific allocator does      
-a special allocation to a single block carrier. This is done by the      
-allocator basically asking for space directly from sys_alloc or      
-mseg_alloc rather than a previously multiblock area already obtained      
-before.</p>
-  
-      This leads to various allocation strategies where you decide to
-      choose:
-      <ol>
-        <li>which multiblock carrier you're going to (if at all)</li>
-        <li>which block in that carrier you're going to</li>
-      </ol>
-  
-      See <a href="http://www.erlang.org/doc/man/erts_alloc.html">the official
-      documentation on erts_alloc</a> for more details.
-    </dd>
-  
-    <dt>mbcs</dt>
-    <dd>Multiblock carriers.</dd>
-  
-    <dt>sbcs</dt>
-    <dd>Single block carriers.</dd>
-  
-    <dt>lmbcs</dt>
-    <dd>Largest multiblock carrier size</dd>
-  
-    <dt>smbcs</dt>
-    <dd>Smallest multiblock carrier size</dd>
-  
-    <dt>sbct</dt>
-    <dd>Single block carrier threshold</dd>
-   </dl>
-  
-   By default all sizes returned by this module are in bytes. You can change
-   this by calling <a docgen-rel="seemfa" docgen-href="#set_unit/1" href="#set_unit-1"><code>set_unit/1</code></a>.
-  
-<h3><a name="types">Data Types</a></h3>
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
 
-<h4 class="typedecl"><a name="type-allocator">allocator()</a></h4>
-<p><code>allocator() = temp_alloc | eheap_alloc | binary_alloc | ets_alloc | driver_alloc | sl_alloc | ll_alloc | fix_alloc | std_alloc</code></p>
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
+    </button>
+    <label class="search-label">
+      <p class="sr-only">Search</p>
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+
+    <div class="sidebar-projectDetails">
+      <a href="https://ferd.github.io/recon/" class="sidebar-projectName" translate="no">
+recon
+      </a>
+      <strong class="sidebar-projectVersion" translate="no">
+        v2.5.3
+      </strong>
+    </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
+
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
 
 
-<h4 class="typedecl"><a name="type-allocdata">allocdata()</a></h4>
-<p><code>allocdata(T) = {{<a href="#type-allocator">allocator()</a>, <a href="#type-instance">instance()</a>}, T}</code></p>
+    </ul>
+  </div>
+
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <output role="status" id="toast"></output>
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
 
 
-<h4 class="typedecl"><a name="type-allocdata_types">allocdata_types()</a></h4>
-<p><code>allocdata_types(T) = {{<a href="#type-allocator">allocator()</a>, [<a href="#type-instance">instance()</a>]}, T}</code></p>
+    <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L116" title="View Source" class="view-source" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+  <span translate="no">recon_alloc</span> 
+  <small class="app-vsn" translate="no">(recon v2.5.3)</small>
+
+</h1>
 
 
-<h4 class="typedecl"><a name="type-instance">instance()</a></h4>
-<p><code>instance() = non_neg_integer()</code></p>
+  <section id="moduledoc">
+<p>Functions to deal with <a href="http://www.erlang.org/doc/man/erts_alloc.html">Erlang's memory allocators</a>, or particularly, to try to present the allocator data in a way that makes it simpler to discover possible problems.</p><p>Tweaking Erlang memory allocators and their behaviour is a very tricky ordeal whenever you have to give up the default settings. This module (and its documentation) will try and provide helpful pointers to help in this task.</p><p>This module should mostly be helpful to figure out <em>if</em> there is a problem, but will offer little help to figure out <em>what</em> is wrong.</p><p>To figure this out, you need to dig deeper into the allocator data (obtainable with <a href="#allocators/1"><code>allocators/1</code></a>), and/or have some precise knowledge about the type of load and work done by the VM to be able to assess what each reaction to individual tweak should be.</p><p>A lot of trial and error might be required to figure out if tweaks have helped or not, ultimately.</p><p>In order to help do offline debugging of memory allocator problems recon_alloc also has a few functions that store snapshots of the memory statistics. These snapshots can be used to freeze the current allocation values so that they do not change during analysis while using the regular functionality of this module, so that the allocator values can be saved, or that they can be shared, dumped, and reloaded for further analysis using files. See <a href="#snapshot_load/1"><code>snapshot_load/1</code></a> for a simple use-case.</p>Glossary:<dl><dt>sys_alloc</dt><dd>System allocator, usually just malloc</dd><dt>mseg_alloc</dt><dd>Used by other allocators, can do mmap. Caches allocations</dd><dt>temp_alloc</dt><dd>Used for temporary allocations</dd><dt>eheap_alloc</dt><dd>Heap data (i.e. process heaps) allocator</dd><dt>binary_alloc</dt><dd>Global binary heap allocator</dd><dt>ets_alloc</dt><dd>ETS data allocator</dd><dt>driver_alloc</dt><dd>Driver data allocator</dd><dt>sl_alloc</dt><dd>Short-lived memory blocks allocator</dd><dt>ll_alloc</dt><dd>Long-lived data (i.e. Erlang code itself) allocator</dd><dt>fix_alloc</dt><dd>Frequently used fixed-size data allocator</dd><dt>std_alloc</dt><dd>Allocator for other memory blocks</dd><dt>carrier</dt><dd><p>When a given area of memory is allocated by the OS to the VM (through sys_alloc or mseg_alloc), it is put into a 'carrier'. There are two kinds of carriers: multiblock and single block. The default carriers data is sent to are multiblock carriers, owned by a specific allocator (ets_alloc, binary_alloc, etc.). The specific allocator can thus do allocation for specific Erlang requirements within bits of memory that has been preallocated before. This allows more reuse, and we can even measure the cache hit rates <a href="#cache_hit_rates/0"><code>cache_hit_rates/0</code></a>.</p><p>There is however a threshold above which an item in memory won't fit a multiblock carrier. When that happens, the specific allocator does a special allocation to a single block carrier. This is done by the allocator basically asking for space directly from sys_alloc or mseg_alloc rather than a previously multiblock area already obtained before.</p>This leads to various allocation strategies where you decide to choose:<ol><li>which multiblock carrier you're going to (if at all)</li><li>which block in that carrier you're going to</li></ol>See <a href="http://www.erlang.org/doc/man/erts_alloc.html">the official documentation on erts_alloc</a> for more details.</dd><dt>mbcs</dt><dd>Multiblock carriers.</dd><dt>sbcs</dt><dd>Single block carriers.</dd><dt>lmbcs</dt><dd>Largest multiblock carrier size</dd><dt>smbcs</dt><dd>Smallest multiblock carrier size</dd><dt>sbct</dt><dd>Single block carrier threshold</dd></dl>By default all sizes returned by this module are in bytes. You can change this by calling <a href="#set_unit/1"><code>set_unit/1</code></a>.
+  </section>
 
 
-<h4 class="typedecl"><a name="type-memory">memory()</a></h4>
-<p><code>memory() = [{atom(), atom()}]</code></p>
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+      Summary
+    </h1>
+
+  <div class="summary-types summary">
+    <h2>
+      <a href="#types">Types</a>
+    </h2>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:allocator/0" translate="no">allocator/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:allocdata/1" translate="no">allocdata/1</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:allocdata_types/1" translate="no">allocdata_types/1</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:instance/0" translate="no">instance/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:memory/0" translate="no">memory/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:snapshot/0" translate="no">snapshot/0</a>
+
+        </div>
+
+      </div>
+
+  </div>
+
+  <div class="summary-functions summary">
+    <h2>
+      <a href="#functions">Functions</a>
+    </h2>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#allocators/0" translate="no">allocators()</a>
+
+        </div>
+
+          <div class="summary-synopsis">returns a dump of all allocator settings and values</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#allocators/1" translate="no">allocators(_)</a>
+
+        </div>
+
+          <div class="summary-synopsis">returns a dump of all allocator settings and values modified depending on the argument.<ul><li><code>types</code> report the settings and accumulated values for each allocator type. This is useful when looking for anomalies in the system as a whole and not specific instances.</li></ul></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#average_block_sizes/1" translate="no">average_block_sizes(Keyword)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Checks all allocators in <a href="#t:allocator/0"><code>allocator()</code></a> and returns the average block sizes being used for <code>mbcs</code> and <code>sbcs</code>. This value is interesting to use because it will tell us how large most blocks are. This can be related to the VM's largest multiblock carrier size (<code>lmbcs</code>) and smallest multiblock carrier size (<code>smbcs</code>) to specify allocation strategies regarding the carrier sizes to be used.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#cache_hit_rates/0" translate="no">cache_hit_rates()</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>looks at the <code>mseg_alloc</code> allocator (allocator used by all the allocators in <a href="#t:allocator/0"><code>allocator()</code></a>) and returns information relative to the cache hit rates. Unless memory has expected spiky behaviour, it should usually be above 0.80 (80%).</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#fragmentation/1" translate="no">fragmentation(Keyword)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Compares the block sizes to the carrier sizes, both for single block (<code>sbcs</code>) and multiblock (<code>mbcs</code>) carriers.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#memory/1" translate="no">memory(Key)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Equivalent to <code>memory(Key, current)</code>.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#memory/2" translate="no">memory(_, Keyword)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>reports one of multiple possible memory values for the entire node depending on what is to be reported</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#sbcs_to_mbcs/1" translate="no">sbcs_to_mbcs(Keyword)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>compares the amount of single block carriers (<code>sbcs</code>) vs the number of multiblock carriers (<code>mbcs</code>) for each individual allocator in <a href="#t:allocator/0"><code>allocator()</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#set_unit/1" translate="no">set_unit(_)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>set the current unit to be used by recon_alloc. This effects all functions that return bytes.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#snapshot/0" translate="no">snapshot()</a>
+
+        </div>
+
+          <div class="summary-synopsis">Take a new snapshot of the current memory allocator statistics. The snapshot is stored in the process dictionary of the calling process, with all the limitations that it implies (i.e. no garbage-collection). To unsert the snapshot, see <a href="#snapshot_clear/0"><code>snapshot_clear/0</code></a>.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#snapshot_clear/0" translate="no">snapshot_clear()</a>
+
+        </div>
+
+          <div class="summary-synopsis">clear the current snapshot in the process dictionary, if present, and return the value it had before being unset.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#snapshot_get/0" translate="no">snapshot_get()</a>
+
+        </div>
+
+          <div class="summary-synopsis">returns the current snapshot stored by <a href="#snapshot/0"><code>snapshot/0</code></a>. Returns <code>undefined</code> if no snapshot has been taken.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#snapshot_load/1" translate="no">snapshot_load(Filename)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>load a snapshot from a given file. The format of the data in the file can be either the same as output by <a href="#snapshot_save/1"><code>snapshot_save/1</code></a>, or the output obtained by calling <code>{erlang:memory(),[{A,erlang:system_info({allocator,A})} || A &lt;- erlang:system_info(alloc_util_allocators)++[sys_alloc,mseg_alloc]]}.</code> and storing it in a file. If the latter option is taken, please remember to add a full stop at the end of the resulting Erlang term, as this function uses <code>file:consult/1</code> to load the file.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#snapshot_print/0" translate="no">snapshot_print()</a>
+
+        </div>
+
+          <div class="summary-synopsis">print a dump of the current snapshot stored by <a href="#snapshot/0"><code>snapshot/0</code></a> Prints <code>undefined</code> if no snapshot has been taken.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#snapshot_save/1" translate="no">snapshot_save(Filename)</a>
+
+        </div>
+
+          <div class="summary-synopsis">save the current snapshot taken by <a href="#snapshot/0"><code>snapshot/0</code></a> to a file. If there is no current snapshot, a snapshot of the current allocator statistics will be written to the file.</div>
+
+      </div>
+
+  </div>
+
+  </section>
 
 
-<h4 class="typedecl"><a name="type-snapshot">snapshot()</a></h4>
-<p><code>snapshot() = {<a href="#type-memory">memory()</a>, [<a href="#type-allocdata">allocdata</a>(term())]}</code></p>
+  <section id="types" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+Types
+    </h1>
+    <div class="types-list">
+<section class="detail" id="t:allocator/0">
+
+  <div class="detail-header">
+    <a href="#t:allocator/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">allocator/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L128" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
 
 
-<h3><a name="index">Function Index</a></h3>
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#allocators-0">allocators/0</a></td><td>returns a dump of all allocator settings and values.</td></tr>
-<tr><td valign="top"><a href="#allocators-1">allocators/1</a></td><td>returns a dump of all allocator settings and values modified
-       depending on the argument.</td></tr>
-<tr><td valign="top"><a href="#average_block_sizes-1">average_block_sizes/1</a></td><td>Checks all allocators in <a docgen-rel="seetype" docgen-href="#allocator/0" href="#type-allocator"><code>allocator()</code></a> and returns the average
-  block sizes being used for <code>mbcs</code> and <code>sbcs</code>.</td></tr>
-<tr><td valign="top"><a href="#cache_hit_rates-0">cache_hit_rates/0</a></td><td>looks at the <code>mseg_alloc</code> allocator (allocator used by all the
-  allocators in <a docgen-rel="seetype" docgen-href="#allocator/0" href="#type-allocator"><code>allocator()</code></a>) and returns information relative to  
-the cache hit rates.</td></tr>
-<tr><td valign="top"><a href="#fragmentation-1">fragmentation/1</a></td><td>Compares the block sizes to the carrier sizes, both for
-  single block (<code>sbcs</code>) and multiblock (<code>mbcs</code>) carriers.</td></tr>
-<tr><td valign="top"><a href="#memory-1">memory/1</a></td><td>Equivalent to <code>memory(Key, current)</code>.</td></tr>
-<tr><td valign="top"><a href="#memory-2">memory/2</a></td><td>reports one of multiple possible memory values for the entire  
-node depending on what is to be reported:.</td></tr>
-<tr><td valign="top"><a href="#sbcs_to_mbcs-1">sbcs_to_mbcs/1</a></td><td>compares the amount of single block carriers (<code>sbcs</code>) vs the
-  number of multiblock carriers (<code>mbcs</code>) for each individual allocator in
-  <a docgen-rel="seetype" docgen-href="#allocator/0" href="#type-allocator"><code>allocator()</code></a>.</td></tr>
-<tr><td valign="top"><a href="#set_unit-1">set_unit/1</a></td><td>set the current unit to be used by recon_alloc.</td></tr>
-<tr><td valign="top"><a href="#snapshot-0">snapshot/0</a></td><td>Take a new snapshot of the current memory allocator statistics.</td></tr>
-<tr><td valign="top"><a href="#snapshot_clear-0">snapshot_clear/0</a></td><td>clear the current snapshot in the process dictionary, if present,
-  and return the value it had before being unset.</td></tr>
-<tr><td valign="top"><a href="#snapshot_get-0">snapshot_get/0</a></td><td>returns the current snapshot stored by <a docgen-rel="seemfa" docgen-href="#snapshot/0" href="#snapshot-0"><code>snapshot/0</code></a>.</td></tr>
-<tr><td valign="top"><a href="#snapshot_load-1">snapshot_load/1</a></td><td>load a snapshot from a given file.</td></tr>
-<tr><td valign="top"><a href="#snapshot_print-0">snapshot_print/0</a></td><td>print a dump of the current snapshot stored by <a docgen-rel="seemfa" docgen-href="#snapshot/0" href="#snapshot-0"><code>snapshot/0</code></a>
-  Prints <code>undefined</code> if no snapshot has been taken.</td></tr>
-<tr><td valign="top"><a href="#snapshot_save-1">snapshot_save/1</a></td><td>save the current snapshot taken by <a docgen-rel="seemfa" docgen-href="#snapshot/0" href="#snapshot-0"><code>snapshot/0</code></a> to a file.</td></tr>
-</table>
+  </div>
 
-<h3><a name="functions">Function Details</a></h3>
+  <section class="docstring">
 
-<h4 class="function"><a name="allocators-0">allocators/0</a></h4>
-<div class="spec">
-<p><code>allocators() -&gt; [<a href="#type-allocdata">allocdata</a>(term())]</code><br></p>
-<p> </p>
-</div><p>returns a dump of all allocator settings and values</p>
+      <div class="specs">
 
-<h4 class="function"><a name="allocators-1">allocators/1</a></h4>
-<div class="spec">
-<p><code>allocators(X1::types) -&gt; [<a href="#type-allocdata_types">allocdata_types</a>(term())]</code><br></p>
-<p> </p>
-</div><p>returns a dump of all allocator settings and values modified
-       depending on the argument.
-  <ul>
-    <li><code>types</code> report the settings and accumulated values for each
-        allocator type. This is useful when looking for anomalies
-        in the system as a whole and not specific instances.</li>
-  </ul></p>
+          <pre translate="no"><span class="attribute">-type</span> allocator() ::
+    temp_alloc | eheap_alloc | binary_alloc | ets_alloc | driver_alloc | sl_alloc | ll_alloc |
+    fix_alloc | std_alloc.</pre>
 
-<h4 class="function"><a name="average_block_sizes-1">average_block_sizes/1</a></h4>
-<div class="spec">
-<p><code>average_block_sizes(Keyword::current | max) -&gt; [{<a href="#type-allocator">allocator()</a>, [{Key, Val}]}]</code>
-<ul class="definitions"><li><code>Key = mbcs | sbcs</code></li><li><code>Val = number()</code></li></ul></p>
-<p> </p>
-</div><p><p>Checks all allocators in <a docgen-rel="seetype" docgen-href="#allocator/0" href="#type-allocator"><code>allocator()</code></a> and returns the average
-  block sizes being used for <code>mbcs</code> and <code>sbcs</code>. This value is interesting
-  to use because it will tell us how large most blocks are.
-  This can be related to the VM's largest multiblock carrier size
-  (<code>lmbcs</code>) and smallest multiblock carrier size (<code>smbcs</code>) to specify  
-allocation strategies regarding the carrier sizes to be used.</p>
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:allocdata/1">
+
+  <div class="detail-header">
+    <a href="#t:allocdata/1" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">allocdata/1</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L132" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> allocdata(T) :: {{<a href="#t:allocator/0">allocator</a>(), <a href="#t:instance/0">instance</a>()}, T}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:allocdata_types/1">
+
+  <div class="detail-header">
+    <a href="#t:allocdata_types/1" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">allocdata_types/1</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L133" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> allocdata_types(T) :: {{<a href="#t:allocator/0">allocator</a>(), [<a href="#t:instance/0">instance</a>()]}, T}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:instance/0">
+
+  <div class="detail-header">
+    <a href="#t:instance/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">instance/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L131" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> instance() :: non_neg_integer().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:memory/0">
+
+  <div class="detail-header">
+    <a href="#t:memory/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">memory/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L144" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> memory() :: [{atom(), atom()}].</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:snapshot/0">
+
+  <div class="detail-header">
+    <a href="#t:snapshot/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">snapshot/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L145" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> snapshot() :: {<a href="#t:memory/0">memory</a>(), [<a href="#t:allocdata/1">allocdata</a>(term())]}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+Functions
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="allocators/0">
+
+  <div class="detail-header">
+    <a href="#allocators/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">allocators()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L369" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> allocators() -> [<a href="#t:allocdata/1">allocdata</a>(term())].</pre>
+
+      </div>
+
+returns a dump of all allocator settings and values
+  </section>
+</section>
+<section class="detail" id="allocators/1">
+
+  <div class="detail-header">
+    <a href="#allocators/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">allocators(_)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L439" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> allocators(types) -> [<a href="#t:allocdata_types/1">allocdata_types</a>(term())].</pre>
+
+      </div>
+
+returns a dump of all allocator settings and values modified depending on the argument.<ul><li><code>types</code> report the settings and accumulated values for each allocator type. This is useful when looking for anomalies in the system as a whole and not specific instances.</li></ul>
+  </section>
+</section>
+<section class="detail" id="average_block_sizes/1">
+
+  <div class="detail-header">
+    <a href="#average_block_sizes/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">average_block_sizes(Keyword)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L313" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> average_block_sizes(current | max) -> [{<a href="#t:allocator/0">allocator</a>(), [{Key, Val}]}]
+                       when Key :: mbcs | sbcs, Val :: number().</pre>
+
+      </div>
+
+<p>Checks all allocators in <a href="#t:allocator/0"><code>allocator()</code></a> and returns the average block sizes being used for <code>mbcs</code> and <code>sbcs</code>. This value is interesting to use because it will tell us how large most blocks are. This can be related to the VM's largest multiblock carrier size (<code>lmbcs</code>) and smallest multiblock carrier size (<code>smbcs</code>) to specify allocation strategies regarding the carrier sizes to be used.</p><p>This function isn't exceptionally useful unless you know you have some specific problem, say with sbcs/mbcs ratios (see <a href="#sbcs_to_mbcs/1"><code>sbcs_to_mbcs/1</code></a>) or fragmentation for a specific allocator, and want to figure out what values to pick to increase or decrease sizes compared to the currently configured value.</p>Do note that values for <code>lmbcs</code> and <code>smbcs</code> are going to be rounded up to the next power of two when configuring them.
+  </section>
+</section>
+<section class="detail" id="cache_hit_rates/0">
+
+  <div class="detail-header">
+    <a href="#cache_hit_rates/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">cache_hit_rates()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L283" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> cache_hit_rates() -> [{{instance, <a href="#t:instance/0">instance</a>()}, [{Key, Val}]}]
+                   when Key :: hit_rate | hits | calls, Val :: term().</pre>
+
+      </div>
+
+<p>looks at the <code>mseg_alloc</code> allocator (allocator used by all the allocators in <a href="#t:allocator/0"><code>allocator()</code></a>) and returns information relative to the cache hit rates. Unless memory has expected spiky behaviour, it should usually be above 0.80 (80%).</p><p>Cache can be tweaked using three VM flags: <code>+MMmcs</code>, <code>+MMrmcbf</code>, and <code>+MMamcbf</code>.</p><p><code>+MMmcs</code> stands for the maximum amount of cached memory segments. Its default value is '10' and can be anything from 0 to 30. Increasing it first and verifying if cache hits get better should be the first step taken.</p><p>The two other options specify what are the maximal values of a segment to cache, in relative (in percent) and absolute terms (in kilobytes), respectively. Increasing these may allow more segments to be cached, but should also add overheads to memory allocation. An Erlang node that has limited memory and increases these values may make things worse on that point.</p>The values returned by this function are sorted by a weight combining the lower cache hit joined to the largest memory values allocated.
+  </section>
+</section>
+<section class="detail" id="fragmentation/1">
+
+  <div class="detail-header">
+    <a href="#fragmentation/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">fragmentation(Keyword)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L246" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> fragmentation(current | max) -> [<a href="#t:allocdata/1">allocdata</a>([{atom(), term()}])].</pre>
+
+      </div>
+
+<p>Compares the block sizes to the carrier sizes, both for single block (<code>sbcs</code>) and multiblock (<code>mbcs</code>) carriers.</p><p>The returned results are sorted by a weight system that is somewhat likely to return the most fragmented allocators first, based on their percentage of use and the total size of the carriers, for both <code>sbcs</code> and <code>mbcs</code>.</p>The values can both be returned for <code>current</code> allocator values, and for <code>max</code> allocator values. The current values hold the present allocation numbers, and max values, the values at the peak. Comparing both together can give an idea of whether the node is currently being at its memory peak when possibly leaky, or if it isn't. This information can in turn influence the tuning of allocators to better fit sizes of blocks and/or carriers.
+  </section>
+</section>
+<section class="detail" id="memory/1">
+
+  <div class="detail-header">
+    <a href="#memory/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">memory(Key)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L166" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> memory(used | allocated | unused) -> pos_integer();
+      (usage) -> number();
+      (allocated_types | allocated_instances) -> [{<a href="#t:allocator/0">allocator</a>(), pos_integer()}].</pre>
+
+      </div>
+
+Equivalent to <code>memory(Key, current)</code>.
+  </section>
+</section>
+<section class="detail" id="memory/2">
+
+  <div class="detail-header">
+    <a href="#memory/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">memory(_, Keyword)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L207" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> memory(used | allocated | unused, current | max) -> pos_integer();
+      (usage, current | max) -> number();
+      (allocated_types | allocated_instances, current | max) -> [{<a href="#t:allocator/0">allocator</a>(), pos_integer()}].</pre>
+
+      </div>
+
+<p>reports one of multiple possible memory values for the entire node depending on what is to be reported:</p><ul><li><code>used</code> reports the memory that is actively used for allocated Erlang data;</li><li><code>allocated</code> reports the memory that is reserved by the VM. It includes the memory used, but also the memory yet-to-be-used but still given by the OS. This is the amount you want if you're dealing with ulimit and OS-reported values.</li><li><code>allocated_types</code> report the memory that is reserved by the VM grouped into the different util allocators.</li><li><code>allocated_instances</code> report the memory that is reserved by the VM grouped into the different schedulers. Note that instance id 0 is the global allocator used to allocate data from non-managed threads, i.e. async and driver threads.</li><li><code>unused</code> reports the amount of memory reserved by the VM that is not being allocated. Equivalent to <code>allocated - used</code>.</li><li><code>usage</code> returns a percentage (0.0 .. 1.0) of <code>used/allocated</code> memory ratios.</li></ul><p>The memory reported by <code>allocated</code> should roughly match what the OS reports. If this amount is different by a large margin, it may be the sign that someone is allocating memory in C directly, outside of Erlang's own allocator -- a big warning sign. There are currently three sources of memory alloction that are not counted towards this value: The cached segments in the mseg allocator, any memory allocated as a super carrier, and small pieces of memory allocated during startup before the memory allocators are initialized.</p>Also note that low memory usages can be the sign of fragmentation in memory, in which case exploring which specific allocator is at fault is recommended (see <a href="#fragmentation/1"><code>fragmentation/1</code></a>)
+  </section>
+</section>
+<section class="detail" id="sbcs_to_mbcs/1">
+
+  <div class="detail-header">
+    <a href="#sbcs_to_mbcs/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">sbcs_to_mbcs(Keyword)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L354" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> sbcs_to_mbcs(max | current) -> [<a href="#t:allocdata/1">allocdata</a>(term())].</pre>
+
+      </div>
+
+<p>compares the amount of single block carriers (<code>sbcs</code>) vs the number of multiblock carriers (<code>mbcs</code>) for each individual allocator in <a href="#t:allocator/0"><code>allocator()</code></a>.</p><p>When a specific piece of data is allocated, it is compared to a threshold, called the 'single block carrier threshold' (<code>sbct</code>). When the data is larger than the <code>sbct</code>, it gets sent to a single block carrier. When the data is smaller than the <code>sbct</code>, it gets placed into a multiblock carrier.</p><p>mbcs are to be preferred to sbcs because they basically represent pre- allocated memory, whereas sbcs will map to one call to sys_alloc or mseg_alloc, which is more expensive than redistributing data that was obtained for multiblock carriers. Moreover, the VM is able to do specific work with mbcs that should help reduce fragmentation in ways sys_alloc or mmap usually won't.</p><p>Ideally, most of the data should fit inside multiblock carriers. If most of the data ends up in <code>sbcs</code>, you may need to adjust the multiblock carrier sizes, specifically the maximal value (<code>lmbcs</code>) and the threshold (<code>sbct</code>). On 32 bit VMs, <code>sbct</code> is limited to 8MBs, but 64 bit VMs can go to pretty much any practical size.</p>Given the value returned is a ratio of sbcs/mbcs, the higher the value, the worst the condition. The list is sorted accordingly.
+  </section>
+</section>
+<section class="detail" id="set_unit/1">
+
+  <div class="detail-header">
+    <a href="#set_unit/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">set_unit(_)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L619" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> set_unit(byte | kilobyte | megabyte | gigabyte) -> ok.</pre>
+
+      </div>
+
+<p>set the current unit to be used by recon_alloc. This effects all functions that return bytes.</p>Eg.<pre><code class="makeup erlang" translate="no"><span class="w">     </span><span class="mi">1</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">recon_alloc</span><span class="p">:</span><span class="nf">memory</span><span class="p" data-group-id="7924037872-1">(</span><span class="ss">used</span><span class="p">,</span><span class="ss">current</span><span class="p" data-group-id="7924037872-1">)</span><span class="p">.</span><span class="w">
+     </span><span class="mi">17548752</span><span class="w">
+     </span><span class="mi">2</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">recon_alloc</span><span class="p">:</span><span class="nf">set_unit</span><span class="p" data-group-id="7924037872-2">(</span><span class="ss">kilobyte</span><span class="p" data-group-id="7924037872-2">)</span><span class="p">.</span><span class="w">
+     </span><span class="ss">undefined</span><span class="w">
+     </span><span class="mi">3</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">recon_alloc</span><span class="p">:</span><span class="nf">memory</span><span class="p" data-group-id="7924037872-3">(</span><span class="ss">used</span><span class="p">,</span><span class="ss">current</span><span class="p" data-group-id="7924037872-3">)</span><span class="p">.</span><span class="w">
+     </span><span class="mf">17576.90625</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="snapshot/0">
+
+  <div class="detail-header">
+    <a href="#snapshot/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">snapshot()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L514" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> snapshot() -> <a href="#t:snapshot/0">snapshot</a>() | undefined.</pre>
+
+      </div>
+
+Take a new snapshot of the current memory allocator statistics. The snapshot is stored in the process dictionary of the calling process, with all the limitations that it implies (i.e. no garbage-collection). To unsert the snapshot, see <a href="#snapshot_clear/0"><code>snapshot_clear/0</code></a>.
+  </section>
+</section>
+<section class="detail" id="snapshot_clear/0">
+
+  <div class="detail-header">
+    <a href="#snapshot_clear/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">snapshot_clear()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L522" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> snapshot_clear() -> <a href="#t:snapshot/0">snapshot</a>() | undefined.</pre>
+
+      </div>
+
+clear the current snapshot in the process dictionary, if present, and return the value it had before being unset.
+  </section>
+</section>
+<section class="detail" id="snapshot_get/0">
+
+  <div class="detail-header">
+    <a href="#snapshot_get/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">snapshot_get()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L534" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> snapshot_get() -> <a href="#t:snapshot/0">snapshot</a>() | undefined.</pre>
+
+      </div>
+
+returns the current snapshot stored by <a href="#snapshot/0"><code>snapshot/0</code></a>. Returns <code>undefined</code> if no snapshot has been taken.
+  </section>
+</section>
+<section class="detail" id="snapshot_load/1">
+
+  <div class="detail-header">
+    <a href="#snapshot_load/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">snapshot_load(Filename)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L583" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> snapshot_load(Filename) -> <a href="#t:snapshot/0">snapshot</a>() | undefined when Filename :: <a href="https://www.erlang.org/doc/man/file.html#type-name">file:name</a>().</pre>
+
+      </div>
+
+<p>load a snapshot from a given file. The format of the data in the file can be either the same as output by <a href="#snapshot_save/1"><code>snapshot_save/1</code></a>, or the output obtained by calling <code>{erlang:memory(),[{A,erlang:system_info({allocator,A})} || A &lt;- erlang:system_info(alloc_util_allocators)++[sys_alloc,mseg_alloc]]}.</code> and storing it in a file. If the latter option is taken, please remember to add a full stop at the end of the resulting Erlang term, as this function uses <code>file:consult/1</code> to load the file.</p><p>Example usage:</p><pre><code class="makeup erlang" translate="no"><span class="w">    </span><span class="n">On</span><span class="w"> </span><span class="ss">target</span><span class="w"> </span><span class="nc">machine</span><span class="p">:</span><span class="w">
+      </span><span class="mi">1</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">recon_alloc</span><span class="p">:</span><span class="nf">snapshot</span><span class="p" data-group-id="7185738125-1">(</span><span class="p" data-group-id="7185738125-1">)</span><span class="p">.</span><span class="w">
+      </span><span class="ss">undefined</span><span class="w">
+      </span><span class="mi">2</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">recon_alloc</span><span class="p">:</span><span class="nf">memory</span><span class="p" data-group-id="7185738125-2">(</span><span class="ss">used</span><span class="p" data-group-id="7185738125-2">)</span><span class="p">.</span><span class="w">
+      </span><span class="mi">18411064</span><span class="w">
+      </span><span class="mi">3</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">recon_alloc</span><span class="p">:</span><span class="nf">snapshot_save</span><span class="p" data-group-id="7185738125-3">(</span><span class="s">&quot;recon_snapshot.terms&quot;</span><span class="p" data-group-id="7185738125-3">)</span><span class="p">.</span><span class="w">
+      </span><span class="ss">ok</span><span class="w">
  
-  <p>This function isn't exceptionally useful unless you know you have some
-  specific problem, say with sbcs/mbcs ratios (see <a docgen-rel="seemfa" docgen-href="#sbcs_to_mbcs/0" href="#sbcs_to_mbcs-0"><code>sbcs_to_mbcs/0</code></a>)  
-or fragmentation for a specific allocator, and want to figure out what  
-values to pick to increase or decrease sizes compared to the currently  
-configured value.</p>
- 
-  Do note that values for <code>lmbcs</code> and <code>smbcs</code> are going to be rounded up
-  to the next power of two when configuring them.</p>
+    </span><span class="n">On</span><span class="w"> </span><span class="ss">other</span><span class="w"> </span><span class="nc">machine</span><span class="p">:</span><span class="w">
+      </span><span class="mi">1</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">recon_alloc</span><span class="p">:</span><span class="nf">snapshot_load</span><span class="p" data-group-id="7185738125-4">(</span><span class="s">&quot;recon_snapshot.terms&quot;</span><span class="p" data-group-id="7185738125-4">)</span><span class="p">.</span><span class="w">
+      </span><span class="ss">undefined</span><span class="w">
+      </span><span class="mi">2</span><span class="o">&gt;</span><span class="w"> </span><span class="nc">recon_alloc</span><span class="p">:</span><span class="nf">memory</span><span class="p" data-group-id="7185738125-5">(</span><span class="ss">used</span><span class="p" data-group-id="7185738125-5">)</span><span class="p">.</span><span class="w">
+      </span><span class="mi">18411064</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="snapshot_print/0">
 
-<h4 class="function"><a name="cache_hit_rates-0">cache_hit_rates/0</a></h4>
-<div class="spec">
-<p><code>cache_hit_rates() -&gt; [{{instance, <a href="#type-instance">instance()</a>}, [{Key, Val}]}]</code>
-<ul class="definitions"><li><code>Key = hit_rate | hits | calls</code></li><li><code>Val = term()</code></li></ul></p>
-<p> </p>
-</div><p><p>looks at the <code>mseg_alloc</code> allocator (allocator used by all the
-  allocators in <a docgen-rel="seetype" docgen-href="#allocator/0" href="#type-allocator"><code>allocator()</code></a>) and returns information relative to  
-the cache hit rates. Unless memory has expected spiky behaviour, it should  
-usually be above 0.80 (80%).</p>
- 
-  <p>Cache can be tweaked using three VM flags: <code>+MMmcs</code>, <code>+MMrmcbf</code>, and
-  <code>+MMamcbf</code>.</p>
- 
-  <p><code>+MMmcs</code> stands for the maximum amount of cached memory segments. Its  
-default value is '10' and can be anything from 0 to 30. Increasing  
-it first and verifying if cache hits get better should be the first  
-step taken.</p>
- 
-  <p>The two other options specify what are the maximal values of a segment  
-to cache, in relative (in percent) and absolute terms (in kilobytes),  
-respectively. Increasing these may allow more segments to be cached, but  
-should also add overheads to memory allocation. An Erlang node that has  
-limited memory and increases these values may make things worse on  
-that point.</p>
- 
-  The values returned by this function are sorted by a weight combining
-  the lower cache hit joined to the largest memory values allocated.</p>
+  <div class="detail-header">
+    <a href="#snapshot_print/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">snapshot_print()</h1>
 
-<h4 class="function"><a name="fragmentation-1">fragmentation/1</a></h4>
-<div class="spec">
-<p><code>fragmentation(Keyword::current | max) -&gt; [<a href="#type-allocdata">allocdata</a>([{atom(), term()}])]</code><br></p>
-<p> </p>
-</div><p><p>Compares the block sizes to the carrier sizes, both for
-  single block (<code>sbcs</code>) and multiblock (<code>mbcs</code>) carriers.</p>
- 
-  <p>The returned results are sorted by a weight system that is
-  somewhat likely to return the most fragmented allocators first,
-  based on their percentage of use and the total size of the carriers,
-  for both <code>sbcs</code> and <code>mbcs</code>.</p>
- 
-  The values can both be returned for <code>current</code> allocator values, and
-  for <code>max</code> allocator values. The current values hold the present allocation
-  numbers, and max values, the values at the peak. Comparing both together
-  can give an idea of whether the node is currently being at its memory peak
-  when possibly leaky, or if it isn't. This information can in turn
-  influence the tuning of allocators to better fit sizes of blocks and/or
-  carriers.</p>
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L528" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
 
-<h4 class="function"><a name="memory-1">memory/1</a></h4>
-<div class="spec">
-<p><code>memory(Key::used | allocated | unused) -&gt; pos_integer()</code><br></p><p><code>memory(Key::usage) -&gt; number()</code><br></p><p><code>memory(Key::allocated_types | allocated_instances) -&gt; [{<a href="#type-allocator">allocator()</a>, pos_integer()}]</code><br></p>
-<p> </p>
-<p> </p>
-<p> </p>
-</div><p>Equivalent to <code>memory(Key, current)</code>.</p>
 
-<h4 class="function"><a name="memory-2">memory/2</a></h4>
-<div class="spec">
-<p><code>memory(X1::used | allocated | unused, Keyword::current | max) -&gt; pos_integer()</code><br></p><p><code>memory(X1::usage, Keyword::current | max) -&gt; number()</code><br></p><p><code>memory(X1::allocated_types | allocated_instances, Keyword::current | max) -&gt; [{<a href="#type-allocator">allocator()</a>, pos_integer()}]</code><br></p>
-<p> </p>
-<p> </p>
-<p> </p>
-</div><p><p>reports one of multiple possible memory values for the entire  
-node depending on what is to be reported:</p>
- 
-  <ul>
-    <li><code>used</code> reports the memory that is actively used for allocated
-        Erlang data;</li>
-    <li><code>allocated</code> reports the memory that is reserved by the VM. It
-        includes the memory used, but also the memory yet-to-be-used but still
-        given by the OS. This is the amount you want if you're dealing with
-        ulimit and OS-reported values. </li>
-    <li><code>allocated_types</code> report the memory that is reserved by the
-        VM grouped into the different util allocators.</li>
-    <li><code>allocated_instances</code> report the memory that is reserved
-        by the VM grouped into the different schedulers. Note that
-        instance id 0 is the global allocator used to allocate data from
-        non-managed threads, i.e. async and driver threads.</li>
-    <li><code>unused</code> reports the amount of memory reserved by the VM that
-        is not being allocated.
-        Equivalent to <code>allocated - used</code>.</li>
-    <li><code>usage</code> returns a percentage (0.0 .. 1.0) of <code>used/allocated</code>
-        memory ratios.</li>
-  </ul>
- 
-  <p>The memory reported by <code>allocated</code> should roughly  
-match what the OS reports. If this amount is different by a large margin,  
-it may be the sign that someone is allocating memory in C directly, outside  
-of Erlang's own allocator -- a big warning sign. There are currently  
-three sources of memory alloction that are not counted towards this value:  
-The cached segments in the mseg allocator, any memory allocated as a  
-super carrier, and small pieces of memory allocated during startup  
-before the memory allocators are initialized.</p>
- 
-  Also note that low memory usages can be the sign of fragmentation in
-  memory, in which case exploring which specific allocator is at fault
-  is recommended (see <a docgen-rel="seemfa" docgen-href="#fragmentation/1" href="#fragmentation-1"><code>fragmentation/1</code></a>)</p>
+  </div>
 
-<h4 class="function"><a name="sbcs_to_mbcs-1">sbcs_to_mbcs/1</a></h4>
-<div class="spec">
-<p><code>sbcs_to_mbcs(Keyword::max | current) -&gt; [<a href="#type-allocdata">allocdata</a>(term())]</code><br></p>
-<p> </p>
-</div><p><p>compares the amount of single block carriers (<code>sbcs</code>) vs the
-  number of multiblock carriers (<code>mbcs</code>) for each individual allocator in
-  <a docgen-rel="seetype" docgen-href="#allocator/0" href="#type-allocator"><code>allocator()</code></a>.</p>
- 
-  <p>When a specific piece of data is allocated, it is compared to a threshold,
-  called the 'single block carrier threshold' (<code>sbct</code>). When the data is
-  larger than the <code>sbct</code>, it gets sent to a single block carrier. When the
-  data is smaller than the <code>sbct</code>, it gets placed into a multiblock carrier.</p>
- 
-  <p>mbcs are to be preferred to sbcs because they basically represent pre-  
-allocated memory, whereas sbcs will map to one call to sys_alloc  
-or mseg_alloc, which is more expensive than redistributing  
-data that was obtained for multiblock carriers. Moreover, the VM is able to  
-do specific work with mbcs that should help reduce fragmentation in ways  
-sys_alloc or mmap usually won't.</p>
- 
-  <p>Ideally, most of the data should fit inside multiblock carriers. If
-  most of the data ends up in <code>sbcs</code>, you may need to adjust the multiblock
-  carrier sizes, specifically the maximal value (<code>lmbcs</code>) and the threshold
-  (<code>sbct</code>). On 32 bit VMs, <code>sbct</code> is limited to 8MBs, but 64 bit VMs can go  
-to pretty much any practical size.</p>
- 
-  Given the value returned is a ratio of sbcs/mbcs, the higher the value,
-  the worst the condition. The list is sorted accordingly.</p>
+  <section class="docstring">
 
-<h4 class="function"><a name="set_unit-1">set_unit/1</a></h4>
-<div class="spec">
-<p><code>set_unit(X1::byte | kilobyte | megabyte | gigabyte) -&gt; ok</code><br></p>
-<p> </p>
-</div><p><p>set the current unit to be used by recon_alloc. This effects all  
-functions that return bytes.</p>
- 
-  Eg.
-  <pre>     1&gt; recon_alloc:memory(used,current).
-     17548752
-     2&gt; recon_alloc:set_unit(kilobyte).
-     undefined
-     3&gt; recon_alloc:memory(used,current).
-     17576.90625</pre>
- </p>
+      <div class="specs">
 
-<h4 class="function"><a name="snapshot-0">snapshot/0</a></h4>
-<div class="spec">
-<p><code>snapshot() -&gt; <a href="#type-snapshot">snapshot()</a> | undefined</code><br></p>
-<p> </p>
-</div><p>Take a new snapshot of the current memory allocator statistics.
-  The snapshot is stored in the process dictionary of the calling process,
-  with all the limitations that it implies (i.e. no garbage-collection).
-  To unsert the snapshot, see <a docgen-rel="seemfa" docgen-href="#snapshot_clear/1" href="#snapshot_clear-1"><code>snapshot_clear/1</code></a>.</p>
+          <pre translate="no"><span class="attribute">-spec</span> snapshot_print() -> ok.</pre>
 
-<h4 class="function"><a name="snapshot_clear-0">snapshot_clear/0</a></h4>
-<div class="spec">
-<p><code>snapshot_clear() -&gt; <a href="#type-snapshot">snapshot()</a> | undefined</code><br></p>
-<p> </p>
-</div><p>clear the current snapshot in the process dictionary, if present,
-  and return the value it had before being unset.</p>
+      </div>
 
-<h4 class="function"><a name="snapshot_get-0">snapshot_get/0</a></h4>
-<div class="spec">
-<p><code>snapshot_get() -&gt; <a href="#type-snapshot">snapshot()</a> | undefined</code><br></p>
-<p> </p>
-</div><p>returns the current snapshot stored by <a docgen-rel="seemfa" docgen-href="#snapshot/0" href="#snapshot-0"><code>snapshot/0</code></a>.
-  Returns <code>undefined</code> if no snapshot has been taken.</p>
+print a dump of the current snapshot stored by <a href="#snapshot/0"><code>snapshot/0</code></a> Prints <code>undefined</code> if no snapshot has been taken.
+  </section>
+</section>
+<section class="detail" id="snapshot_save/1">
 
-<h4 class="function"><a name="snapshot_load-1">snapshot_load/1</a></h4>
-<div class="spec">
-<p><code>snapshot_load(Filename) -&gt; <a href="#type-snapshot">snapshot()</a> | undefined</code>
-<ul class="definitions"><li><code>Filename = <a href="/home/ferd/code/self/kernel/doc/file.html#type-name">file:name()</a></code></li></ul></p>
-<p> </p>
-</div><p><p>load a snapshot from a given file. The format of the data in the
-  file can be either the same as output by <a docgen-rel="seetype" docgen-href="#snapshot_save/0" href="#type-snapshot_save"><code>snapshot_save()</code></a>,
-  or the output obtained by calling
-   <code>{erlang:memory(),[{A,erlang:system_info({allocator,A})} || A &lt;- erlang:system_info(alloc_util_allocators)++[sys_alloc,mseg_alloc]]}.</code>
-  and storing it in a file.
-  If the latter option is taken, please remember to add a full stop at the end
-  of the resulting Erlang term, as this function uses <code>file:consult/1</code> to load  
-the file.</p>
- 
-  <p>Example usage:</p>
- 
- <pre>    On target machine:
-      1&gt; recon_alloc:snapshot().
-      undefined
-      2&gt; recon_alloc:memory(used).
-      18411064
-      3&gt; recon_alloc:snapshot_save("recon_snapshot.terms").
-      ok
- 
-    On other machine:
-      1&gt; recon_alloc:snapshot_load("recon_snapshot.terms").
-      undefined
-      2&gt; recon_alloc:memory(used).
-      18411064</pre>
- </p>
+  <div class="detail-header">
+    <a href="#snapshot_save/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">snapshot_save(Filename)</h1>
 
-<h4 class="function"><a name="snapshot_print-0">snapshot_print/0</a></h4>
-<div class="spec">
-<p><code>snapshot_print() -&gt; ok</code><br></p>
-<p> </p>
-</div><p>print a dump of the current snapshot stored by <a docgen-rel="seemfa" docgen-href="#snapshot/0" href="#snapshot-0"><code>snapshot/0</code></a>
-  Prints <code>undefined</code> if no snapshot has been taken.</p>
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_alloc.erl#L542" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
 
-<h4 class="function"><a name="snapshot_save-1">snapshot_save/1</a></h4>
-<div class="spec">
-<p><code>snapshot_save(Filename) -&gt; ok</code>
-<ul class="definitions"><li><code>Filename = <a href="/home/ferd/code/self/kernel/doc/file.html#type-name">file:name()</a></code></li></ul></p>
-<p> </p>
-</div><p>save the current snapshot taken by <a docgen-rel="seemfa" docgen-href="#snapshot/0" href="#snapshot-0"><code>snapshot/0</code></a> to a file.
-  If there is no current snapshot, a snaphot of the current allocator
-  statistics will be written to the file.</p>
 
-    </article>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> snapshot_save(Filename) -> ok when Filename :: <a href="https://www.erlang.org/doc/man/file.html#type-name">file:name</a>().</pre>
+
+      </div>
+
+save the current snapshot taken by <a href="#snapshot/0"><code>snapshot/0</code></a> to a file. If there is no current snapshot, a snapshot of the current allocator statistics will be written to the file.
+  </section>
+</section>
+
+    </div>
+  </section>
+
+      <footer class="footer">
+
+          <p>
+            On Hex.pm:
+
+            <span class="line">
+              <a href="https://hex.pm/packages/recon/2.5.3" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/recon/2.5.3" class="line">Preview</a>
+
+                <a href="https://preview.hex.pm/preview/recon/2.5.3/show/src/recon_alloc.erl">(current file)</a>
+
+            </span>
+
+            <button class="a-main line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.29.0) for the
+
+            <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+
+
   </body>
 </html>

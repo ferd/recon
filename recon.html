@@ -1,596 +1,2080 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-    <link href='http://fonts.googleapis.com/css?family=Titillium+Web:400,300italic,600italic,700,600,700italic' rel='stylesheet' type='text/css'>
-    <link href='http://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,700italic,400italic' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" href="screen.css" media="screen, projection" />
-    <title>Recon Library</title>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.29.0">
+    <meta name="project" content="recon v2.5.3">
+
+    <title>recon — recon v2.5.3</title>
+    <link rel="stylesheet" href="dist/html-erlang-4XYKNH4U.css" />
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-X7YVL3G2.js"></script>
+    <script src="dist/sidebar_items-BD2EFCFF.js"></script>
+
+      <script src="docs_config.js"></script>
+
+    <script async src="dist/html-XN2TSG4M.js"></script>
+
+
   </head>
-  <body>
-    <header>
-        <h1>Recon</h1>
-        <nav>
-          <ul>
-<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a><li><a href="recon_map.html">recon_map</a><li><a href="recon_rec.html">recon_rec</a><li><a href="recon_trace.html">recon_trace</a>
-          </ul>
-        </nav>
-    </header>
-    <article>
-    <h2>Module recon</h2>
-<ul class="index"><li><a href="#description">Description</a></li><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>Recon, as a module, provides access to the high-level functionality   
-contained in the Recon application.
-
-<p><strong>Authors:</strong> Fred Hebert (<a href="mailto:mononcqc@ferd.ca"><code>mononcqc@ferd.ca</code></a>) [<em>web site:</em> <code><a href="http://ferd.ca/" target="_top">http://ferd.ca/</a></code>].</p>
-
-<h3><a name="description">Description</a></h3><p>Recon, as a module, provides access to the high-level functionality   
-contained in the Recon application.</p>
-  
-   <p>It has functions in five main categories:</p>
-  
-   <dl>
-       <dt>1. State information</dt>
-       <dd>Process information is everything that has to do with the
-           general state of the node. Functions such as <a docgen-rel="seemfa" docgen-href="#info/1" href="#info-1"><code>info/1</code></a>
-           and <a docgen-rel="seemfa" docgen-href="#info/3" href="#info-3"><code>info/3</code></a> are wrappers to provide more details than
-           <code>erlang:process_info/1</code>, while providing it in a production-safe
-           manner. They have equivalents to <code>erlang:process_info/2</code> in
-           the functions <a docgen-rel="seemfa" docgen-href="#info/2" href="#info-2"><code>info/2</code></a> and <a docgen-rel="seemfa" docgen-href="#info/4" href="#info-4"><code>info/4</code></a>, respectively.</dd>
-       <dd><a docgen-rel="seemfa" docgen-href="#proc_count/2" href="#proc_count-2"><code>proc_count/2</code></a> and <a docgen-rel="seemfa" docgen-href="#proc_window/3" href="#proc_window-3"><code>proc_window/3</code></a> are to be used
-           when you require information about processes in a larger sense:
-           biggest consumers of given process information (say memory or
-           reductions), either absolutely or over a sliding time window,
-           respectively.</dd>
-       <dd><a docgen-rel="seemfa" docgen-href="#bin_leak/1" href="#bin_leak-1"><code>bin_leak/1</code></a> is a function that can be used to try and
-           see if your Erlang node is leaking refc binaries. See the function
-           itself for more details.</dd>
-       <dd>Functions to access node statistics, in a manner somewhat similar
-           to what <a href="https://github.com/ferd/vmstats">vmstats</a>
-           provides as a library. There are 3 of them:
-           <a docgen-rel="seemfa" docgen-href="#node_stats_print/2" href="#node_stats_print-2"><code>node_stats_print/2</code></a>, which displays them,
-           <a docgen-rel="seemfa" docgen-href="#node_stats_list/2" href="#node_stats_list-2"><code>node_stats_list/2</code></a>, which returns them in a list, and
-           <a docgen-rel="seemfa" docgen-href="#node_stats/4" href="#node_stats-4"><code>node_stats/4</code></a>, which provides a fold-like interface
-           for stats gathering. For CPU usage specifically, see
-           <a docgen-rel="seemfa" docgen-href="#scheduler_usage/1" href="#scheduler_usage-1"><code>scheduler_usage/1</code></a>.</dd>
-  
-       <dt>2. OTP tools</dt>
-       <dd>This category provides tools to interact with pieces of OTP
-           more easily. At this point, the only function included is
-           <a docgen-rel="seemfa" docgen-href="#get_state/1" href="#get_state-1"><code>get_state/1</code></a>, which works as a wrapper around
-           <a docgen-rel="seemfa" docgen-href="#get_state/2" href="#get_state-2"><code>get_state/2</code></a>, which works as a wrapper around
-           <code>sys:get_state/1</code> in R16B01, and provides the required
-           functionality for older versions of Erlang.</dd>
-  
-       <dt>3. Code Handling</dt>
-       <dd>Specific functions are in <code>recon</code> for the sole purpose
-           of interacting with source and compiled code.
-           <a docgen-rel="seemfa" docgen-href="#remote_load/1" href="#remote_load-1"><code>remote_load/1</code></a> and <a docgen-rel="seemfa" docgen-href="#remote_load/2" href="#remote_load-2"><code>remote_load/2</code></a> will allow
-           to take a local module, and load it remotely (in a diskless
-           manner) on another Erlang node you're connected to.</dd>
-       <dd><a docgen-rel="seemfa" docgen-href="#source/1" href="#source-1"><code>source/1</code></a> allows to print the source of a loaded module,
-           in case it's not available in the currently running node.</dd>
-  
-       <dt>4. Ports and Sockets</dt>
-       <dd>To make it simpler to debug some network-related issues,
-           recon contains functions to deal with Erlang ports (raw, file
-           handles, or inet). Functions <a docgen-rel="seemfa" docgen-href="#tcp/0" href="#tcp-0"><code>tcp/0</code></a>, <a docgen-rel="seemfa" docgen-href="#udp/0" href="#udp-0"><code>udp/0</code></a>,
-           <a docgen-rel="seemfa" docgen-href="#sctp/0" href="#sctp-0"><code>sctp/0</code></a>, <a docgen-rel="seemfa" docgen-href="#files/0" href="#files-0"><code>files/0</code></a>, and <a docgen-rel="seemfa" docgen-href="#port_types/0" href="#port_types-0"><code>port_types/0</code></a> will
-           list all the Erlang ports of a given type. The latter function
-           prints counts of all individual types.</dd>
-       <dd>Port state information can be useful to figure out why certain
-           parts of the system misbehave. Functions such as
-           <a docgen-rel="seemfa" docgen-href="#port_info/1" href="#port_info-1"><code>port_info/1</code></a> and <a docgen-rel="seemfa" docgen-href="#port_info/2" href="#port_info-2"><code>port_info/2</code></a> are wrappers to provide
-           more similar or more details than <code>erlang:port_info/1-2</code>, and, for
-           inet ports, statistics and options for each socket.</dd>
-       <dd>Finally, the functions <a docgen-rel="seemfa" docgen-href="#inet_count/2" href="#inet_count-2"><code>inet_count/2</code></a> and <a docgen-rel="seemfa" docgen-href="#inet_window/3" href="#inet_window-3"><code>inet_window/3</code></a>
-           provide the absolute or sliding window functionality of
-           <a docgen-rel="seemfa" docgen-href="#proc_count/2" href="#proc_count-2"><code>proc_count/2</code></a> and <a docgen-rel="seemfa" docgen-href="#proc_count/3" href="#proc_count-3"><code>proc_count/3</code></a> to inet ports
-           and connections currently on the node.</dd>
-  
-       <dt>5. RPC</dt>
-       <dd>These are wrappers to make RPC work simpler with clusters of
-           Erlang nodes. Default RPC mechanisms (from the <code>rpc</code> module)
-           make it somewhat painful to call shell-defined funs over node
-           boundaries. The functions <a docgen-rel="seemfa" docgen-href="#rpc/1" href="#rpc-1"><code>rpc/1</code></a>, <a docgen-rel="seemfa" docgen-href="#rpc/2" href="#rpc-2"><code>rpc/2</code></a>, and
-           <a docgen-rel="seemfa" docgen-href="#rpc/3" href="#rpc-3"><code>rpc/3</code></a> will do it with a simpler interface.</dd>
-       <dd>Additionally, when you're running diagnostic code on remote
-           nodes and want to know which node evaluated what result, using
-           <a docgen-rel="seemfa" docgen-href="#named_rpc/1" href="#named_rpc-1"><code>named_rpc/1</code></a>, <a docgen-rel="seemfa" docgen-href="#named_rpc/2" href="#named_rpc-2"><code>named_rpc/2</code></a>, and <a docgen-rel="seemfa" docgen-href="#named_rpc/3" href="#named_rpc-3"><code>named_rpc/3</code></a>
-           will wrap the results in a tuple that tells you which node it's
-           coming from, making it easier to identify bad nodes.</dd>
-   </dl>
-<h3><a name="types">Data Types</a></h3>
-
-<h4 class="typedecl"><a name="type-inet_attrs">inet_attrs()</a></h4>
-<p><code>inet_attrs() = {port(), Attr::term(), [{atom(), term()}]}</code></p>
-
-
-<h4 class="typedecl"><a name="type-info_key">info_key()</a></h4>
-<p><code>info_key() = <a href="#type-info_meta_key">info_meta_key()</a> | <a href="#type-info_signals_key">info_signals_key()</a> | <a href="#type-info_location_key">info_location_key()</a> | <a href="#type-info_memory_key">info_memory_key()</a> | <a href="#type-info_work_key">info_work_key()</a></code></p>
-
+  <body data-type="modules" class="page-module">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
+    </button>
+    <label class="search-label">
+      <p class="sr-only">Search</p>
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+    </label>
+  </form>
 
-<h4 class="typedecl"><a name="type-info_location_key">info_location_key()</a></h4>
-<p><code>info_location_key() = initial_call | current_stacktrace</code></p>
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
 
+  <div class="sidebar-header">
 
-<h4 class="typedecl"><a name="type-info_memory_key">info_memory_key()</a></h4>
-<p><code>info_memory_key() = memory | message_queue_len | heap_size | total_heap_size | garbage_collection</code></p>
+    <div class="sidebar-projectDetails">
+      <a href="https://ferd.github.io/recon/" class="sidebar-projectName" translate="no">
+recon
+      </a>
+      <strong class="sidebar-projectVersion" translate="no">
+        v2.5.3
+      </strong>
+    </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
 
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
 
-<h4 class="typedecl"><a name="type-info_meta_key">info_meta_key()</a></h4>
-<p><code>info_meta_key() = registered_name | dictionary | group_leader | status</code></p>
 
+    </ul>
+  </div>
 
-<h4 class="typedecl"><a name="type-info_signals_key">info_signals_key()</a></h4>
-<p><code>info_signals_key() = links | monitors | monitored_by | trap_exit</code></p>
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
 
+<section class="content">
+  <output role="status" id="toast"></output>
+  <div class="content-outer">
+    <div id="content" class="content-inner">
 
-<h4 class="typedecl"><a name="type-info_type">info_type()</a></h4>
-<p><code>info_type() = meta | signals | location | memory_used | work</code></p>
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
 
 
-<h4 class="typedecl"><a name="type-info_work_key">info_work_key()</a></h4>
-<p><code>info_work_key() = reductions</code></p>
+    <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L80" title="View Source" class="view-source" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
 
+  <span translate="no">recon</span> 
+  <small class="app-vsn" translate="no">(recon v2.5.3)</small>
 
-<h4 class="typedecl"><a name="type-pid_term">pid_term()</a></h4>
-<p><code>pid_term() = pid() | atom() | string() | {global, term()} | {via, module(), term()} | {non_neg_integer(), non_neg_integer(), non_neg_integer()}</code></p>
+</h1>
 
 
-<h4 class="typedecl"><a name="type-port_info_io_key">port_info_io_key()</a></h4>
-<p><code>port_info_io_key() = input | output</code></p>
+  <section id="moduledoc">
+<p>Recon, as a module, provides access to the high-level functionality contained in the Recon application.</p><p>It has functions in five main categories:</p><dl><dt>1. State information</dt><dd>Process information is everything that has to do with the general state of the node. Functions such as <a href="#info/1"><code>info/1</code></a> and <a href="#info/3"><code>info/3</code></a> are wrappers to provide more details than <code>erlang:process_info/1</code>, while providing it in a production-safe manner. They have equivalents to <code>erlang:process_info/2</code> in the functions <a href="#info/2"><code>info/2</code></a> and <a href="#info/4"><code>info/4</code></a>, respectively.</dd><dd><a href="#proc_count/2"><code>proc_count/2</code></a> and <a href="#proc_window/3"><code>proc_window/3</code></a> are to be used when you require information about processes in a larger sense: biggest consumers of given process information (say memory or reductions), either absolutely or over a sliding time window, respectively.</dd><dd><a href="#bin_leak/1"><code>bin_leak/1</code></a> is a function that can be used to try and see if your Erlang node is leaking refc binaries. See the function itself for more details.</dd><dd>Functions to access node statistics, in a manner somewhat similar to what <a href="https://github.com/ferd/vmstats">vmstats</a> provides as a library. There are 3 of them: <a href="#node_stats_print/2"><code>node_stats_print/2</code></a>, which displays them, <a href="#node_stats_list/2"><code>node_stats_list/2</code></a>, which returns them in a list, and <a href="#node_stats/4"><code>node_stats/4</code></a>, which provides a fold-like interface for stats gathering. For CPU usage specifically, see <a href="#scheduler_usage/1"><code>scheduler_usage/1</code></a>.</dd><dt>2. OTP tools</dt><dd>This category provides tools to interact with pieces of OTP more easily. At this point, the only function included is <a href="#get_state/1"><code>get_state/1</code></a>, which works as a wrapper around <a href="#get_state/2"><code>get_state/2</code></a>, which works as a wrapper around <code>sys:get_state/1</code> in R16B01, and provides the required functionality for older versions of Erlang.</dd><dt>3. Code Handling</dt><dd>Specific functions are in <code>recon</code> for the sole purpose of interacting with source and compiled code. <a href="#remote_load/1"><code>remote_load/1</code></a> and <a href="#remote_load/2"><code>remote_load/2</code></a> will allow to take a local module, and load it remotely (in a diskless manner) on another Erlang node you're connected to.</dd><dd><a href="#source/1"><code>source/1</code></a> allows to print the source of a loaded module, in case it's not available in the currently running node.</dd><dt>4. Ports and Sockets</dt><dd>To make it simpler to debug some network-related issues, recon contains functions to deal with Erlang ports (raw, file handles, or inet). Functions <a href="#tcp/0"><code>tcp/0</code></a>, <a href="#udp/0"><code>udp/0</code></a>, <a href="#sctp/0"><code>sctp/0</code></a>, <a href="#files/0"><code>files/0</code></a>, and <a href="#port_types/0"><code>port_types/0</code></a> will list all the Erlang ports of a given type. The latter function prints counts of all individual types.</dd><dd>Port state information can be useful to figure out why certain parts of the system misbehave. Functions such as <a href="#port_info/1"><code>port_info/1</code></a> and <a href="#port_info/2"><code>port_info/2</code></a> are wrappers to provide more similar or more details than <code>erlang:port_info/1-2</code>, and, for inet ports, statistics and options for each socket.</dd><dd>Finally, the functions <a href="#inet_count/2"><code>inet_count/2</code></a> and <a href="#inet_window/3"><code>inet_window/3</code></a> provide the absolute or sliding window functionality of <a href="#proc_count/2"><code>proc_count/2</code></a> and <a href="#proc_window/3"><code>proc_window/3</code></a> to inet ports and connections currently on the node.</dd><dt>5. RPC</dt><dd>These are wrappers to make RPC work simpler with clusters of Erlang nodes. Default RPC mechanisms (from the <code>rpc</code> module) make it somewhat painful to call shell-defined funs over node boundaries. The functions <a href="#rpc/1"><code>rpc/1</code></a>, <a href="#rpc/2"><code>rpc/2</code></a>, and <a href="#rpc/3"><code>rpc/3</code></a> will do it with a simpler interface.</dd><dd>Additionally, when you're running diagnostic code on remote nodes and want to know which node evaluated what result, using <a href="#named_rpc/1"><code>named_rpc/1</code></a>, <a href="#named_rpc/2"><code>named_rpc/2</code></a>, and <a href="#named_rpc/3"><code>named_rpc/3</code></a> will wrap the results in a tuple that tells you which node it's coming from, making it easier to identify bad nodes.</dd></dl>
+  </section>
 
 
-<h4 class="typedecl"><a name="type-port_info_key">port_info_key()</a></h4>
-<p><code>port_info_key() = <a href="#type-port_info_meta_key">port_info_meta_key()</a> | <a href="#type-port_info_signals_key">port_info_signals_key()</a> | <a href="#type-port_info_io_key">port_info_io_key()</a> | <a href="#type-port_info_memory_key">port_info_memory_key()</a> | <a href="#type-port_info_specific_key">port_info_specific_key()</a></code></p>
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+      Summary
+    </h1>
 
+  <div class="summary-types summary">
+    <h2>
+      <a href="#types">Types</a>
+    </h2>
 
-<h4 class="typedecl"><a name="type-port_info_memory_key">port_info_memory_key()</a></h4>
-<p><code>port_info_memory_key() = memory | queue_size</code></p>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:inet_attrs/0" translate="no">inet_attrs/0</a>
 
+        </div>
 
-<h4 class="typedecl"><a name="type-port_info_meta_key">port_info_meta_key()</a></h4>
-<p><code>port_info_meta_key() = registered_name | id | name | os_pid</code></p>
+      </div>
 
-
-<h4 class="typedecl"><a name="type-port_info_signals_key">port_info_signals_key()</a></h4>
-<p><code>port_info_signals_key() = connected | links | monitors</code></p>
-
-
-<h4 class="typedecl"><a name="type-port_info_specific_key">port_info_specific_key()</a></h4>
-<p><code>port_info_specific_key() = atom()</code></p>
-
-
-<h4 class="typedecl"><a name="type-port_info_type">port_info_type()</a></h4>
-<p><code>port_info_type() = meta | signals | io | memory_used | specific</code></p>
-
-
-<h4 class="typedecl"><a name="type-port_term">port_term()</a></h4>
-<p><code>port_term() = port() | string() | atom() | pos_integer()</code></p>
-
-
-<h4 class="typedecl"><a name="type-proc_attrs">proc_attrs()</a></h4>
-<p><code>proc_attrs() = {pid(), Attr::term(), [Name::atom() | {current_function, mfa()} | {initial_call, mfa()}, ...]}</code></p>
-
-
-<h3><a name="index">Function Index</a></h3>
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#bin_leak-1">bin_leak/1</a></td><td>Refc binaries can be leaking when barely-busy processes route them
-  around and do little else, or when extremely busy processes reach a stable
-  amount of memory allocated and do the vast majority of their work with refc
-  binaries.</td></tr>
-<tr><td valign="top"><a href="#files-0">files/0</a></td><td>(<em>Deprecated</em>.) returns a list of all file handles open on the node.</td></tr>
-<tr><td valign="top"><a href="#get_state-1">get_state/1</a></td><td>Shorthand call to <code>recon:get_state(PidTerm, 5000)</code></td></tr>
-<tr><td valign="top"><a href="#get_state-2">get_state/2</a></td><td>Fetch the internal state of an OTP process.</td></tr>
-<tr><td valign="top"><a href="#inet_count-2">inet_count/2</a></td><td>Fetches a given attribute from all inet ports (TCP, UDP, SCTP)
-  and returns the biggest <code>Num</code> consumers.</td></tr>
-<tr><td valign="top"><a href="#inet_window-3">inet_window/3</a></td><td>Fetches a given attribute from all inet ports (TCP, UDP, SCTP)  
-and returns the biggest entries, over a sliding time window.</td></tr>
-<tr><td valign="top"><a href="#info-1">info/1</a></td><td>Allows to be similar to <code>erlang:process_info/1</code>, but excludes fields
-  such as the mailbox, which have a tendency to grow and be unsafe when called
-  in production systems.</td></tr>
-<tr><td valign="top"><a href="#info-2">info/2</a></td><td>Allows to be similar to <code>erlang:process_info/2</code>, but allows to  
-sort fields by safe categories and pre-selections, avoiding items such  
-as the mailbox, which may have a tendency to grow and be unsafe when  
-called in production systems.</td></tr>
-<tr><td valign="top"><a href="#info-3">info/3</a></td><td>Equivalent to <code>info(&lt;A.B.C&gt;)</code> where <code>A</code>, <code>B</code>, and <code>C</code> are integers part
-  of a pid.</td></tr>
-<tr><td valign="top"><a href="#info-4">info/4</a></td><td>Equivalent to <code>info(&lt;A.B.C&gt;, Key)</code> where <code>A</code>, <code>B</code>, and <code>C</code> are integers part
-  of a pid.</td></tr>
-<tr><td valign="top"><a href="#named_rpc-1">named_rpc/1</a></td><td>Shorthand for <code>named_rpc([node()|nodes()], Fun)</code>.</td></tr>
-<tr><td valign="top"><a href="#named_rpc-2">named_rpc/2</a></td><td>Shorthand for <code>named_rpc(Nodes, Fun, infinity)</code>.</td></tr>
-<tr><td valign="top"><a href="#named_rpc-3">named_rpc/3</a></td><td>Runs an arbitrary fun (of arity 0) over one or more nodes, and returns the
-  name of the node that computed a given result along with it, in a tuple.</td></tr>
-<tr><td valign="top"><a href="#node_stats-4">node_stats/4</a></td><td>Gathers statistics <code>N</code> time, waiting <code>Interval</code> milliseconds between
-  each run, and accumulates results using a folding function <code>FoldFun</code>.</td></tr>
-<tr><td valign="top"><a href="#node_stats_list-2">node_stats_list/2</a></td><td>Shorthand for <code>node_stats(N, Interval, fun(X,Acc) -&gt; [X|Acc] end, [])</code>
-  with the results reversed to be in the right temporal order.</td></tr>
-<tr><td valign="top"><a href="#node_stats_print-2">node_stats_print/2</a></td><td>Shorthand for <code>node_stats(N, Interval, fun(X,_) -&gt; io:format("~p~n",[X]) end, nostate)</code>.</td></tr>
-<tr><td valign="top"><a href="#port_info-1">port_info/1</a></td><td>Allows to be similar to <code>erlang:port_info/1</code>, but allows
-  more flexible port usage: usual ports, ports that were registered
-  locally (an atom), ports represented as strings (<code>"#Port&lt;0.2013&gt;"</code>),
-  or through an index lookup (<code>2013</code>, for the same result as
-  <code>"#Port&lt;0.2013&gt;"</code>).</td></tr>
-<tr><td valign="top"><a href="#port_info-2">port_info/2</a></td><td>Allows to be similar to <code>erlang:port_info/2</code>, but allows
-  more flexible port usage: usual ports, ports that were registered
-  locally (an atom), ports represented as strings (<code>"#Port&lt;0.2013&gt;"</code>),
-  or through an index lookup (<code>2013</code>, for the same result as
-  <code>"#Port&lt;0.2013&gt;"</code>).</td></tr>
-<tr><td valign="top"><a href="#port_types-0">port_types/0</a></td><td>Shows a list of all different ports on the node with their respective
-  types.</td></tr>
-<tr><td valign="top"><a href="#proc_count-2">proc_count/2</a></td><td>Fetches a given attribute from all processes (except the
-  caller) and returns the biggest <code>Num</code> consumers.</td></tr>
-<tr><td valign="top"><a href="#proc_window-3">proc_window/3</a></td><td>Fetches a given attribute from all processes (except the  
-caller) and returns the biggest entries, over a sliding time window.</td></tr>
-<tr><td valign="top"><a href="#remote_load-1">remote_load/1</a></td><td>Equivalent to <a href="#remote_load-2"><code>remote_load(nodes(), Mod)</code></a>.
-</td></tr>
-<tr><td valign="top"><a href="#remote_load-2">remote_load/2</a></td><td>Loads one or more modules remotely, in a diskless manner.</td></tr>
-<tr><td valign="top"><a href="#rpc-1">rpc/1</a></td><td>Shorthand for <code>rpc([node()|nodes()], Fun)</code>.</td></tr>
-<tr><td valign="top"><a href="#rpc-2">rpc/2</a></td><td>Shorthand for <code>rpc(Nodes, Fun, infinity)</code>.</td></tr>
-<tr><td valign="top"><a href="#rpc-3">rpc/3</a></td><td>Runs an arbitrary fun (of arity 0) over one or more nodes.</td></tr>
-<tr><td valign="top"><a href="#scheduler_usage-1">scheduler_usage/1</a></td><td>Because Erlang CPU usage as reported from <code>top</code> isn't the most  
-reliable value (due to schedulers doing idle spinning to avoid going  
-to sleep and impacting latency), a metric exists that is based on  
-scheduler wall time.</td></tr>
-<tr><td valign="top"><a href="#sctp-0">sctp/0</a></td><td>returns a list of all SCTP ports (the data type) open on the node.</td></tr>
-<tr><td valign="top"><a href="#source-1">source/1</a></td><td>Obtain the source code of a module compiled with <code>debug_info</code>.</td></tr>
-<tr><td valign="top"><a href="#tcp-0">tcp/0</a></td><td>returns a list of all TCP ports (the data type) open on the node.</td></tr>
-<tr><td valign="top"><a href="#udp-0">udp/0</a></td><td>returns a list of all UDP ports (the data type) open on the node.</td></tr>
-</table>
-
-<h3><a name="functions">Function Details</a></h3>
-
-<h4 class="function"><a name="bin_leak-1">bin_leak/1</a></h4>
-<div class="spec">
-<p><code>bin_leak(N::pos_integer()) -&gt; [<a href="#type-proc_attrs">proc_attrs()</a>]</code><br></p>
-<p> </p>
-</div><p><p>Refc binaries can be leaking when barely-busy processes route them
-  around and do little else, or when extremely busy processes reach a stable
-  amount of memory allocated and do the vast majority of their work with refc
-  binaries. When this happens, it may take a very long while before references
-  get deallocated and refc binaries get to be garbage collected, leading to
-  Out Of Memory crashes.
-  This function fetches the number of refc binary references in each process
-  of the node, garbage collects them, and compares the resulting number of
-  references in each of them. The function then returns the <code>N</code> processes  
-that freed the biggest amount of binaries, potentially highlighting leaks.</p>
- 
-  See <a href="http://www.erlang.org/doc/efficiency_guide/binaryhandling.html#id65722">The efficiency guide</a>
-  for more details on refc binaries</p>
-
-<h4 class="function"><a name="files-0">files/0</a></h4>
-<div class="spec">
-<p><code>files() -&gt; [port()]</code><br></p>
-<p> </p>
-</div><p><strong>This function is deprecated:</strong> Starting with OTP-21, files are implemented as NIFs
-  and can no longer be listed. This function returns an empty list
-  in such a case.</p>
-<p>returns a list of all file handles open on the node.</p>
-
-<h4 class="function"><a name="get_state-1">get_state/1</a></h4>
-<div class="spec">
-<p><code>get_state(PidTerm::<a href="#type-pid_term">pid_term()</a>) -&gt; term()</code><br></p>
-<p> </p>
-</div><p>Shorthand call to <code>recon:get_state(PidTerm, 5000)</code></p>
-
-<h4 class="function"><a name="get_state-2">get_state/2</a></h4>
-<div class="spec">
-<p><code>get_state(PidTerm::<a href="#type-pid_term">pid_term()</a>, Ms::non_neg_integer() | infinity) -&gt; term()</code><br></p>
-<p> </p>
-</div><p>Fetch the internal state of an OTP process.
-  Calls <code>sys:get_state/2</code> directly in R16B01+, and fetches
-  it dynamically on older versions of OTP.</p>
-
-<h4 class="function"><a name="inet_count-2">inet_count/2</a></h4>
-<div class="spec">
-<p><code>inet_count(AttributeName, Num) -&gt; [<a href="#type-inet_attrs">inet_attrs()</a>]</code>
-<ul class="definitions"><li><code>AttributeName = recv_cnt | recv_oct | send_cnt | send_oct | cnt | oct</code></li><li><code>Num = non_neg_integer()</code></li></ul></p>
-<p> </p>
-</div><p><p>Fetches a given attribute from all inet ports (TCP, UDP, SCTP)
-  and returns the biggest <code>Num</code> consumers.</p>
- 
-  The values to be used can be the number of octets (bytes) sent, received,
-  or both (<code>send_oct</code>, <code>recv_oct</code>, <code>oct</code>, respectively), or the number
-  of packets sent, received, or both (<code>send_cnt</code>, <code>recv_cnt</code>, <code>cnt</code>,
-  respectively). Individual absolute values for each metric will be returned
-  in the 3rd position of the resulting tuple.</p>
-
-<h4 class="function"><a name="inet_window-3">inet_window/3</a></h4>
-<div class="spec">
-<p><code>inet_window(AttributeName, Num, Milliseconds) -&gt; [<a href="#type-inet_attrs">inet_attrs()</a>]</code>
-<ul class="definitions"><li><code>AttributeName = recv_cnt | recv_oct | send_cnt | send_oct | cnt | oct</code></li><li><code>Num = non_neg_integer()</code></li><li><code>Milliseconds = pos_integer()</code></li></ul></p>
-<p> </p>
-</div><p><p>Fetches a given attribute from all inet ports (TCP, UDP, SCTP)  
-and returns the biggest entries, over a sliding time window.</p>
- 
-  <p>Warning: this function depends on data gathered at two snapshots, and then  
-building a dictionary with entries to differentiate them. This can take a  
-heavy toll on memory when you have many dozens of thousands of ports open.</p>
- 
-  The values to be used can be the number of octets (bytes) sent, received,
-  or both (<code>send_oct</code>, <code>recv_oct</code>, <code>oct</code>, respectively), or the number
-  of packets sent, received, or both (<code>send_cnt</code>, <code>recv_cnt</code>, <code>cnt</code>,
-  respectively). Individual absolute values for each metric will be returned
-  in the 3rd position of the resulting tuple.</p>
-
-<h4 class="function"><a name="info-1">info/1</a></h4>
-<div class="spec">
-<p><code>info(PidTerm::<a href="#type-pid_term">pid_term()</a>) -&gt; [{<a href="#type-info_type">info_type()</a>, [{<a href="#type-info_key">info_key()</a>, Value}]}, ...]</code>
-<ul class="definitions"><li><code>Value = term()</code></li></ul></p>
-<p> </p>
-</div><p><p>Allows to be similar to <code>erlang:process_info/1</code>, but excludes fields
-  such as the mailbox, which have a tendency to grow and be unsafe when called
-  in production systems. Also includes a few more fields than what is usually
-  given (<code>monitors</code>, <code>monitored_by</code>, etc.), and separates the fields in a more  
-readable format based on the type of information contained.</p>
- 
-  Moreover, it will fetch and read information on local processes that were
-  registered locally (an atom), globally (<code>{global, Name}</code>), or through
-  another registry supported in the <code>{via, Module, Name}</code> syntax (must have a
-  <code>Module:whereis_name/1</code> function). Pids can also be passed in as a string
-  (<code>"&lt;0.39.0&gt;"</code>) or a triple (<code>{0,39,0}</code>) and will be converted to be used.</p>
-
-<h4 class="function"><a name="info-2">info/2</a></h4>
-<div class="spec">
-<p><code>info(PidTerm::<a href="#type-pid_term">pid_term()</a>, Keys::<a href="#type-info_type">info_type()</a>) -&gt; {<a href="#type-info_type">info_type()</a>, [{<a href="#type-info_key">info_key()</a>, term()}]}</code><br></p><p><code>info(PidTerm::<a href="#type-pid_term">pid_term()</a>, Keys::[atom()]) -&gt; [{atom(), term()}]</code><br></p><p><code>info(PidTerm::<a href="#type-pid_term">pid_term()</a>, Keys::atom()) -&gt; {atom(), term()}</code><br></p>
-<p> </p>
-<p> </p>
-<p> </p>
-</div><p><p>Allows to be similar to <code>erlang:process_info/2</code>, but allows to  
-sort fields by safe categories and pre-selections, avoiding items such  
-as the mailbox, which may have a tendency to grow and be unsafe when  
-called in production systems.</p>
- 
-  <p>Moreover, it will fetch and read information on local processes that were
-  registered locally (an atom), globally (<code>{global, Name}</code>), or through
-  another registry supported in the <code>{via, Module, Name}</code> syntax (must have a
-  <code>Module:whereis_name/1</code> function). Pids can also be passed in as a string
-  (<code>"&lt;0.39.0&gt;"</code>) or a triple (<code>{0,39,0}</code>) and will be converted to be used.</p>
- 
-  <p>Although the type signature doesn't show it in generated documentation,
-  a list of arguments or individual arguments accepted by
-  <code>erlang:process_info/2</code> and return them as that function would.</p>
- 
-  A fake attribute <code>binary_memory</code> is also available to return the
-  amount of memory used by refc binaries for a process.</p>
-
-<h4 class="function"><a name="info-3">info/3</a></h4>
-<div class="spec">
-<p><code>info(N, N, N) -&gt; [{<a href="#type-info_type">info_type()</a>, [{<a href="#type-info_key">info_key()</a>, term()}]}, ...]</code>
-<ul class="definitions"><li><code>N = non_neg_integer()</code></li></ul></p>
-<p> </p>
-</div><p>Equivalent to <code>info(&lt;A.B.C&gt;)</code> where <code>A</code>, <code>B</code>, and <code>C</code> are integers part
-  of a pid</p>
-
-<h4 class="function"><a name="info-4">info/4</a></h4>
-<div class="spec">
-<p><code>info(N, N, N, Key) -&gt; term()</code>
-<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Key = <a href="#type-info_type">info_type()</a> | [atom()] | atom()</code></li></ul></p>
-<p> </p>
-</div><p>Equivalent to <code>info(&lt;A.B.C&gt;, Key)</code> where <code>A</code>, <code>B</code>, and <code>C</code> are integers part
-  of a pid</p>
-
-<h4 class="function"><a name="named_rpc-1">named_rpc/1</a></h4>
-<div class="spec">
-<p><code>named_rpc(Fun::fun(() -&gt; term())) -&gt; {[Success::term()], [Fail::term()]}</code><br></p>
-<p> </p>
-</div><p>Shorthand for <code>named_rpc([node()|nodes()], Fun)</code>.</p>
-
-<h4 class="function"><a name="named_rpc-2">named_rpc/2</a></h4>
-<div class="spec">
-<p><code>named_rpc(Nodes::node() | [node(), ...], Fun::fun(() -&gt; term())) -&gt; {[Success::term()], [Fail::term()]}</code><br></p>
-<p> </p>
-</div><p>Shorthand for <code>named_rpc(Nodes, Fun, infinity)</code>.</p>
-
-<h4 class="function"><a name="named_rpc-3">named_rpc/3</a></h4>
-<div class="spec">
-<p><code>named_rpc(Nodes::node() | [node(), ...], Fun::fun(() -&gt; term()), Timeout::timeout()) -&gt; {[Success::term()], [Fail::term()]}</code><br></p>
-<p> </p>
-</div><p>Runs an arbitrary fun (of arity 0) over one or more nodes, and returns the
-  name of the node that computed a given result along with it, in a tuple.</p>
-
-<h4 class="function"><a name="node_stats-4">node_stats/4</a></h4>
-<div class="spec">
-<p><code>node_stats(N, Interval, FoldFun, Acc) -&gt; Acc</code>
-<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Interval = pos_integer()</code></li><li><code>FoldFun = fun((Stats, Acc) -&gt; Acc)</code></li><li><code>Acc = term()</code></li><li><code>Stats = {[Absolutes::{atom(), term()}], [Increments::{atom(), term()}]}</code></li></ul></p>
-<p> </p>
-</div><p><p>Gathers statistics <code>N</code> time, waiting <code>Interval</code> milliseconds between
-  each run, and accumulates results using a folding function <code>FoldFun</code>.  
-The function will gather statistics in two forms: Absolutes and Increments.</p>
- 
-  <p>Absolutes are values that keep changing with time, and are useful to know  
-about as a datapoint: process count, size of the run queue, error_logger  
-queue length in versions before OTP-21 or those thar run it explicitely,  
-and the memory of the node (total, processes, atoms, binaries,  
-and ets tables).</p>
- 
-  Increments are values that are mostly useful when compared to a previous
-  one to have an idea what they're doing, because otherwise they'd never
-  stop increasing: bytes in and out of the node, number of garbage colelctor
-  runs, words of memory that were garbage collected, and the global reductions
-  count for the node.</p>
-
-<h4 class="function"><a name="node_stats_list-2">node_stats_list/2</a></h4>
-<div class="spec">
-<p><code>node_stats_list(Repeat, Interval) -&gt; [Stats]</code>
-<ul class="definitions"><li><code>Repeat = non_neg_integer()</code></li><li><code>Interval = pos_integer()</code></li><li><code>Stats = {[Absolutes::{atom(), term()}], [Increments::{atom(), term()}]}</code></li></ul></p>
-<p> </p>
-</div><p>Shorthand for <code>node_stats(N, Interval, fun(X,Acc) -&gt; [X|Acc] end, [])</code>
-  with the results reversed to be in the right temporal order.</p>
-
-<h4 class="function"><a name="node_stats_print-2">node_stats_print/2</a></h4>
-<div class="spec">
-<p><code>node_stats_print(Repeat, Interval) -&gt; term()</code>
-<ul class="definitions"><li><code>Repeat = non_neg_integer()</code></li><li><code>Interval = pos_integer()</code></li></ul></p>
-<p> </p>
-</div><p>Shorthand for <code>node_stats(N, Interval, fun(X,_) -&gt; io:format("~p~n",[X]) end, nostate)</code>.</p>
-
-<h4 class="function"><a name="port_info-1">port_info/1</a></h4>
-<div class="spec">
-<p><code>port_info(PortTerm::<a href="#type-port_term">port_term()</a>) -&gt; [{<a href="#type-port_info_type">port_info_type()</a>, [{<a href="#type-port_info_key">port_info_key()</a>, term()}]}, ...]</code><br></p>
-<p> </p>
-</div><p><p>Allows to be similar to <code>erlang:port_info/1</code>, but allows
-  more flexible port usage: usual ports, ports that were registered
-  locally (an atom), ports represented as strings (<code>"#Port&lt;0.2013&gt;"</code>),
-  or through an index lookup (<code>2013</code>, for the same result as
-  <code>"#Port&lt;0.2013&gt;"</code>).</p>
- 
-  <p>Moreover, the function will try to fetch implementation-specific  
-details based on the port type (only inet ports have this feature  
-so far). For example, TCP ports will include information about the  
-remote peer, transfer statistics, and socket options being used.</p>
- 
-  The information-specific and the basic port info are sorted and
-  categorized in broader categories (<a docgen-rel="seetype" docgen-href="#port_info_type/0" href="#type-port_info_type"><code>port_info_type()</code></a>).</p>
-
-<h4 class="function"><a name="port_info-2">port_info/2</a></h4>
-<div class="spec">
-<p><code>port_info(PortTerm::<a href="#type-port_term">port_term()</a>, Keys::<a href="#type-port_info_type">port_info_type()</a>) -&gt; {<a href="#type-port_info_type">port_info_type()</a>, [{<a href="#type-port_info_key">port_info_key()</a>, term()}]}</code><br></p><p><code>port_info(PortTerm::<a href="#type-port_term">port_term()</a>, Keys::[atom()]) -&gt; [{atom(), term()}]</code><br></p><p><code>port_info(PortTerm::<a href="#type-port_term">port_term()</a>, Keys::atom()) -&gt; {atom(), term()}</code><br></p>
-<p> </p>
-<p> </p>
-<p> </p>
-</div><p><p>Allows to be similar to <code>erlang:port_info/2</code>, but allows
-  more flexible port usage: usual ports, ports that were registered
-  locally (an atom), ports represented as strings (<code>"#Port&lt;0.2013&gt;"</code>),
-  or through an index lookup (<code>2013</code>, for the same result as
-  <code>"#Port&lt;0.2013&gt;"</code>).</p>
- 
-  Moreover, the function allows to to fetch information by category
-  as defined in <a docgen-rel="seetype" docgen-href="#port_info_type/0" href="#type-port_info_type"><code>port_info_type()</code></a>, and although the type signature
-  doesn't show it in the generated documentation, individual items
-  accepted by <code>erlang:port_info/2</code> are accepted, and lists of them too.</p>
-
-<h4 class="function"><a name="port_types-0">port_types/0</a></h4>
-<div class="spec">
-<p><code>port_types() -&gt; [{Type::string(), Count::pos_integer()}]</code><br></p>
-<p> </p>
-</div><p>Shows a list of all different ports on the node with their respective
-  types.</p>
-
-<h4 class="function"><a name="proc_count-2">proc_count/2</a></h4>
-<div class="spec">
-<p><code>proc_count(AttributeName, Num) -&gt; [<a href="#type-proc_attrs">proc_attrs()</a>]</code>
-<ul class="definitions"><li><code>AttributeName = atom()</code></li><li><code>Num = non_neg_integer()</code></li></ul></p>
-<p> </p>
-</div><p>Fetches a given attribute from all processes (except the
-  caller) and returns the biggest <code>Num</code> consumers.</p>
-
-<h4 class="function"><a name="proc_window-3">proc_window/3</a></h4>
-<div class="spec">
-<p><code>proc_window(AttributeName, Num, Milliseconds) -&gt; [<a href="#type-proc_attrs">proc_attrs()</a>]</code>
-<ul class="definitions"><li><code>AttributeName = atom()</code></li><li><code>Num = non_neg_integer()</code></li><li><code>Milliseconds = pos_integer()</code></li></ul></p>
-<p> </p>
-</div><p><p>Fetches a given attribute from all processes (except the  
-caller) and returns the biggest entries, over a sliding time window.</p>
- 
-  <p>This function is particularly useful when processes on the node  
-are mostly short-lived, usually too short to inspect through other  
-tools, in order to figure out what kind of processes are eating  
-through a lot resources on a given node.</p>
- 
-  <p>It is important to see this function as a snapshot over a sliding  
-window. A program's timeline during sampling might look like this:</p>
- 
-   <p><code>--w---- [Sample1] ---x-------------y----- [Sample2] ---z---&gt;</code></p>
- 
-  <p>Some processes will live between <code>w</code> and die at <code>x</code>, some between <code>y</code> and
-  <code>z</code>, and some between <code>x</code> and <code>y</code>. These samples will not be too significant
-  as they're incomplete. If the majority of your processes run between a time
-  interval <code>x</code>...<code>y</code> (in absolute terms), you should make sure that your
-  sampling time is smaller than this so that for many processes, their
-  lifetime spans the equivalent of <code>w</code> and <code>z</code>. Not doing this can skew the  
-results: long-lived processes, that have 10 times the time to accumulate  
-data (say reductions) will look like bottlenecks when they're not one.</p>
- 
-  Warning: this function depends on data gathered at two snapshots, and then
-  building a dictionary with entries to differentiate them. This can take a
-  heavy toll on memory when you have many dozens of thousands of processes.</p>
-
-<h4 class="function"><a name="remote_load-1">remote_load/1</a></h4>
-<div class="spec">
-<p><code>remote_load(Mod::module()) -&gt; term()</code><br></p>
-<p> </p>
-</div><p>Equivalent to <a href="#remote_load-2"><code>remote_load(nodes(), Mod)</code></a>.</p>
-
-
-<h4 class="function"><a name="remote_load-2">remote_load/2</a></h4>
-<div class="spec">
-<p><code>remote_load(Nodes, Mod::module()) -&gt; term()</code>
-<ul class="definitions"><li><code>Nodes = [node(), ...] | node()</code></li></ul></p>
-<p> </p>
-</div><p>Loads one or more modules remotely, in a diskless manner.  Allows to
-  share code loaded locally with a remote node that doesn't have it</p>
-
-<h4 class="function"><a name="rpc-1">rpc/1</a></h4>
-<div class="spec">
-<p><code>rpc(Fun::fun(() -&gt; term())) -&gt; {[Success::term()], [Fail::term()]}</code><br></p>
-<p> </p>
-</div><p>Shorthand for <code>rpc([node()|nodes()], Fun)</code>.</p>
-
-<h4 class="function"><a name="rpc-2">rpc/2</a></h4>
-<div class="spec">
-<p><code>rpc(Nodes::node() | [node(), ...], Fun::fun(() -&gt; term())) -&gt; {[Success::term()], [Fail::term()]}</code><br></p>
-<p> </p>
-</div><p>Shorthand for <code>rpc(Nodes, Fun, infinity)</code>.</p>
-
-<h4 class="function"><a name="rpc-3">rpc/3</a></h4>
-<div class="spec">
-<p><code>rpc(Nodes::node() | [node(), ...], Fun::fun(() -&gt; term()), Timeout::timeout()) -&gt; {[Success::term()], [Fail::term()]}</code><br></p>
-<p> </p>
-</div><p>Runs an arbitrary fun (of arity 0) over one or more nodes.</p>
-
-<h4 class="function"><a name="scheduler_usage-1">scheduler_usage/1</a></h4>
-<div class="spec">
-<p><code>scheduler_usage(Millisecs) -&gt; undefined | [{SchedulerId, Usage}]</code>
-<ul class="definitions"><li><code>Millisecs = non_neg_integer()</code></li><li><code>SchedulerId = pos_integer()</code></li><li><code>Usage = number()</code></li></ul></p>
-<p> </p>
-</div><p><p>Because Erlang CPU usage as reported from <code>top</code> isn't the most  
-reliable value (due to schedulers doing idle spinning to avoid going  
-to sleep and impacting latency), a metric exists that is based on  
-scheduler wall time.</p>
- 
-  <p>For any time interval, Scheduler wall time can be used as a measure  
-of how 'busy' a scheduler is. A scheduler is busy when:</p>
- 
-  <ul>
-     <li>executing process code</li>
-     <li>executing driver code</li>
-     <li>executing NIF code</li>
-     <li>executing BIFs</li>
-     <li>garbage collecting</li>
-     <li>doing memory management</li>
-  </ul>
- 
-  A scheduler isn't busy when doing anything else.</p>
-
-<h4 class="function"><a name="sctp-0">sctp/0</a></h4>
-<div class="spec">
-<p><code>sctp() -&gt; [port()]</code><br></p>
-<p> </p>
-</div><p>returns a list of all SCTP ports (the data type) open on the node.</p>
-
-<h4 class="function"><a name="source-1">source/1</a></h4>
-<div class="spec">
-<p><code>source(Module::module()) -&gt; iolist()</code><br></p>
-<p> </p>
-</div><p>Obtain the source code of a module compiled with <code>debug_info</code>.
-  The returned list sadly does not allow to format the types and typed
-  records the way they look in the original module, but instead goes to
-  an intermediary form used in the AST. They will still be placed
-  in the right module attributes, however.</p>
-
-<h4 class="function"><a name="tcp-0">tcp/0</a></h4>
-<div class="spec">
-<p><code>tcp() -&gt; [port()]</code><br></p>
-<p> </p>
-</div><p>returns a list of all TCP ports (the data type) open on the node.</p>
-
-<h4 class="function"><a name="udp-0">udp/0</a></h4>
-<div class="spec">
-<p><code>udp() -&gt; [port()]</code><br></p>
-<p> </p>
-</div><p>returns a list of all UDP ports (the data type) open on the node.</p>
-
-    </article>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:info_key/0" translate="no">info_key/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:info_location_key/0" translate="no">info_location_key/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:info_memory_key/0" translate="no">info_memory_key/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:info_meta_key/0" translate="no">info_meta_key/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:info_signals_key/0" translate="no">info_signals_key/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:info_type/0" translate="no">info_type/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:info_work_key/0" translate="no">info_work_key/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:pid_term/0" translate="no">pid_term/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:port_info_io_key/0" translate="no">port_info_io_key/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:port_info_key/0" translate="no">port_info_key/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:port_info_memory_key/0" translate="no">port_info_memory_key/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:port_info_meta_key/0" translate="no">port_info_meta_key/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:port_info_signals_key/0" translate="no">port_info_signals_key/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:port_info_specific_key/0" translate="no">port_info_specific_key/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:port_info_type/0" translate="no">port_info_type/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:port_term/0" translate="no">port_term/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:proc_attrs/0" translate="no">proc_attrs/0</a>
+
+        </div>
+
+      </div>
+
+  </div>
+
+  <div class="summary-functions summary">
+    <h2>
+      <a href="#functions">Functions</a>
+    </h2>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#bin_leak/1" translate="no">bin_leak(N)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Refc binaries can be leaking when barely-busy processes route them around and do little else, or when extremely busy processes reach a stable amount of memory allocated and do the vast majority of their work with refc binaries. When this happens, it may take a very long while before references get deallocated and refc binaries get to be garbage collected, leading to Out Of Memory crashes. This function fetches the number of refc binary references in each process of the node, garbage collects them, and compares the resulting number of references in each of them. The function then returns the <code>N</code> processes that freed the biggest amount of binaries, potentially highlighting leaks.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#files/0" translate="no">files()</a>
+
+            <span class="deprecated" title="Starting with OTP-21, files are implemented as NIFs and can no longer be listed. This function returns an empty list in such a case.">deprecated</span>
+
+        </div>
+
+          <div class="summary-synopsis">returns a list of all file handles open on the node.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_state/1" translate="no">get_state(PidTerm)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Shorthand call to <code>recon:get_state(PidTerm, 5000)</code></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_state/2" translate="no">get_state(PidTerm, Ms)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Fetch the internal state of an OTP process. Calls <code>sys:get_state/2</code> directly in R16B01+, and fetches it dynamically on older versions of OTP.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#inet_count/2" translate="no">inet_count(AttributeName, Num)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Fetches a given attribute from all inet ports (TCP, UDP, SCTP) and returns the biggest <code>Num</code> consumers.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#inet_window/3" translate="no">inet_window(AttributeName, Num, Milliseconds)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Fetches a given attribute from all inet ports (TCP, UDP, SCTP) and returns the biggest entries, over a sliding time window.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#info/1" translate="no">info(PidTerm)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Allows to be similar to <code>erlang:process_info/1</code>, but excludes fields such as the mailbox, which have a tendency to grow and be unsafe when called in production systems. Also includes a few more fields than what is usually given (<code>monitors</code>, <code>monitored_by</code>, etc.), and separates the fields in a more readable format based on the type of information contained.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#info/2" translate="no">info(PidTerm, Keys)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Allows to be similar to <code>erlang:process_info/2</code>, but allows to sort fields by safe categories and pre-selections, avoiding items such as the mailbox, which may have a tendency to grow and be unsafe when called in production systems.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#info/3" translate="no">info(N, N, N)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Equivalent to <code>info(&lt;A.B.C&gt;)</code> where <code>A</code>, <code>B</code>, and <code>C</code> are integers part of a pid</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#info/4" translate="no">info(N, N, N, Key)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Equivalent to <code>info(&lt;A.B.C&gt;, Key)</code> where <code>A</code>, <code>B</code>, and <code>C</code> are integers part of a pid</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#named_rpc/1" translate="no">named_rpc(Fun)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Shorthand for <code>named_rpc([node()|nodes()], Fun)</code>.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#named_rpc/2" translate="no">named_rpc(Nodes, Fun)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Shorthand for <code>named_rpc(Nodes, Fun, infinity)</code>.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#named_rpc/3" translate="no">named_rpc(Nodes, Fun, Timeout)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Runs an arbitrary fun (of arity 0) over one or more nodes, and returns the name of the node that computed a given result along with it, in a tuple.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#node_stats/4" translate="no">node_stats(N, Interval, FoldFun, Acc)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Gathers statistics <code>N</code> time, waiting <code>Interval</code> milliseconds between each run, and accumulates results using a folding function <code>FoldFun</code>. The function will gather statistics in two forms: Absolutes and Increments.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#node_stats_list/2" translate="no">node_stats_list(Repeat, Interval)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Shorthand for <code>node_stats(N, Interval, fun(X,Acc) -&gt; [X|Acc] end, [])</code> with the results reversed to be in the right temporal order.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#node_stats_print/2" translate="no">node_stats_print(Repeat, Interval)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Shorthand for <code>node_stats(N, Interval, fun(X,_) -&gt; io:format(&quot;~p~n&quot;,[X]) end, nostate)</code>.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#port_info/1" translate="no">port_info(PortTerm)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Allows to be similar to <code>erlang:port_info/1</code>, but allows more flexible port usage: usual ports, ports that were registered locally (an atom), ports represented as strings (<code>&quot;#Port&lt;0.2013&gt;&quot;</code>), or through an index lookup (<code>2013</code>, for the same result as <code>&quot;#Port&lt;0.2013&gt;&quot;</code>).</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#port_info/2" translate="no">port_info(PortTerm, Keys)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Allows to be similar to <code>erlang:port_info/2</code>, but allows more flexible port usage: usual ports, ports that were registered locally (an atom), ports represented as strings (<code>&quot;#Port&lt;0.2013&gt;&quot;</code>), or through an index lookup (<code>2013</code>, for the same result as <code>&quot;#Port&lt;0.2013&gt;&quot;</code>).</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#port_types/0" translate="no">port_types()</a>
+
+        </div>
+
+          <div class="summary-synopsis">Shows a list of all different ports on the node with their respective types.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#proc_count/2" translate="no">proc_count(AttributeName, Num)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Fetches a given attribute from all processes (except the caller) and returns the biggest <code>Num</code> consumers.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#proc_window/3" translate="no">proc_window(AttributeName, Num, Milliseconds)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Fetches a given attribute from all processes (except the caller) and returns the biggest entries, over a sliding time window.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#remote_load/1" translate="no">remote_load(Mod)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Equivalent to <a href="#remote_load/2">remote_load(nodes(), Mod)</a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#remote_load/2" translate="no">remote_load(Nodes, Mod)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Loads one or more modules remotely, in a diskless manner. Allows to share code loaded locally with a remote node that doesn't have it</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#rpc/1" translate="no">rpc(Fun)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Shorthand for <code>rpc([node()|nodes()], Fun)</code>.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#rpc/2" translate="no">rpc(Nodes, Fun)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Shorthand for <code>rpc(Nodes, Fun, infinity)</code>.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#rpc/3" translate="no">rpc(Nodes, Fun, Timeout)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Runs an arbitrary fun (of arity 0) over one or more nodes.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#scheduler_usage/1" translate="no">scheduler_usage(Millisecs)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Because Erlang CPU usage as reported from <code>top</code> isn't the most reliable value (due to schedulers doing idle spinning to avoid going to sleep and impacting latency), a metric exists that is based on scheduler wall time.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#sctp/0" translate="no">sctp()</a>
+
+        </div>
+
+          <div class="summary-synopsis">returns a list of all SCTP ports (the data type) open on the node.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#source/1" translate="no">source(Module)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Obtain the source code of a module compiled with <code>debug_info</code>. The returned list sadly does not allow to format the types and typed records the way they look in the original module, but instead goes to an intermediary form used in the AST. They will still be placed in the right module attributes, however.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#tcp/0" translate="no">tcp()</a>
+
+        </div>
+
+          <div class="summary-synopsis">returns a list of all TCP ports (the data type) open on the node.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#udp/0" translate="no">udp()</a>
+
+        </div>
+
+          <div class="summary-synopsis">returns a list of all UDP ports (the data type) open on the node.</div>
+
+      </div>
+
+  </div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+Types
+    </h1>
+    <div class="types-list">
+<section class="detail" id="t:inet_attrs/0">
+
+  <div class="detail-header">
+    <a href="#t:inet_attrs/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">inet_attrs/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L104" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> inet_attrs() :: {port(), Attr :: _, [{atom(), term()}]}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:info_key/0">
+
+  <div class="detail-header">
+    <a href="#t:info_key/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">info_key/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L121" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> info_key() ::
+    <a href="#t:info_meta_key/0">info_meta_key</a>() |
+    <a href="#t:info_signals_key/0">info_signals_key</a>() |
+    <a href="#t:info_location_key/0">info_location_key</a>() |
+    <a href="#t:info_memory_key/0">info_memory_key</a>() |
+    <a href="#t:info_work_key/0">info_work_key</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:info_location_key/0">
+
+  <div class="detail-header">
+    <a href="#t:info_location_key/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">info_location_key/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L116" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> info_location_key() :: initial_call | current_stacktrace.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:info_memory_key/0">
+
+  <div class="detail-header">
+    <a href="#t:info_memory_key/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">info_memory_key/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L117" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> info_memory_key() :: memory | message_queue_len | heap_size | total_heap_size | garbage_collection.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:info_meta_key/0">
+
+  <div class="detail-header">
+    <a href="#t:info_meta_key/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">info_meta_key/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L114" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> info_meta_key() :: registered_name | dictionary | group_leader | status.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:info_signals_key/0">
+
+  <div class="detail-header">
+    <a href="#t:info_signals_key/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">info_signals_key/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L115" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> info_signals_key() :: links | monitors | monitored_by | trap_exit.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:info_type/0">
+
+  <div class="detail-header">
+    <a href="#t:info_type/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">info_type/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L112" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> info_type() :: meta | signals | location | memory_used | work.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:info_work_key/0">
+
+  <div class="detail-header">
+    <a href="#t:info_work_key/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">info_work_key/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L119" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> info_work_key() :: reductions.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:pid_term/0">
+
+  <div class="detail-header">
+    <a href="#t:pid_term/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">pid_term/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L108" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> pid_term() ::
+    pid() |
+    atom() |
+    string() |
+    {global, term()} |
+    {via, module(), term()} |
+    {non_neg_integer(), non_neg_integer(), non_neg_integer()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:port_info_io_key/0">
+
+  <div class="detail-header">
+    <a href="#t:port_info_io_key/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">port_info_io_key/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L130" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> port_info_io_key() :: input | output.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:port_info_key/0">
+
+  <div class="detail-header">
+    <a href="#t:port_info_key/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">port_info_key/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L134" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> port_info_key() ::
+    <a href="#t:port_info_meta_key/0">port_info_meta_key</a>() |
+    <a href="#t:port_info_signals_key/0">port_info_signals_key</a>() |
+    <a href="#t:port_info_io_key/0">port_info_io_key</a>() |
+    <a href="#t:port_info_memory_key/0">port_info_memory_key</a>() |
+    <a href="#t:port_info_specific_key/0">port_info_specific_key</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:port_info_memory_key/0">
+
+  <div class="detail-header">
+    <a href="#t:port_info_memory_key/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">port_info_memory_key/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L131" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> port_info_memory_key() :: memory | queue_size.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:port_info_meta_key/0">
+
+  <div class="detail-header">
+    <a href="#t:port_info_meta_key/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">port_info_meta_key/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L128" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> port_info_meta_key() :: registered_name | id | name | os_pid.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:port_info_signals_key/0">
+
+  <div class="detail-header">
+    <a href="#t:port_info_signals_key/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">port_info_signals_key/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L129" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> port_info_signals_key() :: connected | links | monitors.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:port_info_specific_key/0">
+
+  <div class="detail-header">
+    <a href="#t:port_info_specific_key/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">port_info_specific_key/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L132" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> port_info_specific_key() :: atom().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:port_info_type/0">
+
+  <div class="detail-header">
+    <a href="#t:port_info_type/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">port_info_type/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L126" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> port_info_type() :: meta | signals | io | memory_used | specific.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:port_term/0">
+
+  <div class="detail-header">
+    <a href="#t:port_term/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">port_term/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L124" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> port_term() :: port() | string() | atom() | pos_integer().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:proc_attrs/0">
+
+  <div class="detail-header">
+    <a href="#t:proc_attrs/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">proc_attrs/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L98" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> proc_attrs() ::
+    {pid(), Attr :: _, [Name :: atom() | {current_function, mfa()} | {initial_call, mfa()}, ...]}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+Functions
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="bin_leak/1">
+
+  <div class="detail-header">
+    <a href="#bin_leak/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">bin_leak(N)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L316" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> bin_leak(pos_integer()) -> [<a href="#t:proc_attrs/0">proc_attrs</a>()].</pre>
+
+      </div>
+
+<p>Refc binaries can be leaking when barely-busy processes route them around and do little else, or when extremely busy processes reach a stable amount of memory allocated and do the vast majority of their work with refc binaries. When this happens, it may take a very long while before references get deallocated and refc binaries get to be garbage collected, leading to Out Of Memory crashes. This function fetches the number of refc binary references in each process of the node, garbage collects them, and compares the resulting number of references in each of them. The function then returns the <code>N</code> processes that freed the biggest amount of binaries, potentially highlighting leaks.</p>See <a href="http://www.erlang.org/doc/efficiency_guide/binaryhandling.html#id65722">The efficiency guide</a> for more details on refc binaries
+  </section>
+</section>
+<section class="detail" id="files/0">
+
+  <div class="detail-header">
+    <a href="#files/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">files()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L537" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+    <div class="deprecated">
+      This function is deprecated. Starting with OTP-21, files are implemented as NIFs and can no longer be listed. This function returns an empty list in such a case..
+    </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> files() -> [port()].</pre>
+
+      </div>
+
+returns a list of all file handles open on the node.
+  </section>
+</section>
+<section class="detail" id="get_state/1">
+
+  <div class="detail-header">
+    <a href="#get_state/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">get_state(PidTerm)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L466" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> get_state(<a href="#t:pid_term/0">pid_term</a>()) -> term().</pre>
+
+      </div>
+
+Shorthand call to <code>recon:get_state(PidTerm, 5000)</code>
+  </section>
+</section>
+<section class="detail" id="get_state/2">
+
+  <div class="detail-header">
+    <a href="#get_state/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">get_state(PidTerm, Ms)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L472" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> get_state(<a href="#t:pid_term/0">pid_term</a>(), Ms :: non_neg_integer() | infinity) -> term().</pre>
+
+      </div>
+
+Fetch the internal state of an OTP process. Calls <code>sys:get_state/2</code> directly in R16B01+, and fetches it dynamically on older versions of OTP.
+  </section>
+</section>
+<section class="detail" id="inet_count/2">
+
+  <div class="detail-header">
+    <a href="#inet_count/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">inet_count(AttributeName, Num)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L561" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> inet_count(AttributeName, Num) -> [<a href="#t:inet_attrs/0">inet_attrs</a>()]
+              when
+                  AttributeName :: recv_cnt | recv_oct | send_cnt | send_oct | cnt | oct,
+                  Num :: non_neg_integer().</pre>
+
+      </div>
+
+<p>Fetches a given attribute from all inet ports (TCP, UDP, SCTP) and returns the biggest <code>Num</code> consumers.</p>The values to be used can be the number of octets (bytes) sent, received, or both (<code>send_oct</code>, <code>recv_oct</code>, <code>oct</code>, respectively), or the number of packets sent, received, or both (<code>send_cnt</code>, <code>recv_cnt</code>, <code>cnt</code>, respectively). Individual absolute values for each metric will be returned in the 3rd position of the resulting tuple.
+  </section>
+</section>
+<section class="detail" id="inet_window/3">
+
+  <div class="detail-header">
+    <a href="#inet_window/3" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">inet_window(AttributeName, Num, Milliseconds)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L581" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> inet_window(AttributeName, Num, Milliseconds) -> [<a href="#t:inet_attrs/0">inet_attrs</a>()]
+               when
+                   AttributeName :: recv_cnt | recv_oct | send_cnt | send_oct | cnt | oct,
+                   Num :: non_neg_integer(),
+                   Milliseconds :: pos_integer().</pre>
+
+      </div>
+
+<p>Fetches a given attribute from all inet ports (TCP, UDP, SCTP) and returns the biggest entries, over a sliding time window.</p><p>Warning: this function depends on data gathered at two snapshots, and then building a dictionary with entries to differentiate them. This can take a heavy toll on memory when you have many dozens of thousands of ports open.</p>The values to be used can be the number of octets (bytes) sent, received, or both (<code>send_oct</code>, <code>recv_oct</code>, <code>oct</code>, respectively), or the number of packets sent, received, or both (<code>send_cnt</code>, <code>recv_cnt</code>, <code>cnt</code>, respectively). Individual absolute values for each metric will be returned in the 3rd position of the resulting tuple.
+  </section>
+</section>
+<section class="detail" id="info/1">
+
+  <div class="detail-header">
+    <a href="#info/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">info(PidTerm)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L180" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> info(<a href="#t:pid_term/0">pid_term</a>()) -> [{<a href="#t:info_type/0">info_type</a>(), [{<a href="#t:info_key/0">info_key</a>(), Value}]}, ...] when Value :: term().</pre>
+
+      </div>
+
+<p>Allows to be similar to <code>erlang:process_info/1</code>, but excludes fields such as the mailbox, which have a tendency to grow and be unsafe when called in production systems. Also includes a few more fields than what is usually given (<code>monitors</code>, <code>monitored_by</code>, etc.), and separates the fields in a more readable format based on the type of information contained.</p>Moreover, it will fetch and read information on local processes that were registered locally (an atom), globally (<code>{global, Name}</code>), or through another registry supported in the <code>{via, Module, Name}</code> syntax (must have a <code>Module:whereis_name/1</code> function). Pids can also be passed in as a string (<code>&quot;&lt;0.39.0&gt;&quot;</code>) or a triple (<code>{0,39,0}</code>) and will be converted to be used. Returns <code>undefined</code> as a value when a process died.
+  </section>
+</section>
+<section class="detail" id="info/2">
+
+  <div class="detail-header">
+    <a href="#info/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">info(PidTerm, Keys)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L205" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> info(<a href="#t:pid_term/0">pid_term</a>(), <a href="#t:info_type/0">info_type</a>()) -> {<a href="#t:info_type/0">info_type</a>(), [{<a href="#t:info_key/0">info_key</a>(), term()}] | undefined};
+    (<a href="#t:pid_term/0">pid_term</a>(), [atom()]) -> [{atom(), term()}] | undefined;
+    (<a href="#t:pid_term/0">pid_term</a>(), atom()) -> {atom(), term()} | undefined.</pre>
+
+      </div>
+
+<p>Allows to be similar to <code>erlang:process_info/2</code>, but allows to sort fields by safe categories and pre-selections, avoiding items such as the mailbox, which may have a tendency to grow and be unsafe when called in production systems.</p><p>Moreover, it will fetch and read information on local processes that were registered locally (an atom), globally (<code>{global, Name}</code>), or through another registry supported in the <code>{via, Module, Name}</code> syntax (must have a <code>Module:whereis_name/1</code> function). Pids can also be passed in as a string (<code>&quot;&lt;0.39.0&gt;&quot;</code>) or a triple (<code>{0,39,0}</code>) and will be converted to be used.</p><p>Although the type signature doesn't show it in generated documentation, a list of arguments or individual arguments accepted by <code>erlang:process_info/2</code> and return them as that function would.</p>A fake attribute <code>binary_memory</code> is also available to return the amount of memory used by refc binaries for a process.
+  </section>
+</section>
+<section class="detail" id="info/3">
+
+  <div class="detail-header">
+    <a href="#info/3" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">info(N, N, N)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L156" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> info(N, N, N) -> [{<a href="#t:info_type/0">info_type</a>(), [{<a href="#t:info_key/0">info_key</a>(), term()}]}, ...] when N :: non_neg_integer().</pre>
+
+      </div>
+
+Equivalent to <code>info(&lt;A.B.C&gt;)</code> where <code>A</code>, <code>B</code>, and <code>C</code> are integers part of a pid
+  </section>
+</section>
+<section class="detail" id="info/4">
+
+  <div class="detail-header">
+    <a href="#info/4" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">info(N, N, N, Key)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L163" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> info(N, N, N, Key) -> term() when N :: non_neg_integer(), Key :: <a href="#t:info_type/0">info_type</a>() | [atom()] | atom().</pre>
+
+      </div>
+
+Equivalent to <code>info(&lt;A.B.C&gt;, Key)</code> where <code>A</code>, <code>B</code>, and <code>C</code> are integers part of a pid
+  </section>
+</section>
+<section class="detail" id="named_rpc/1">
+
+  <div class="detail-header">
+    <a href="#named_rpc/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">named_rpc(Fun)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L705" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> named_rpc(fun(() -> term())) -> {[Success :: _], [Fail :: _]}.</pre>
+
+      </div>
+
+Shorthand for <code>named_rpc([node()|nodes()], Fun)</code>.
+  </section>
+</section>
+<section class="detail" id="named_rpc/2">
+
+  <div class="detail-header">
+    <a href="#named_rpc/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">named_rpc(Nodes, Fun)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L710" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> named_rpc(node() | [node(), ...], fun(() -> term())) -> {[Success :: _], [Fail :: _]}.</pre>
+
+      </div>
+
+Shorthand for <code>named_rpc(Nodes, Fun, infinity)</code>.
+  </section>
+</section>
+<section class="detail" id="named_rpc/3">
+
+  <div class="detail-header">
+    <a href="#named_rpc/3" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">named_rpc(Nodes, Fun, Timeout)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L716" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> named_rpc(node() | [node(), ...], fun(() -> term()), timeout()) -> {[Success :: _], [Fail :: _]}.</pre>
+
+      </div>
+
+Runs an arbitrary fun (of arity 0) over one or more nodes, and returns the name of the node that computed a given result along with it, in a tuple.
+  </section>
+</section>
+<section class="detail" id="node_stats/4">
+
+  <div class="detail-header">
+    <a href="#node_stats/4" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">node_stats(N, Interval, FoldFun, Acc)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L401" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> node_stats(N, Interval, FoldFun, Acc) -> Acc
+              when
+                  N :: non_neg_integer(),
+                  Interval :: pos_integer(),
+                  FoldFun :: fun((Stats, Acc) -> Acc),
+                  Acc :: term(),
+                  Stats :: {[Absolutes :: {atom(), term()}], [Increments :: {atom(), term()}]}.</pre>
+
+      </div>
+
+<p>Gathers statistics <code>N</code> time, waiting <code>Interval</code> milliseconds between each run, and accumulates results using a folding function <code>FoldFun</code>. The function will gather statistics in two forms: Absolutes and Increments.</p><p>Absolutes are values that keep changing with time, and are useful to know about as a datapoint: process count, size of the run queue, error_logger queue length in versions before OTP-21 or those thar run it explicitly, and the memory of the node (total, processes, atoms, binaries, and ets tables).</p>Increments are values that are mostly useful when compared to a previous one to have an idea what they're doing, because otherwise they'd never stop increasing: bytes in and out of the node, number of garbage collector runs, words of memory that were garbage collected, and the global reductions count for the node.
+  </section>
+</section>
+<section class="detail" id="node_stats_list/2">
+
+  <div class="detail-header">
+    <a href="#node_stats_list/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">node_stats_list(Repeat, Interval)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L376" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> node_stats_list(Repeat, Interval) -> [Stats]
+                   when
+                       Repeat :: non_neg_integer(),
+                       Interval :: pos_integer(),
+                       Stats ::
+                           {[Absolutes :: {atom(), term()}], [Increments :: {atom(), term()}]}.</pre>
+
+      </div>
+
+Shorthand for <code>node_stats(N, Interval, fun(X,Acc) -&gt; [X|Acc] end, [])</code> with the results reversed to be in the right temporal order.
+  </section>
+</section>
+<section class="detail" id="node_stats_print/2">
+
+  <div class="detail-header">
+    <a href="#node_stats_print/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">node_stats_print(Repeat, Interval)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L333" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> node_stats_print(Repeat, Interval) -> term()
+                    when Repeat :: non_neg_integer(), Interval :: pos_integer().</pre>
+
+      </div>
+
+Shorthand for <code>node_stats(N, Interval, fun(X,_) -&gt; io:format(&quot;~p~n&quot;,[X]) end, nostate)</code>.
+  </section>
+</section>
+<section class="detail" id="port_info/1">
+
+  <div class="detail-header">
+    <a href="#port_info/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">port_info(PortTerm)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L601" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> port_info(<a href="#t:port_term/0">port_term</a>()) -> [{<a href="#t:port_info_type/0">port_info_type</a>(), [{<a href="#t:port_info_key/0">port_info_key</a>(), term()}]}, ...].</pre>
+
+      </div>
+
+<p>Allows to be similar to <code>erlang:port_info/1</code>, but allows more flexible port usage: usual ports, ports that were registered locally (an atom), ports represented as strings (<code>&quot;#Port&lt;0.2013&gt;&quot;</code>), or through an index lookup (<code>2013</code>, for the same result as <code>&quot;#Port&lt;0.2013&gt;&quot;</code>).</p><p>Moreover, the function will try to fetch implementation-specific details based on the port type (only inet ports have this feature so far). For example, TCP ports will include information about the remote peer, transfer statistics, and socket options being used.</p>The information-specific and the basic port info are sorted and categorized in broader categories (<a href="#t:port_info_type/0"><code>port_info_type()</code></a>).
+  </section>
+</section>
+<section class="detail" id="port_info/2">
+
+  <div class="detail-header">
+    <a href="#port_info/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">port_info(PortTerm, Keys)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L621" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> port_info(<a href="#t:port_term/0">port_term</a>(), <a href="#t:port_info_type/0">port_info_type</a>()) -> {<a href="#t:port_info_type/0">port_info_type</a>(), [{<a href="#t:port_info_key/0">port_info_key</a>(), _}]};
+         (<a href="#t:port_term/0">port_term</a>(), [atom()]) -> [{atom(), term()}];
+         (<a href="#t:port_term/0">port_term</a>(), atom()) -> {atom(), term()}.</pre>
+
+      </div>
+
+<p>Allows to be similar to <code>erlang:port_info/2</code>, but allows more flexible port usage: usual ports, ports that were registered locally (an atom), ports represented as strings (<code>&quot;#Port&lt;0.2013&gt;&quot;</code>), or through an index lookup (<code>2013</code>, for the same result as <code>&quot;#Port&lt;0.2013&gt;&quot;</code>).</p>Moreover, the function allows to to fetch information by category as defined in <a href="#t:port_info_type/0"><code>port_info_type()</code></a>, and although the type signature doesn't show it in the generated documentation, individual items accepted by <code>erlang:port_info/2</code> are accepted, and lists of them too.
+  </section>
+</section>
+<section class="detail" id="port_types/0">
+
+  <div class="detail-header">
+    <a href="#port_types/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">port_types()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L542" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> port_types() -> [{Type :: string(), Count :: pos_integer()}].</pre>
+
+      </div>
+
+Shows a list of all different ports on the node with their respective types.
+  </section>
+</section>
+<section class="detail" id="proc_count/2">
+
+  <div class="detail-header">
+    <a href="#proc_count/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">proc_count(AttributeName, Num)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L265" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> proc_count(AttributeName, Num) -> [<a href="#t:proc_attrs/0">proc_attrs</a>()]
+              when AttributeName :: atom(), Num :: non_neg_integer().</pre>
+
+      </div>
+
+Fetches a given attribute from all processes (except the caller) and returns the biggest <code>Num</code> consumers.
+  </section>
+</section>
+<section class="detail" id="proc_window/3">
+
+  <div class="detail-header">
+    <a href="#proc_window/3" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">proc_window(AttributeName, Num, Milliseconds)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L297" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> proc_window(AttributeName, Num, Milliseconds) -> [<a href="#t:proc_attrs/0">proc_attrs</a>()]
+               when
+                   AttributeName :: atom(),
+                   Num :: non_neg_integer(),
+                   Milliseconds :: pos_integer().</pre>
+
+      </div>
+
+<p>Fetches a given attribute from all processes (except the caller) and returns the biggest entries, over a sliding time window.</p><p>This function is particularly useful when processes on the node are mostly short-lived, usually too short to inspect through other tools, in order to figure out what kind of processes are eating through a lot resources on a given node.</p><p>It is important to see this function as a snapshot over a sliding window. A program's timeline during sampling might look like this:</p><p><code>--w---- [Sample1] ---x-------------y----- [Sample2] ---z---&gt;</code></p><p>Some processes will live between <code>w</code> and die at <code>x</code>, some between <code>y</code> and <code>z</code>, and some between <code>x</code> and <code>y</code>. These samples will not be too significant as they're incomplete. If the majority of your processes run between a time interval <code>x</code>...<code>y</code> (in absolute terms), you should make sure that your sampling time is smaller than this so that for many processes, their lifetime spans the equivalent of <code>w</code> and <code>z</code>. Not doing this can skew the results: long-lived processes, that have 10 times the time to accumulate data (say reductions) will look like bottlenecks when they're not one.</p>Warning: this function depends on data gathered at two snapshots, and then building a dictionary with entries to differentiate them. This can take a heavy toll on memory when you have many dozens of thousands of processes.
+  </section>
+</section>
+<section class="detail" id="remote_load/1">
+
+  <div class="detail-header">
+    <a href="#remote_load/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">remote_load(Mod)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L492" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> remote_load(module()) -> term().</pre>
+
+      </div>
+
+<p>Equivalent to <a href="#remote_load/2">remote_load(nodes(), Mod)</a>.</p>
+  </section>
+</section>
+<section class="detail" id="remote_load/2">
+
+  <div class="detail-header">
+    <a href="#remote_load/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">remote_load(Nodes, Mod)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L498" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> remote_load(Nodes, module()) -> term() when Nodes :: [node(), ...] | node().</pre>
+
+      </div>
+
+Loads one or more modules remotely, in a diskless manner. Allows to share code loaded locally with a remote node that doesn't have it
+  </section>
+</section>
+<section class="detail" id="rpc/1">
+
+  <div class="detail-header">
+    <a href="#rpc/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">rpc(Fun)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L688" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> rpc(fun(() -> term())) -> {[Success :: _], [Fail :: _]}.</pre>
+
+      </div>
+
+Shorthand for <code>rpc([node()|nodes()], Fun)</code>.
+  </section>
+</section>
+<section class="detail" id="rpc/2">
+
+  <div class="detail-header">
+    <a href="#rpc/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">rpc(Nodes, Fun)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L693" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> rpc(node() | [node(), ...], fun(() -> term())) -> {[Success :: _], [Fail :: _]}.</pre>
+
+      </div>
+
+Shorthand for <code>rpc(Nodes, Fun, infinity)</code>.
+  </section>
+</section>
+<section class="detail" id="rpc/3">
+
+  <div class="detail-header">
+    <a href="#rpc/3" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">rpc(Nodes, Fun, Timeout)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L698" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> rpc(node() | [node(), ...], fun(() -> term()), timeout()) -> {[Success :: _], [Fail :: _]}.</pre>
+
+      </div>
+
+Runs an arbitrary fun (of arity 0) over one or more nodes.
+  </section>
+</section>
+<section class="detail" id="scheduler_usage/1">
+
+  <div class="detail-header">
+    <a href="#scheduler_usage/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">scheduler_usage(Millisecs)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L358" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> scheduler_usage(Millisecs) -> undefined | [{SchedulerId, Usage}]
+                   when
+                       Millisecs :: non_neg_integer(),
+                       SchedulerId :: pos_integer(),
+                       Usage :: number().</pre>
+
+      </div>
+
+<p>Because Erlang CPU usage as reported from <code>top</code> isn't the most reliable value (due to schedulers doing idle spinning to avoid going to sleep and impacting latency), a metric exists that is based on scheduler wall time.</p><p>For any time interval, Scheduler wall time can be used as a measure of how 'busy' a scheduler is. A scheduler is busy when:</p><ul><li>executing process code</li><li>executing driver code</li><li>executing NIF code</li><li>executing BIFs</li><li>garbage collecting</li><li>doing memory management</li></ul>A scheduler isn't busy when doing anything else.
+  </section>
+</section>
+<section class="detail" id="sctp/0">
+
+  <div class="detail-header">
+    <a href="#sctp/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">sctp()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L530" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> sctp() -> [port()].</pre>
+
+      </div>
+
+returns a list of all SCTP ports (the data type) open on the node.
+  </section>
+</section>
+<section class="detail" id="source/1">
+
+  <div class="detail-header">
+    <a href="#source/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">source(Module)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L513" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> source(module()) -> iolist().</pre>
+
+      </div>
+
+Obtain the source code of a module compiled with <code>debug_info</code>. The returned list sadly does not allow to format the types and typed records the way they look in the original module, but instead goes to an intermediary form used in the AST. They will still be placed in the right module attributes, however.
+  </section>
+</section>
+<section class="detail" id="tcp/0">
+
+  <div class="detail-header">
+    <a href="#tcp/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">tcp()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L522" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> tcp() -> [port()].</pre>
+
+      </div>
+
+returns a list of all TCP ports (the data type) open on the node.
+  </section>
+</section>
+<section class="detail" id="udp/0">
+
+  <div class="detail-header">
+    <a href="#udp/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">udp()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon.erl#L526" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> udp() -> [port()].</pre>
+
+      </div>
+
+returns a list of all UDP ports (the data type) open on the node.
+  </section>
+</section>
+
+    </div>
+  </section>
+
+      <footer class="footer">
+
+          <p>
+            On Hex.pm:
+
+            <span class="line">
+              <a href="https://hex.pm/packages/recon/2.5.3" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/recon/2.5.3" class="line">Preview</a>
+
+                <a href="https://preview.hex.pm/preview/recon/2.5.3/show/src/recon.erl">(current file)</a>
+
+            </span>
+
+            <button class="a-main line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.29.0) for the
+
+            <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+
+
   </body>
 </html>

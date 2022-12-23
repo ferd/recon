@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.29.0">
+    <meta name="project" content="recon v2.5.3">
+
+    <title>Overview — recon v2.5.3</title>
+    <link rel="stylesheet" href="dist/html-erlang-4XYKNH4U.css" />
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-X7YVL3G2.js"></script>
+    <script src="dist/sidebar_items-BD2EFCFF.js"></script>
+
+      <script src="docs_config.js"></script>
+
+    <script async src="dist/html-XN2TSG4M.js"></script>
+
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
+    </button>
+    <label class="search-label">
+      <p class="sr-only">Search</p>
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+
+    <div class="sidebar-projectDetails">
+      <a href="https://ferd.github.io/recon/" class="sidebar-projectName" translate="no">
+recon
+      </a>
+      <strong class="sidebar-projectVersion" translate="no">
+        v2.5.3
+      </strong>
+    </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
+
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+    </ul>
+  </div>
+
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <output role="status" id="toast"></output>
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
+
+
+    <a href="https://github.com/ferd/recon/blob/v2.5.3/src_doc/overview.md#L1" title="View Source" class="view-source" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+  <span>Recon</span>
+</h1>
+
+<p>Recon is a library to be dropped into any other Erlang project,
+to be used to assist DevOps people diagnose problems in production
+nodes.</p><p>The source code can be obtained from <a href="https://github.com/ferd/recon">the github repo</a>.
+A toy application to experiment with can be found at <a href="https://github.com/ferd/recon_demo">recon_demo</a>.</p><h2 id="installing" class="section-heading">
+  <a href="#installing" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">installing</p>
+  </a>
+  Installing
+</h2>
+<p>Add recon to your project by adding it as a dependency. With rebar3 this is done as:</p><pre><code class="makeup elixir" translate="no"><span class="p" data-group-id="7670804957-1">{</span><span class="n">deps</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7670804957-2">[</span><span class="n">recon</span><span class="p" data-group-id="7670804957-2">]</span><span class="p" data-group-id="7670804957-1">}</span><span class="o">.</span></code></pre><p>If you are using releases, make sure to add recon to this list of applications bundled in:</p><pre><code class="makeup elixir" translate="no"><span class="p" data-group-id="4925990497-1">{</span><span class="n">relx</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4925990497-2">[</span><span class="w">
+    </span><span class="p" data-group-id="4925990497-3">{</span><span class="n">release</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4925990497-4">{</span><span class="n">myrel</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;0.1.0&quot;</span><span class="p" data-group-id="4925990497-4">}</span><span class="p">,</span><span class="w">
+      </span><span class="p" data-group-id="4925990497-5">[</span><span class="n">myapp</span><span class="p">,</span><span class="w">
+       </span><span class="n">recon</span><span class="p">,</span><span class="w"> </span><span class="p">%</span><span class="w"> </span><span class="o">&lt;-</span><span class="o">-</span><span class="w"> </span><span class="n">here</span><span class="w">
+       </span><span class="n">sasl</span><span class="p" data-group-id="4925990497-5">]</span><span class="w">
+    </span><span class="p" data-group-id="4925990497-3">}</span><span class="p">,</span><span class="w">
+    </span><span class="n">...</span><span class="w">
+</span><span class="p" data-group-id="4925990497-2">]</span><span class="p" data-group-id="4925990497-1">}</span><span class="o">.</span></code></pre><h2 id="running-tests" class="section-heading">
+  <a href="#running-tests" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">running-tests</p>
+  </a>
+  Running tests
+</h2>
+<p>Call <code class="inline">rebar3 check</code></p><h2 id="using-it" class="section-heading">
+  <a href="#using-it" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">using-it</p>
+  </a>
+  Using it
+</h2>
+<p>Each module in the API describes how it should be used in a stand-alone manner. Insights about how to debug a production Erlang system, often relying on this library, can be found in the free online book <a href="https://www.erlang-in-anger.com/">Erlang in Anger</a>.</p><p>The library also contains a few basic scripts that have proven useful in the past but may not be as much today in its <code class="inline">script/</code> directory. These include ways to visualize application dependencies, and a few short scripts to extract high-level information from crashdumps.</p>
+<div class="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="api-reference.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+API Reference
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="changelog.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+Changelog
+        </span>
+      </a>
+
+  </div>
+</div>
+      <footer class="footer">
+
+          <p>
+            On Hex.pm:
+
+            <span class="line">
+              <a href="https://hex.pm/packages/recon/2.5.3" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/recon/2.5.3" class="line">Preview</a>
+
+                <a href="https://preview.hex.pm/preview/recon/2.5.3/show/src_doc/overview.md">(current file)</a>
+
+            </span>
+
+            <button class="a-main line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.29.0) for the
+
+            <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+
+
+  </body>
+</html>

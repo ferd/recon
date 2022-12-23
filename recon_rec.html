@@ -1,123 +1,632 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-    <link href='http://fonts.googleapis.com/css?family=Titillium+Web:400,300italic,600italic,700,600,700italic' rel='stylesheet' type='text/css'>
-    <link href='http://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,700italic,400italic' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" href="screen.css" media="screen, projection" />
-    <title>Recon Library</title>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.29.0">
+    <meta name="project" content="recon v2.5.3">
+
+    <title>recon_rec — recon v2.5.3</title>
+    <link rel="stylesheet" href="dist/html-erlang-4XYKNH4U.css" />
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-X7YVL3G2.js"></script>
+    <script src="dist/sidebar_items-BD2EFCFF.js"></script>
+
+      <script src="docs_config.js"></script>
+
+    <script async src="dist/html-XN2TSG4M.js"></script>
+
+
   </head>
-  <body>
-    <header>
-        <h1>Recon</h1>
-        <nav>
-          <ul>
-<li><a href="index.html">index</a><li><a href="recon.html">recon</a><li><a href="recon_alloc.html">recon_alloc</a><li><a href="recon_lib.html">recon_lib</a><li><a href="recon_map.html">recon_map</a><li><a href="recon_rec.html">recon_rec</a><li><a href="recon_trace.html">recon_trace</a>
-          </ul>
-        </nav>
-    </header>
-    <article>
-    <h2>Module recon_rec</h2>
-<ul class="index"><li><a href="#description">Description</a></li><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
-   This module handles formatting records for known record types.
+  <body data-type="modules" class="page-module">
+    <script>
 
-<p><strong>Authors:</strong> <a href="mailto:bartlomiej.gorny@erlang-solutions.com"><code>bartlomiej.gorny@erlang-solutions.com</code></a>.</p>
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
 
-<h3><a name="description">Description</a></h3>
-   This module handles formatting records for known record types.
-   Record definitions are imported from modules by user. Definitions are
-   distinguished by record name and its arity, if you have multiple records
-   of the same name and size, you have to choose one of them and some of your
-   records may be wrongly labelled. You can manipulate your definition list by
-   using import/1 and clear/1, and check which definitions are in use by executing
-   list/0.
-<h3><a name="types">Data Types</a></h3>
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
 
-<h4 class="typedecl"><a name="type-field">field()</a></h4>
-<p><code>field() = atom()</code></p>
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
+    </button>
+    <label class="search-label">
+      <p class="sr-only">Search</p>
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+
+    <div class="sidebar-projectDetails">
+      <a href="https://ferd.github.io/recon/" class="sidebar-projectName" translate="no">
+recon
+      </a>
+      <strong class="sidebar-projectVersion" translate="no">
+        v2.5.3
+      </strong>
+    </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
+
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
 
 
-<h4 class="typedecl"><a name="type-import_result">import_result()</a></h4>
-<p><code>import_result() = {imported, module(), <a href="#type-record_name">record_name()</a>, arity()} | {overwritten, module(), <a href="#type-record_name">record_name()</a>, arity()} | {ignored, module(), <a href="#type-record_name">record_name()</a>, arity(), module()}</code></p>
+    </ul>
+  </div>
+
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <output role="status" id="toast"></output>
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
 
 
-<h4 class="typedecl"><a name="type-limit">limit()</a></h4>
-<p><code>limit() = all | none | <a href="#type-field">field()</a> | [<a href="#type-field">field()</a>]</code></p>
+    <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_rec.erl#L13" title="View Source" class="view-source" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+  <span translate="no">recon_rec</span> 
+  <small class="app-vsn" translate="no">(recon v2.5.3)</small>
+
+</h1>
 
 
-<h4 class="typedecl"><a name="type-listentry">listentry()</a></h4>
-<p><code>listentry() = {module(), <a href="#type-record_name">record_name()</a>, [<a href="#type-field">field()</a>], <a href="#type-limit">limit()</a>}</code></p>
+  <section id="moduledoc">
+This module handles formatting records for known record types. Record definitions are imported from modules by user. Definitions are distinguished by record name and its arity, if you have multiple records of the same name and size, you have to choose one of them and some of your records may be wrongly labelled. You can manipulate your definition list by using import/1 and clear/1, and check which definitions are in use by executing list/0.
+  </section>
 
 
-<h4 class="typedecl"><a name="type-record_name">record_name()</a></h4>
-<p><code>record_name() = atom()</code></p>
-<p> compound</p>
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+      Summary
+    </h1>
 
-<h3><a name="index">Function Index</a></h3>
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#clear-0">clear/0</a></td><td>remove all imported definitions, destroy the table, clean up.</td></tr>
-<tr><td valign="top"><a href="#clear-1">clear/1</a></td><td>remove definitions imported from a module.</td></tr>
-<tr><td valign="top"><a href="#get_list-0">get_list/0</a></td><td>returns a list of active record definitions.</td></tr>
-<tr><td valign="top"><a href="#import-1">import/1</a></td><td>import record definitions from a module.</td></tr>
-<tr><td valign="top"><a href="#is_active-0">is_active/0</a></td><td>quickly check if we want to do any record formatting.</td></tr>
-<tr><td valign="top"><a href="#limit-3">limit/3</a></td><td>Limit output to selected fields of a record (can be 'none', 'all', a field or a list of fields).</td></tr>
-<tr><td valign="top"><a href="#list-0">list/0</a></td><td>prints out all "known" (imported) record definitions and their limit settings.</td></tr>
-</table>
+  <div class="summary-types summary">
+    <h2>
+      <a href="#types">Types</a>
+    </h2>
 
-<h3><a name="functions">Function Details</a></h3>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:field/0" translate="no">field/0</a>
 
-<h4 class="function"><a name="clear-0">clear/0</a></h4>
-<div class="spec">
-<p><code>clear() -&gt; any()</code></p>
-<p> </p>
-</div><p>remove all imported definitions, destroy the table, clean up</p>
+        </div>
 
-<h4 class="function"><a name="clear-1">clear/1</a></h4>
-<div class="spec">
-<p><code>clear(Module) -&gt; any()</code></p>
-<p> </p>
-</div><p>remove definitions imported from a module.</p>
+      </div>
 
-<h4 class="function"><a name="get_list-0">get_list/0</a></h4>
-<div class="spec">
-<p><code>get_list() -&gt; [<a href="#type-listentry">listentry()</a>]</code><br></p>
-<p> </p>
-</div><p>returns a list of active record definitions</p>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:import_result/0" translate="no">import_result/0</a>
 
-<h4 class="function"><a name="import-1">import/1</a></h4>
-<div class="spec">
-<p><code>import(Modules::module() | [module()]) -&gt; <a href="#type-import_result">import_result()</a> | [<a href="#type-import_result">import_result()</a>]</code><br></p>
-<p> </p>
-</div><p>import record definitions from a module. If a record definition of the same name
-  and arity has already been imported from another module then the new
-  definition is ignored (returned info tells you from which module the existing definition was imported).
-  You have to choose one and possibly remove the old one using
-  clear/1. Supports importing multiple modules at once (by giving a list of atoms as
-  an argument).</p>
+        </div>
 
-<h4 class="function"><a name="is_active-0">is_active/0</a></h4>
-<div class="spec">
-<p><code>is_active() -&gt; boolean()</code><br></p>
-<p> </p>
-</div><p>quickly check if we want to do any record formatting</p>
+      </div>
 
-<h4 class="function"><a name="limit-3">limit/3</a></h4>
-<div class="spec">
-<p><code>limit(Name::<a href="#type-record_name">record_name()</a>, Arity::arity(), Limit::<a href="#type-limit">limit()</a>) -&gt; ok | {error, any()}</code><br></p>
-<p> </p>
-</div><p>Limit output to selected fields of a record (can be 'none', 'all', a field or a list of fields).
-  Limit set to 'none' means there is no limit, and all fields are displayed; limit 'all' means that
-  all fields are squashed and only record name will be shown.</p>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:limit/0" translate="no">limit/0</a>
 
-<h4 class="function"><a name="list-0">list/0</a></h4>
-<div class="spec">
-<p><code>list() -&gt; any()</code></p>
-<p> </p>
-</div><p>prints out all "known" (imported) record definitions and their limit settings.
-  Printout tells module a record originates from, its name and a list of field names,
-  plus the record's arity (may be handy if handling big records) and a list of field it
-  limits its output to, if set.</p>
+        </div>
 
-    </article>
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:listentry/0" translate="no">listentry/0</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:record_name/0" translate="no">record_name/0</a>
+
+        </div>
+
+          <div class="summary-synopsis">compound</div>
+
+      </div>
+
+  </div>
+
+  <div class="summary-functions summary">
+    <h2>
+      <a href="#functions">Functions</a>
+    </h2>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#clear/0" translate="no">clear()</a>
+
+        </div>
+
+          <div class="summary-synopsis">remove all imported definitions, destroy the table, clean up</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#clear/1" translate="no">clear(Module)</a>
+
+        </div>
+
+          <div class="summary-synopsis">remove definitions imported from a module.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_list/0" translate="no">get_list()</a>
+
+        </div>
+
+          <div class="summary-synopsis">returns a list of active record definitions</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#import/1" translate="no">import(Modules)</a>
+
+        </div>
+
+          <div class="summary-synopsis">import record definitions from a module. If a record definition of the same name and arity has already been imported from another module then the new definition is ignored (returned info tells you from which module the existing definition was imported). You have to choose one and possibly remove the old one using clear/1. Supports importing multiple modules at once (by giving a list of atoms as an argument).</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#is_active/0" translate="no">is_active()</a>
+
+        </div>
+
+          <div class="summary-synopsis">quickly check if we want to do any record formatting</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#limit/3" translate="no">limit(Name, Arity, Limit)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Limit output to selected fields of a record (can be 'none', 'all', a field or a list of fields). Limit set to 'none' means there is no limit, and all fields are displayed; limit 'all' means that all fields are squashed and only record name will be shown.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#list/0" translate="no">list()</a>
+
+        </div>
+
+          <div class="summary-synopsis">prints out all &quot;known&quot; (imported) record definitions and their limit settings. Printout tells module a record originates from, its name and a list of field names, plus the record's arity (may be handy if handling big records) and a list of field it limits its output to, if set.</div>
+
+      </div>
+
+  </div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+Types
+    </h1>
+    <div class="types-list">
+<section class="detail" id="t:field/0">
+
+  <div class="detail-header">
+    <a href="#t:field/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">field/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_rec.erl#L26" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> field() :: atom().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:import_result/0">
+
+  <div class="detail-header">
+    <a href="#t:import_result/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">import_result/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_rec.erl#L31" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> import_result() ::
+    {imported, module(), <a href="#t:record_name/0">record_name</a>(), arity()} |
+    {overwritten, module(), <a href="#t:record_name/0">record_name</a>(), arity()} |
+    {ignored, module(), <a href="#t:record_name/0">record_name</a>(), arity(), module()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:limit/0">
+
+  <div class="detail-header">
+    <a href="#t:limit/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">limit/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_rec.erl#L29" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> limit() :: all | none | <a href="#t:field/0">field</a>() | [<a href="#t:field/0">field</a>()].</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:listentry/0">
+
+  <div class="detail-header">
+    <a href="#t:listentry/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">listentry/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_rec.erl#L30" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> listentry() :: {module(), <a href="#t:record_name/0">record_name</a>(), [<a href="#t:field/0">field</a>()], <a href="#t:limit/0">limit</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:record_name/0">
+
+  <div class="detail-header">
+    <a href="#t:record_name/0" class="detail-link" title="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature" translate="no">record_name/0</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_rec.erl#L27" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> record_name() :: atom().</pre>
+
+      </div>
+
+compound
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+Functions
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="clear/0">
+
+  <div class="detail-header">
+    <a href="#clear/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">clear()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_rec.erl#L61" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+remove all imported definitions, destroy the table, clean up
+  </section>
+</section>
+<section class="detail" id="clear/1">
+
+  <div class="detail-header">
+    <a href="#clear/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">clear(Module)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_rec.erl#L57" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+remove definitions imported from a module.
+  </section>
+</section>
+<section class="detail" id="get_list/0">
+
+  <div class="detail-header">
+    <a href="#get_list/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">get_list()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_rec.erl#L82" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> get_list() -> [<a href="#t:listentry/0">listentry</a>()].</pre>
+
+      </div>
+
+returns a list of active record definitions
+  </section>
+</section>
+<section class="detail" id="import/1">
+
+  <div class="detail-header">
+    <a href="#import/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">import(Modules)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_rec.erl#L43" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> import(module() | [module()]) -> <a href="#t:import_result/0">import_result</a>() | [<a href="#t:import_result/0">import_result</a>()].</pre>
+
+      </div>
+
+import record definitions from a module. If a record definition of the same name and arity has already been imported from another module then the new definition is ignored (returned info tells you from which module the existing definition was imported). You have to choose one and possibly remove the old one using clear/1. Supports importing multiple modules at once (by giving a list of atoms as an argument).
+  </section>
+</section>
+<section class="detail" id="is_active/0">
+
+  <div class="detail-header">
+    <a href="#is_active/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">is_active()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_rec.erl#L50" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> is_active() -> boolean().</pre>
+
+      </div>
+
+quickly check if we want to do any record formatting
+  </section>
+</section>
+<section class="detail" id="limit/3">
+
+  <div class="detail-header">
+    <a href="#limit/3" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">limit(Name, Arity, Limit)</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_rec.erl#L92" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> limit(<a href="#t:record_name/0">record_name</a>(), arity(), <a href="#t:limit/0">limit</a>()) -> ok | {error, any()}.</pre>
+
+      </div>
+
+Limit output to selected fields of a record (can be 'none', 'all', a field or a list of fields). Limit set to 'none' means there is no limit, and all fields are displayed; limit 'all' means that all fields are squashed and only record name will be shown.
+  </section>
+</section>
+<section class="detail" id="list/0">
+
+  <div class="detail-header">
+    <a href="#list/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">list()</h1>
+
+      <a href="https://github.com/ferd/recon/blob/v2.5.3/src/recon_rec.erl#L70" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+prints out all &quot;known&quot; (imported) record definitions and their limit settings. Printout tells module a record originates from, its name and a list of field names, plus the record's arity (may be handy if handling big records) and a list of field it limits its output to, if set.
+  </section>
+</section>
+
+    </div>
+  </section>
+
+      <footer class="footer">
+
+          <p>
+            On Hex.pm:
+
+            <span class="line">
+              <a href="https://hex.pm/packages/recon/2.5.3" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/recon/2.5.3" class="line">Preview</a>
+
+                <a href="https://preview.hex.pm/preview/recon/2.5.3/show/src/recon_rec.erl">(current file)</a>
+
+            </span>
+
+            <button class="a-main line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.29.0) for the
+
+            <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+
+
   </body>
 </html>

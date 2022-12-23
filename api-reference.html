@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.29.0">
+    <meta name="project" content="recon v2.5.3">
+
+    <title>API Reference — recon v2.5.3</title>
+    <link rel="stylesheet" href="dist/html-erlang-4XYKNH4U.css" />
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-X7YVL3G2.js"></script>
+    <script src="dist/sidebar_items-BD2EFCFF.js"></script>
+
+      <script src="docs_config.js"></script>
+
+    <script async src="dist/html-XN2TSG4M.js"></script>
+
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
+    </button>
+    <label class="search-label">
+      <p class="sr-only">Search</p>
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+
+    <div class="sidebar-projectDetails">
+      <a href="https://ferd.github.io/recon/" class="sidebar-projectName" translate="no">
+recon
+      </a>
+      <strong class="sidebar-projectVersion" translate="no">
+        v2.5.3
+      </strong>
+    </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
+
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+    </ul>
+  </div>
+
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <output role="status" id="toast"></output>
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
+
+
+  <span>API Reference <small class="app-vsn">recon v2.5.3</small></span>
+</h1>
+
+
+  <section class="details-list">
+    <h2 id="modules" class="section-heading">
+  <a href="#modules" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">modules</p>
+  </a>
+  Modules
+</h2>
+
+    <div class="summary">
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="recon.html" translate="no">recon</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Recon, as a module, provides access to the high-level functionality contained in the Recon application.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="recon_alloc.html" translate="no">recon_alloc</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Functions to deal with <a href="http://www.erlang.org/doc/man/erts_alloc.html">Erlang's memory allocators</a>, or particularly, to try to present the allocator data in a way that makes it simpler to discover possible problems.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="recon_lib.html" translate="no">recon_lib</a>
+
+  </div>
+
+    <div class="summary-synopsis">Regroups useful functionality used by recon when dealing with data from the node. The functions in this module allow quick runtime access to fancier behaviour than what would be done using recon module itself.</div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="recon_map.html" translate="no">recon_map</a>
+
+  </div>
+
+    <div class="summary-synopsis">This module handles formatting maps. It allows for trimming output to selected fields, or to nothing at all. It also adds a label to a printout. To set up a limit for a map, you need to give recon a way to tell the map you want to trim from all the other maps, so you have to provide something like a 'type definition'. It can be either another map which is compared to the arg, or a fun.</div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="recon_rec.html" translate="no">recon_rec</a>
+
+  </div>
+
+    <div class="summary-synopsis">This module handles formatting records for known record types. Record definitions are imported from modules by user. Definitions are distinguished by record name and its arity, if you have multiple records of the same name and size, you have to choose one of them and some of your records may be wrongly labelled. You can manipulate your definition list by using import/1 and clear/1, and check which definitions are in use by executing list/0.</div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="recon_trace.html" translate="no">recon_trace</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p><code>recon_trace</code> is a module that handles tracing in a safe manner for single Erlang nodes, currently for function calls only. Functionality includes</p></div>
+
+</div>
+
+    </div>
+  </section>
+
+
+<div class="bottom-actions">
+  <div class="bottom-actions-item">
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="overview.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+Overview
+        </span>
+      </a>
+
+  </div>
+</div>
+      <footer class="footer">
+
+          <p>
+            On Hex.pm:
+
+            <span class="line">
+              <a href="https://hex.pm/packages/recon/2.5.3" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/recon/2.5.3" class="line">Preview</a>
+
+            </span>
+
+            <button class="a-main line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.29.0) for the
+
+            <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+
+
+  </body>
+</html>

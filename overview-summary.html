@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Recon Application</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<h1>Recon Application</h1>
+<p>Copyright © 2012-2023 Fred Hebert (BSD 3-Clause License)
+</p>
+<p><b>Authors:</b> Fred Hebert (<a href="mailto:mononcqc@ferd.ca"><tt>mononcqc@ferd.ca</tt></a>) [<em>web site:</em> <tt><a href="http://ferd.ca/" target="_top">http://ferd.ca/</a></tt>].</p>
+<p>Recon is a library to be dropped into any other Erlang project,
+to be used to assist DevOps people diagnose problems in production
+nodes.</p>
+
+<p>The source code can be obtained from <a href="https://github.com/ferd/recon">the github repo</a>.</p>
+
+<p>Included modules are:</p>
+
+<dl>
+    <dt><a docgen-rel="seeerl" docgen-href="recon" href="recon.html"><code>recon</code></a></dt>
+    <dd>
+        Main module, contains basic functionality to interact with
+        the <code>recon</code> application. It includes functions to gather
+        information about processes and the general state of the
+        virtual machine, ports, and OTP behaviours running in the
+        node. It also includes a few functions to facilitate RPC
+        calls with distributed Erlang nodes.
+    </dd>
+
+    <dt><a docgen-rel="seeerl" docgen-href="recon_alloc" href="recon_alloc.html"><code>recon_alloc</code></a></dt>
+    <dd>
+        Regroups functions to deal with Erlang's memory allocators, or
+        particularly, to try to present the allocator data in a way that
+        makes it simpler to discover the presence of possible problems.
+    </dd>
+
+    <dt><a docgen-rel="seeerl" docgen-href="recon_lib" href="recon_lib.html"><code>recon_lib</code></a></dt>
+    <dd>
+        Regroups useful functionality used by <a docgen-rel="seeerl" docgen-href="recon" href="recon.html"><code>recon</code></a> when dealing
+        with data from the node. Would be an interesting place to look
+        if you were looking to extend Recon's functionality
+    </dd>
+
+    <dt><a docgen-rel="seeerl" docgen-href="recon_trace" href="recon_trace.html"><code>recon_trace</code></a></dt>
+    <dd>
+        Provides production-safe tracing facilities, to dig into the
+        execution of programs and function calls as they are running.
+    </dd>
+
+    <dt><a docgen-rel="seeerl" docgen-href="recon_rec" href="recon_rec.html"><code>recon_rec</code></a></dt>
+    <dd>
+        An extension to recon_trace, enables printing out records in a more readable format
+        based on known record definitions.
+    </dd>
+</dl>
+
+<p>This library contains few tests -- most of the functionality has been
+tried directly in production instead, and for many Erlang installs, Recon
+functionality should be safe to use directly in production, assuming there
+is still memory left to be used in the node.</p>
+
+<p>To help with regular DevOps tasks, a variety of scripts has also been included
+in the repository's <code>script/</code> directory:</p>
+
+<dl>
+    <dt><code>app_deps.erl</code></dt>
+    <dd>
+        Escript that relies on graphviz, and produces a dependency graph of all
+        applications in the repository. The script can be run directly from an
+        Erlang shell (if compiled), or as <code>escript app_deps.erl</code>.
+    </dd>
+
+    <dt><code>erl_crashdump_analyzer.sh</code></dt>
+    <dd>
+        Bash script to run on an Erlang crash dump as
+        <code>./erl_crashdump_analyzer.sh &lt;crashdump&gt;</code> and will extract generic
+        information that can be useful in determining the most common causes
+        of node failure.
+    </dd>
+
+    <dt><code>queue_fun.awk</code></dt>
+    <dd>
+        Awk script to run on an Erlang Crash dump as
+        <code>awk -v threshold=&lt;queue size&gt; -f queue_fun.awk &lt;crashdump&gt;</code> and will
+        show what function processes with queue sizes larger or equal to
+        <code>&lt;queue size&gt;</code> were operating at the time of the crash dump. May help
+        find out if most processes were stuck blocking on a given function
+        call while accumulating messages forever.
+    </dd>
+</dl>
+<hr>
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc</i></p>
+</body>
+</html>

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.29.0">
+    <meta name="project" content="recon v2.5.3">
+
+    <title>Changelog — recon v2.5.3</title>
+    <link rel="stylesheet" href="dist/html-erlang-4XYKNH4U.css" />
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-X7YVL3G2.js"></script>
+    <script src="dist/sidebar_items-BD2EFCFF.js"></script>
+
+      <script src="docs_config.js"></script>
+
+    <script async src="dist/html-XN2TSG4M.js"></script>
+
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
+    </button>
+    <label class="search-label">
+      <p class="sr-only">Search</p>
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+
+    <div class="sidebar-projectDetails">
+      <a href="https://ferd.github.io/recon/" class="sidebar-projectName" translate="no">
+recon
+      </a>
+      <strong class="sidebar-projectVersion" translate="no">
+        v2.5.3
+      </strong>
+    </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
+
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+    </ul>
+  </div>
+
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <output role="status" id="toast"></output>
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
+
+
+    <a href="https://github.com/ferd/recon/blob/v2.5.3/CHANGELOG.md#L1" title="View Source" class="view-source" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+  <span>Changelog</span>
+</h1>
+
+<p>Branches are organized by version. <code class="inline">master</code> contains the bleeding edge, <code class="inline">2.x</code>
+contains all stable changes up to the latest release of v2, and <code class="inline">1.x</code> contains
+all stable changes of the first version of Recon.</p><h2 id="2-5-3" class="section-heading">
+  <a href="#2-5-3" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-5-3</p>
+  </a>
+  2.5.3
+</h2>
+<ul><li><a href="https://github.com/ferd/recon/pull/97">Handle dead processes in <code class="inline">recon:info/2</code> types and edge cases</a></li><li><a href="https://github.com/ferd/recon/pull/103">Reworking documentation structure to support <code class="inline">ex_doc</code> and fit in with hex standard</a></li></ul><h2 id="2-5-2" class="section-heading">
+  <a href="#2-5-2" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-5-2</p>
+  </a>
+  2.5.2
+</h2>
+<ul><li><a href="https://github.com/ferd/recon/pull/88">Increase Dialyzer strictness</a></li><li><a href="https://github.com/ferd/recon/pull/83">Accumulate all block entries in <code class="inline">format_blocks</code></a></li><li><a href="https://github.com/ferd/recon/pull/80">option <code class="inline">io_server</code> can also be an <code class="inline">atom()</code> in traces doc</a></li></ul><h2 id="2-5-1" class="section-heading">
+  <a href="#2-5-1" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-5-1</p>
+  </a>
+  2.5.1
+</h2>
+<ul><li>Fix support for extra messages in traces (thanks to Péter Gömöri)</li><li>Fix some typespecs for match specs (thanks to @chenduo)</li><li>Support OTP-23 change of format in allocator blocks related to carrier migration support</li></ul><h2 id="2-5-0" class="section-heading">
+  <a href="#2-5-0" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-5-0</p>
+  </a>
+  2.5.0
+</h2>
+<ul><li>Optional formatting of records in traces (thanks to @bartekgorny)</li><li>Basic support for OTP-22 in <code class="inline">recon_alloc</code> (base handling of <code class="inline">foreign_blocks</code> type)</li></ul><h2 id="2-4-0" class="section-heading">
+  <a href="#2-4-0" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-4-0</p>
+  </a>
+  2.4.0
+</h2>
+<ul><li>Optional formatting of records in traces (thanks to @bartekgorny)</li></ul><h2 id="2-3-6" class="section-heading">
+  <a href="#2-3-6" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-3-6</p>
+  </a>
+  2.3.6
+</h2>
+<ul><li>Adapting for OTP-21. Includes the 'deprecation' of <code class="inline">recon:files/0</code>
+since OTP-21 no longer supports listing all file descriptors, and
+removing <code class="inline">error_logger_queue_len</code> from node stats since a new
+logging mechanism was introduced in-process instead.</li></ul><h2 id="2-3-5" class="section-heading">
+  <a href="#2-3-5" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-3-5</p>
+  </a>
+  2.3.5
+</h2>
+<ul><li>fixing timefold's first iteration to prevent errors at call-site
+by sleeping before sampling</li></ul><h2 id="2-3-4" class="section-heading">
+  <a href="#2-3-4" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-3-4</p>
+  </a>
+  2.3.4
+</h2>
+<ul><li>fixing edoc tag that broke some downstream packaging attempts</li></ul><h2 id="2-3-3" class="section-heading">
+  <a href="#2-3-3" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-3-3</p>
+  </a>
+  2.3.3
+</h2>
+<ul><li>fixing <code class="inline">bin_leak</code> arith errors</li><li>fixes to <code class="inline">recon_alloc:allocators/1</code> (incl. R16 compatibility)</li><li>fix errors in scheduler wall time calculations</li><li><code class="inline">term_to_pid</code> supports binaries</li></ul><h2 id="2-3-2" class="section-heading">
+  <a href="#2-3-2" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-3-2</p>
+  </a>
+  2.3.2
+</h2>
+<ul><li>Allow the <code class="inline">return_to</code> option in <code class="inline">recon_trace</code></li><li>More efficient sorting function for procs and ports attributes
+(thanks to @zhongwencool and @pichi)</li><li>Allow the usage of <code class="inline">return_trace</code> in <code class="inline">recon_trace:calls/2-3</code> instead
+of <code class="inline">fun(_) -&gt; return_trace() end</code>.</li></ul><h2 id="2-3-1" class="section-heading">
+  <a href="#2-3-1" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-3-1</p>
+  </a>
+  2.3.1
+</h2>
+<ul><li>Updated <code class="inline">app_deps</code> script to run with rebar3 dependencies</li><li>Minor docs update</li></ul><h2 id="2-3-0" class="section-heading">
+  <a href="#2-3-0" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-3-0</p>
+  </a>
+  2.3.0
+</h2>
+<ul><li>Doc made clearer around semantics of <code class="inline">recon:proc_count</code> and
+<code class="inline">recon:proc_window</code>.</li><li>Fix doc typos</li><li>Fix potential race condition on waiting for death of tracing process</li><li>Add an option which allows sending tracing output somewhere other than
+group_leader() (thanks @djnym)</li><li>Add ability to pass custom formatter function when tracing (thanks @iilyak)</li></ul><h2 id="2-2-1" class="section-heading">
+  <a href="#2-2-1" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-2-1</p>
+  </a>
+  2.2.1
+</h2>
+<ul><li>Fixing type specs for <code class="inline">recon:port_types/0</code> and <code class="inline">recon_lib:count/1</code>,
+thanks to @lucafavatella</li><li>Minor documentation fixes.</li></ul><h2 id="2-2-0" class="section-heading">
+  <a href="#2-2-0" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-2-0</p>
+  </a>
+  2.2.0
+</h2>
+<ul><li>Adding scheduler info metrics to get a more accurate picture than what
+top and CPU gives.</li><li>Broadening <code class="inline">recon_trace:calls/2</code> interface to allow multiple match specs,
+which was currently only allowed for <code class="inline">calls/3</code>.</li><li>Support for <code class="inline">mbcs_pool</code> data in <code class="inline">erts_alloc</code>, and some internal refactoring,
+thanks to Lukas Larsson.</li></ul><h2 id="2-1-2" class="section-heading">
+  <a href="#2-1-2" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-1-2</p>
+  </a>
+  2.1.2
+</h2>
+<ul><li>Fixing tests for R15B02 and up</li><li>Fixing a backwards compatibility for R15B03 on <code class="inline">recon_alloc</code> operations
+with dumps on disk</li></ul><h2 id="2-1-1" class="section-heading">
+  <a href="#2-1-1" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-1-1</p>
+  </a>
+  2.1.1
+</h2>
+<ul><li>Renaming <code class="inline">recon_trace:mfa()</code> type to <code class="inline">recon_trace:tspec()</code> to avoid
+issues in older Erlang versions regarding redefining an existing type
+(Thanks Roberto Aloi)</li></ul><h2 id="2-1-0" class="section-heading">
+  <a href="#2-1-0" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-1-0</p>
+  </a>
+  2.1.0
+</h2>
+<ul><li>Adding <code class="inline">recon_trace</code> script to allow safe tracing of function calls
+on production nodes.</li><li>Adding <code class="inline">queue_fun.awk</code> script to inspect running functions of processes
+with large mailboxes in a crash dump.</li></ul><h2 id="2-0-2" class="section-heading">
+  <a href="#2-0-2" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-0-2</p>
+  </a>
+  2.0.2
+</h2>
+<ul><li>Preventing crashes in <code class="inline">recon_alloc</code> when certain expected allocators
+do not return results (Thanks to Michal Ptaszek)</li></ul><h2 id="2-0-1" class="section-heading">
+  <a href="#2-0-1" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-0-1</p>
+  </a>
+  2.0.1
+</h2>
+<ul><li>Add support for R16B03 in <code class="inline">recon_alloc</code>.</li></ul><h2 id="2-0-0" class="section-heading">
+  <a href="#2-0-0" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">2-0-0</p>
+  </a>
+  2.0.0
+</h2>
+<ul><li>Test suite added</li><li>Major rewrite of <code class="inline">recon_alloc</code>, thanks to Lukas Larsson. Things that changed include:<ul><li><code class="inline">average_sizes/0</code> is renamed <code class="inline">average_block_sizes/1</code> and now takes
+the keywords <code class="inline">current</code> and <code class="inline">max</code>.</li><li>Documentation updates.</li><li><code class="inline">memory/1</code> has new options in <code class="inline">allocated_types</code> and <code class="inline">allocated_instances</code>.</li><li><code class="inline">memory/2</code> has been added, which allows to choose between <code class="inline">current</code> and
+<code class="inline">max</code> values. <code class="inline">memory(Term)</code> is made equivalent to <code class="inline">memory(Term, current)</code>.</li><li>Allow <code class="inline">sbcs_to_mbcs/0</code> to take the arguments <code class="inline">current</code> and <code class="inline">max</code>.</li><li>Added unit conversion function <code class="inline">set_unit/1</code>, which allows to get the
+<code class="inline">recon_alloc</code> results in bytes (default), kilobytes, megabytes, and
+gigabytes, to help with readability.</li></ul></li><li>Updated the internal rebar version, if anybody were to use it.</li><li><code class="inline">recon:port_info/1</code> no longer includes the <code class="inline">parallelism</code> option by default
+within the <code class="inline">meta</code> category as this would hurt backwards compatibility on
+some installations.</li><li><code class="inline">recon:get_state/2</code> is added in order to specify timeouts.
+<code class="inline">recon:get_state/1</code> keeps its 5000 milliseconds timeout.</li><li>Addition of a fake attribute called <code class="inline">binary_memory</code>, which is callable in
+<code class="inline">recon:info/2,4</code>, <code class="inline">recon:proc_count/2</code>, and <code class="inline">recon:proc_window/3</code>. This
+attribute allows to fetch the amount of memory used by refc binaries for
+a process, and to sort by that value for counts and windows.</li></ul><h2 id="1-2-0" class="section-heading">
+  <a href="#1-2-0" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">1-2-0</p>
+  </a>
+  1.2.0
+</h2>
+<ul><li>add <code class="inline">recon_alloc:snapshot*</code> functions, which allow memory allocation
+snapshots to be taken, saved on disk, reloaded, and analyzed on-demand.
+Thanks to Lukas Larsson for this functionality.</li><li>remove <code class="inline">parallelism</code> data from <code class="inline">port_info</code> for better OTP backwards
+compatibility with little loss of information.</li></ul><h2 id="1-1-0" class="section-heading">
+  <a href="#1-1-0" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">1-1-0</p>
+  </a>
+  1.1.0
+</h2>
+<ul><li>add <code class="inline">recon_lib:term_to_port</code> to convert a string back to a
+usable port.</li><li>add <code class="inline">recon:port_info/1</code> and <code class="inline">recon:port_info/2</code></li><li>add <code class="inline">recon_alloc</code> module</li></ul><h2 id="1-0-0" class="section-heading">
+  <a href="#1-0-0" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">1-0-0</p>
+  </a>
+  1.0.0
+</h2>
+<p>  add <code class="inline">info/2</code> and <code class="inline">info/4</code>. The <code class="inline">memory</code> info type thus gets renamed
+  to <code class="inline">memory_used</code>, in order to avoid conflicts when picking between a type
+  and a specific process attribute. Types exported by the module also get
+  updated.</p><h2 id="0-4-2" class="section-heading">
+  <a href="#0-4-2" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">0-4-2</p>
+  </a>
+  0.4.2
+</h2>
+<ul><li>extended <code class="inline">app_deps.erl</code> to read apps/ directories for releases</li></ul><h2 id="0-4-1" class="section-heading">
+  <a href="#0-4-1" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">0-4-1</p>
+  </a>
+  0.4.1
+</h2>
+<ul><li>fixed bug where nodes with lots of processes could see the GC call
+fail if said processes failed between long calls within the <code class="inline">bin_leak</code>
+function call.</li></ul><h2 id="0-4-0" class="section-heading">
+  <a href="#0-4-0" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">0-4-0</p>
+  </a>
+  0.4.0
+</h2>
+<ul><li>fixed bug where nodes with lots of processes or ports could see their
+count or window functions fail because a process or socket closed between the
+time the function started and before it finished. This ends up changing the
+API in <code class="inline">recon_lib</code> for the window and count functions that take a specific
+pid as an argument.</li></ul><h2 id="0-3-1" class="section-heading">
+  <a href="#0-3-1" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">0-3-1</p>
+  </a>
+  0.3.1
+</h2>
+<ul><li>factored out some logic from <code class="inline">recon:info/1</code> into <code class="inline">recon_lib:term_to_pid</code>
+and allowed arbitrary terms to be used for pids in <code class="inline">recon:get_state/1</code>.</li></ul>
+<div class="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="overview.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+Overview
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="license.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+License
+        </span>
+      </a>
+
+  </div>
+</div>
+      <footer class="footer">
+
+          <p>
+            On Hex.pm:
+
+            <span class="line">
+              <a href="https://hex.pm/packages/recon/2.5.3" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/recon/2.5.3" class="line">Preview</a>
+
+                <a href="https://preview.hex.pm/preview/recon/2.5.3/show/CHANGELOG.md">(current file)</a>
+
+            </span>
+
+            <button class="a-main line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.29.0) for the
+
+            <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+
+
+  </body>
+</html>
