@@ -5,9 +5,9 @@ Branches are organized by version. `master` contains the bleeding edge, `2.x`
 contains all stable changes up to the latest release of v2, and `1.x` contains
 all stable changes of the first version of Recon.
 
-## 2.5.3 (unpublished)
+## 2.5.3
   - [Handle dead processes in `recon:info/2` types and edge cases](https://github.com/ferd/recon/pull/97)
-  - Reworking documentation structure to support `ex_doc` and fit in with hex standard
+  - [Reworking documentation structure to support `ex_doc` and fit in with hex standard](https://github.com/ferd/recon/pull/103)
 
 ## 2.5.2
   - [Increase Dialyzer strictness](https://github.com/ferd/recon/pull/88)
