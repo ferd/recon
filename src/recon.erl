@@ -61,7 +61,7 @@
 %%%         inet ports, statistics and options for each socket.</dd>
 %%%     <dd>Finally, the functions {@link inet_count/2} and {@link inet_window/3}
 %%%         provide the absolute or sliding window functionality of
-%%%         {@link proc_count/2} and {@link proc_count/3} to inet ports
+%%%         {@link proc_count/2} and {@link proc_window/3} to inet ports
 %%%         and connections currently on the node.</dd>
 %%%
 %%%     <dt>5. RPC</dt>

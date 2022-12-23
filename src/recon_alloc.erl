@@ -15,7 +15,7 @@
 %%% a problem, but will offer little help to figure out <em>what</em> is wrong.
 %%%
 %%% To figure this out, you need to dig deeper into the allocator data
-%%% (obtainable with {@link allocators/0}), and/or have some precise knowledge
+%%% (obtainable with {@link allocators/1}), and/or have some precise knowledge
 %%% about the type of load and work done by the VM to be able to assess what
 %%% each reaction to individual tweak should be.
 %%%
@@ -300,7 +300,7 @@ cache_hit_rates() ->
 %% allocation strategies regarding the carrier sizes to be used.
 %%
 %% This function isn't exceptionally useful unless you know you have some
-%% specific problem, say with sbcs/mbcs ratios (see {@link sbcs_to_mbcs/0})
+%% specific problem, say with sbcs/mbcs ratios (see {@link sbcs_to_mbcs/1})
 %% or fragmentation for a specific allocator, and want to figure out what
 %% values to pick to increase or decrease sizes compared to the currently
 %% configured value.
@@ -509,7 +509,7 @@ sort_values(_Type, Vs) ->
 %% @doc Take a new snapshot of the current memory allocator statistics.
 %% The snapshot is stored in the process dictionary of the calling process,
 %% with all the limitations that it implies (i.e. no garbage-collection).
-%% To unsert the snapshot, see {@link snapshot_clear/1}.
+%% To unsert the snapshot, see {@link snapshot_clear/0}.
 -spec snapshot() -> snapshot() | undefined.
 snapshot() ->
     put(recon_alloc_snapshot, snapshot_int()).
@@ -554,7 +554,7 @@ snapshot_save(Filename) ->
 
 
 %% @doc load a snapshot from a given file. The format of the data in the
-%% file can be either the same as output by {@link snapshot_save()},
+%% file can be either the same as output by {@link snapshot_save/1},
 %% or the output obtained by calling
 %%  `{erlang:memory(),[{A,erlang:system_info({allocator,A})} || A <- erlang:system_info(alloc_util_allocators)++[sys_alloc,mseg_alloc]]}.'
 %% and storing it in a file.
