@@ -12,9 +12,9 @@
 -define(DOCPATH, "doc/").
 -define(SITEPATH, "site/").
 
-main() -> main([]).
+main() -> main(["ex_doc"]).
 
-main(_) ->
+main(["edoc"]) ->
     ok = filelib:ensure_dir(?SITEPATH), % output directory
     Output = os:cmd("rebar3 edoc"), % build docs
     {match, _} = re:run(Output, "Running edoc"),
@@ -28,6 +28,12 @@ main(_) ->
            end,
            [Pre,content(File),Post])
      || File <- [Overview|Modules]],
+    halt(0);
+main(_) ->
+    ok = filelib:ensure_dir(?SITEPATH), % output directory
+    Output = os:cmd("rebar3 ex_doc"), % build docs
+    {match, _} = re:run(Output, "Running ex_doc"),
+    os:cmd("cp -r " ++ ?DOCPATH ++ " " ++ ?SITEPATH),
     halt(0).
 
 content(File) ->
