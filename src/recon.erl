@@ -514,6 +514,7 @@ source(Module) ->
     Path = code:which(Module),
     {ok,{_,[{abstract_code,{_,AC}}]}} = beam_lib:chunks(Path, [abstract_code]),
     erl_prettypr:format(erl_syntax:form_list(AC)).
+-dialyzer({nowarn_function, source/1}).
 
 %%% Ports Info %%%
 

@@ -369,11 +369,13 @@ sbcs_to_mbcs(Keyword) ->
 allocators() ->
     UtilAllocators = erlang:system_info(alloc_util_allocators),
     Allocators = [sys_alloc,mseg_alloc|UtilAllocators],
-    [{{A,N}, format_alloc(A, Props)} ||
-        A <- Allocators,
-        Allocs <- [erlang:system_info({allocator,A})],
-        Allocs =/= false,
-        {_,N,Props} <- Allocs].
+    try [{{erts_mmap,0},erlang:system_info({allocator,erts_mmap})}]
+    catch error:badarg -> [] end ++
+        [{{A,N}, format_alloc(A, Props)} ||
+            A <- Allocators,
+            Allocs <- [erlang:system_info({allocator,A})],
+            Allocs =/= false,
+            {_,N,Props} <- Allocs].
 
 format_alloc(Alloc, Props) ->
     %% {versions,_,_} is implicitly deleted in order to allow the use of the
@@ -637,6 +639,8 @@ conv_mem(Mem,Factor) ->
     [{T,M / Factor} || {T,M} <- Mem].
 
 conv_alloc([{{sys_alloc,_I},_Props} = Alloc|R], Factor) ->
+    [Alloc|conv_alloc(R,Factor)];
+conv_alloc([{{erts_mmap,_I},_Props} = Alloc|R], Factor) ->
     [Alloc|conv_alloc(R,Factor)];
 conv_alloc([{{mseg_alloc,_I} = AI,Props}|R], Factor) ->
     MemKind = orddict:fetch(memkind,Props),
