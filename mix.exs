@@ -5,7 +5,7 @@ defmodule Recon.MixProject do
     [
       app: :recon,
       description: "Diagnostic tools for production use",
-      version: "2.5.3",
+      version: "2.5.4",
       language: :erlang,
       deps: []
     ]
