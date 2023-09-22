@@ -703,7 +703,7 @@ weighed_values({SbcsBlockSize, SbcsCarrierSize},
 %% but also takes 0/0 to be 100% to make working with sorting and
 %% weights simpler.
 usage(0,0) -> 1.00;
-usage(0.0,0.0) -> 1.00;
+usage(+0.0,+0.0) -> 1.00;
 %usage(N,0) -> ???;
 usage(Block,Carrier) -> Block/Carrier.
 
