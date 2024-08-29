@@ -3,7 +3,7 @@
   {vsn, "2.5.5"},
   {modules, [recon, recon_alloc, recon_lib, recon_trace, recon_rec]},
   {registered, []},
-  {applications, [kernel, stdlib]},
+  {applications, [kernel, stdlib, syntax_tools]},
 
   {licenses, ["BSD"]},
   {links, [{"Github", "https://github.com/ferd/recon/"},
