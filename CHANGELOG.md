@@ -5,6 +5,9 @@ Branches are organized by version. `master` contains the bleeding edge, `2.x`
 contains all stable changes up to the latest release of v2, and `1.x` contains
 all stable changes of the first version of Recon.
 
+## 2.5.6
+  - [Add missing run-time dependency on `syntax_tools`](https://github.com/ferd/recon/pull/111)
+
 ## 2.5.5
   - [Fix OTP-26 compiler warnings for OTP-27](https://github.com/ferd/recon/pull/107)
 

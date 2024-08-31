@@ -1,11 +1,11 @@
 {application, recon,
  [{description, "Diagnostic tools for production use"},
-  {vsn, "2.5.5"},
+  {vsn, "2.5.6"},
   {modules, [recon, recon_alloc, recon_lib, recon_trace, recon_rec]},
   {registered, []},
   {applications, [kernel, stdlib, syntax_tools]},
 
-  {licenses, ["BSD"]},
+  {licenses, ["BSD-3-Clause"]},
   {links, [{"Github", "https://github.com/ferd/recon/"},
            {"Documentation", "http://ferd.github.io/recon/"}]},
   {build_tools, ["mix", "rebar3"]},
