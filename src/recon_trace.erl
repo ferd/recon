@@ -393,7 +393,10 @@ formatter(Tracer, IOServer, FormatterFun) ->
         {'EXIT', Tracer, Reason} ->
             exit(Reason);
         TraceMsg ->
-            io:format(IOServer, FormatterFun(TraceMsg), []),
+            case FormatterFun(TraceMsg) of
+                "" -> ok;
+                Formatted -> io:format(IOServer, Formatted, [])
+            end,
             formatter(Tracer, IOServer, FormatterFun)
     end.
 
