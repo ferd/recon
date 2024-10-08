@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: rebar3 edoc
-      - run: if [ $(rebar3 version | awk '{print $5}') -gt 23 ]; then rebar3 ex_doc; fi;
+      - run: if [ $(rebar3 version | awk '{print $5}') -gt 24 ]; then rebar3 ex_doc; fi;
       - run: rebar3 eunit
       - run: rebar3 ct
       - run: rebar3 dialyzer
