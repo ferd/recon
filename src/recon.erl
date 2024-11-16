@@ -240,8 +240,10 @@ proc_info(Pid, List) when is_list(List) ->
         false ->
             erlang:process_info(Pid, List);
         true ->
-            Res = erlang:process_info(Pid, replace(binary_memory, binary, List)),
-            proc_fake(List, Res)
+            case erlang:process_info(Pid, replace(binary_memory, binary, List)) of
+                undefined -> undefined;
+                Res when is_list(Res) -> proc_fake(List, Res)
+            end
     end.
 
 %% @private Replace keys around

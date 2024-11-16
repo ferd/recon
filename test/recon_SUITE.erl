@@ -315,7 +315,14 @@ binary_memory(_Config) ->
     Res2 = recon:info(Pid2, [binary_memory, binary, binary_memory]),
     %% we expect everything to look as a single call to process_info/2
     [{binary,X}, {binary_memory,_}, {binary,X}] = Res1,
-    [{binary_memory,Y}, {binary,_}, {binary_memory,Y}] = Res2.
+    [{binary_memory,Y}, {binary,_}, {binary_memory,Y}] = Res2,
+    %% make sure we deal with dead processes fine
+    {Pid, Ref} = spawn_monitor(fun() -> ok end),
+    receive
+        {'DOWN', Ref, _, _, _} -> ok
+    end,
+    ?assertEqual(undefined, recon:info(Pid, [binary_memory])),
+    ok.
 
 %% Just check that we get many schedulers and that the usage values are all
 %% between 0 and 1 inclusively. We don't care for edge cases like a
