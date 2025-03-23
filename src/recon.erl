@@ -233,8 +233,6 @@ proc_info(Pid, binary_memory) ->
         {binary, Bins} ->
             {binary_memory, recon_lib:binary_memory(Bins)}
     end;
-proc_info(Pid, Term) when is_atom(Term) ->
-    erlang:process_info(Pid, Term);
 proc_info(Pid, List) when is_list(List) ->
     case lists:member(binary_memory, List) of
         false ->
@@ -244,7 +242,9 @@ proc_info(Pid, List) when is_list(List) ->
                 undefined -> undefined;
                 Res when is_list(Res) -> proc_fake(List, Res)
             end
-    end.
+    end;
+proc_info(Pid, Term) ->
+    erlang:process_info(Pid, Term).
 
 %% @private Replace keys around
 replace(_, _, []) -> [];
