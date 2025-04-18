@@ -13,7 +13,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 
--define(HeavyStateWindowLength, 1000).
+-define(HeavyStateWindowLength, 300).
 
 %% API
 -export([start/0, stop/0]).
