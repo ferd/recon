@@ -11,11 +11,11 @@
 
 -export([format/1]).
 
--record(trace, {pid, type, mfa}).
-
+-record(trace, {pid, type, info}).
+-record(trace_ts, {pid, type, info, timestamp}).
  
 %% Internal exports
--export([count_tracer/3, rate_tracer/2, formatter/5, format_trace_output/1, format_trace_output/2]).
+-export([count_tracer/4, formatter/5, format_trace_output/1, format_trace_output/2]).
 
 -type matchspec()    :: [{[term()] | '_', [term()], [term()]}].
 -type shellfun()     :: fun((_) -> term()).
@@ -91,30 +91,16 @@ calls(TSpecs, Max, Opts) ->
 %     Pid = setup(rate_tracer, [Max, Time],
 %                 validate_formatter(Opts), validate_io_server(Opts)),
 %     trace_calls(TSpecs, Pid, Opts);
-printer() ->
-    receive
-        {print, Msg} ->
-            io:format("Trace message: ~p~n", [Msg]),
-            printer();
-        {'EXIT', Tracer, normal} ->
-            io:format("Recon tracer rate limit tripped.~n"),
-            exit(normal);
-        {'EXIT', Tracer, Reason} ->
-            exit(Reason);
-        TraceMsg ->
-            io:format("Trace message: ~p~n", [TraceMsg]),
-            printer()
-    end.
-        
-        
+
+         
 
 calls_dbg(TSpecs = [{M,F,A}|_], Max, Opts) ->
-    % Formatter= validate_formatter(Opts),
+    Formatter= validate_formatter(Opts),
     IoServer = validate_io_server(Opts),
     
-    Printer = spawn(fun printer/0),
-
-    PatternsFun = generate_pattern_filter(count_tracer, TSpecs, Max, Printer),
+    PatternsFun = 
+        generate_pattern_filter(count_tracer, TSpecs, 
+            Max, IoServer, Formatter),
     
     dbg:tracer(process,{PatternsFun, 0}),
     dbg:p(all,[c]),
@@ -126,65 +112,72 @@ calls_dbg(TSpecs = [{M,F,A}|_], Max, Opts) ->
 %%%%%%%%%%%%%%%%%%%%%%%
 %%% PRIVATE EXPORTS %%%
 %%%%%%%%%%%%%%%%%%%%%%%
+%% starts the tracer and formatter processes, and
+%% cleans them up before each call.
+generate_pattern_filter(count_tracer,
+        [{M,F,PatternFun}] = TSpecs, Max, IoServer, Formater) ->
+    clear(),
+    Ref = make_ref(),
+    count_tracer(Max, {M,F,PatternFun},IoServer, Formater).
+
 %% @private Stops when N trace messages have been received
-count_tracer(Max, {M, F, PatternFun}, IoProc) ->
-
-
-    IoProc ! {print,"77eeeas2222222222222222222"},
-
-    fun
-            (_X, N) when N > Max -> 
-            
-    IoProc ! {print,{_X, N}} ,
-    IoProc ! {print,"top3234eeeas2222222222222222222"},
-            dbg:stop();
-        (#trace{type=call, mfa={M,F,A}}, N) when N =< Max -> 
- 
-    IoProc ! {print,"23234eeeas2222222222222222222"},
-        try PatternFun(A) of
-            {true, PrintOut} ->
-
-    io:format("asiujfdghas ~p~n", [PrintOut]),
-                IoProc ! {print, PrintOut},
+count_tracer(Max, {M, F, PatternFun}, IoServer, Formatter) ->
+fun
+    (_Trace, N) when N > Max -> 
+        io:format("Recon tracer rate limit tripped.~n"),
+        dbg:stop();
+    (Trace, N) when (N =< Max) and is_tuple(Trace) ->
+    %%  Type = element(1, Trace),
+        Print = filter_call(Trace, M, F, PatternFun),                  
+        case Print of
+            reject -> N;
+            print ->
+                Output = Formatter(Trace),
+                io:format(IoServer, Output, []),
                 N+1;
-            {false, PrintOut} ->
-    IoProc ! {print,"2eeeas2222222222222222222"},
-                N+1;
-            false -> 
-    IoProc ! {print,"3eeeas2222222222222222222"},
-                N;        
-            XX ->
-  IoProc ! {print,"4eeeas2222222222222222222"},
-     IoProc ! {print,XX}
-            catch
-                error:badarg ->
-        IoProc ! {print,"55eeeas2222222222222222222"},
-                io:format("2222222222222222222~p~n", [IoProc])            ;
-            error:_ ->
-    IoProc ! {print,"66eeeas2222222222222222222"},
-                io:format("2222222222222222222~p~n", [IoProc])
-        end
+            _ -> N
+        end;
+    
+    (Trace, N) when N =< Max ->
+               io:format("aaaaaaaaaaaaaaaaaaa ~p", [Trace]), N+1
 end.
 
-%% @private Stops whenever the trace message rates goes higher than
-%% `Max' messages in `Time' milliseconds. Note that if the rate
-%% proposed is higher than what the IO system of the formatter
-%% can handle, this can still put a node at risk.
-%%
-%% It is recommended to try stricter rates to begin with.
-rate_tracer(Max, Time) -> rate_tracer(Max, Time, 0, os:timestamp()).
+test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
+ Match = 
+   case {M==TraceM, ((F=='_') or (F==TraceF)), PatternFun} of
+       {true, true, '_'} -> true;
+       {true, true, _} -> check;
+       _ -> false
+   end,
+   
+   case Match of
+       true -> print; 
+       false -> reject;
+       check ->              
+           try PatternFun(Args) of
+               _ -> print
+           catch
+               error:badarg ->
+                   reject;
+               error:_ ->
+                   reject
+           end
+   end.
 
-rate_tracer(Max, Time, Count, Start) ->
-    receive
-        Msg ->
-            recon_trace_formatter ! Msg,
-            Now = os:timestamp(),
-            Delay = timer:now_diff(Now, Start) div 1000,
-            if Delay > Time -> rate_tracer(Max, Time, 0, Now)
-             ; Max > Count -> rate_tracer(Max, Time, Count+1, Start)
-             ; Max =:= Count -> exit(normal)
-            end
+% @doc
+%% @private Filters the trace messages
+%% and calls the pattern function
+%% @end
+
+filter_call(TraceMsg, M, F, PatternFun) ->
+    case extract_info(TraceMsg) of
+        {call, _, _, [{TraceM,TraceF, Args}]} ->
+            test_match(M, F, TraceM, TraceF, Args, PatternFun);
+        {call, _, _, [{TraceM, TraceF, Args}, _Msg]} ->
+            test_match(M, F, TraceM, TraceF, Args, PatternFun);
+        _ -> print
     end.
+
 
 %% @private Formats traces to be output
 formatter(Tracer, Parent, Ref, FormatterFun, IOServer) ->
@@ -212,15 +205,6 @@ formatter(Tracer, IOServer, FormatterFun) ->
 %%%%%%%%%%%%%%%%%%%%%%%
 %%% SETUP FUNCTIONS %%%
 %%%%%%%%%%%%%%%%%%%%%%%
-
-%% starts the tracer and formatter processes, and
-%% cleans them up before each call.
-generate_pattern_filter(count_tracer,
-        [{M,F,PatternFun}] = TSpecs, Max, IoServer) ->
-    clear(),
-    Ref = make_ref(),
-    count_tracer(Max, {M,F,PatternFun},IoServer).
-
 %% Sets the traces in action
 trace_calls(TSpecs, Pid, Opts) ->
     {PidSpecs, TraceOpts, MatchOpts} = validate_opts(Opts),
@@ -394,6 +378,8 @@ format(TraceMsg) ->
     end,
     io_lib:format("~n~p:~p:~9.6.0f ~p " ++ FormatStr ++ "~n",
                   [Hour, Min, Sec, Pid] ++ FormatArgs).
+
+
 
 extract_info(TraceMsg) ->
     case tuple_to_list(TraceMsg) of
