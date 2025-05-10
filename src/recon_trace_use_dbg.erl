@@ -5,7 +5,7 @@
 %%% Erlang nodes, currently for function calls only. Functionality includes:
 %%% @end
 -module(recon_trace_use_dbg).
-
+-include_lib("stdlib/include/ms_transform.hrl").
 %% API
 -export([clear/0, calls/2, calls/3]).
 
@@ -78,7 +78,6 @@ calls(TSpecs = [_|_], Max) ->
 %% @end
 -spec calls(tspec() | [tspec(),...], max(), options()) -> num_matches().
 
-
 calls({Mod, Fun, Args}, Max, Opts) ->
             calls([{Mod,Fun,Args}], Max, Opts);
 calls(TSpecs, Max, Opts) ->
@@ -95,6 +94,16 @@ calls(TSpecs, Max, Opts) ->
          
 
 calls_dbg(TSpecs = [{M,F,A}|_], Max, Opts) ->
+    case trace_function_type(A) of
+        trace_fun -> 
+            io:format(
+                "Warning: TSpecs contain erlang trace template function"++
+                "use_dbg flag ignored, falling back to default recon_trace behaviour~n"),
+        recon_trace:calls(TSpecs, Max, proplists:delete_value(use_dbg, Opts);
+    standard_fun ->  
+
+            
+            
     Formatter= validate_formatter(Opts),
     IoServer = validate_io_server(Opts),
     
@@ -105,7 +114,8 @@ calls_dbg(TSpecs = [{M,F,A}|_], Max, Opts) ->
     dbg:tracer(process,{PatternsFun, 0}),
     dbg:p(all,[c]),
     dbg:tpl({M, F, '_'},[{'_', [], []}]),
-    dbg:tp({M, F, '_'},[{'_', [], []}]).
+    dbg:tp({M, F, '_'},[{'_', [], []}])
+end.
 
     
 
@@ -141,16 +151,52 @@ fun
     (Trace, N) when N =< Max ->
                io:format("aaaaaaaaaaaaaaaaaaa ~p", [Trace]), N+1
 end.
+trace_function_type(PatternFun) ->
+    try dbg:fun2ms(PatternFun) of
+        Patterns -> trace_function_type(Patterns, not_decided)       
+    catch
+        _:_ -> standard_fun;
+    end.  
 
-test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
- Match = 
-   case {M==TraceM, ((F=='_') or (F==TraceF)), PatternFun} of
-       {true, true, '_'} -> true;
-       {true, true, _} -> check;
-       _ -> false
-   end,
+%% all function clauses are '_'
+trace_function_type([], trace_fun) -> trace_fun;
+trace_function_type([], standard_fun) -> standard_fun;
+
+trace_function_type([ClauseType | Rest], Type) ->
+    ClauseType = clause_type(Rest) ->
+    case Type of
+        not_decided -> 
+            trace_function_type(Rest, ClauseType);
+        _ ->
+            if ClauseType =/= Type -> exit(mixed_clauses_types);
+                true -> trace_function_type(Rest, Type)
+            end
+    end.
    
-   case Match of
+clause_type([_head,_guard, []]) -> standard_fun;
+clause_type([_head,_guard, Return]) ->
+    if {return_trace} == lists:last(Return) -> true;
+        _ -> false
+    end.    
+    
+test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
+case trace_function_type(PatternFun) of
+    standard_fun -> test_match(standard_fun, M, F, TraceM, TraceF, Args, PatternFun);
+    trace_fun -> 
+   Patterns = dbg:ms2fun(PatternFun), 
+              test_match(trace_fun, M, F, TraceM, TraceF, Args, Patterns)
+end.
+
+
+test_match(standard_fun, M, F, TraceM, TraceF, Args, PatternFun) ->
+    Match = 
+        case {M==TraceM, ((F=='_') or (F==TraceF)), PatternFun} of
+            {true, true, '_'} -> true;
+            {true, true, _} -> check;
+            _ -> false
+    end,
+   
+    case Match of
        true -> print; 
        false -> reject;
        check ->              
@@ -162,7 +208,31 @@ test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
                error:_ ->
                    reject
            end
-   end.
+  end;
+test_match(trace_fun, M, F, TraceM, TraceF, Args, Patterns) ->
+    Match = erlang:match_spec_test(Args, Patterns, trace), 
+        case {M==TraceM, ((F=='_') or (F==TraceF)), PatternFun} of
+            {true, true, '_'} -> true;
+            {true, true, _} -> check;
+            _ -> false
+    end,
+   
+    case Match of
+       true -> print; 
+       false -> reject;
+       check ->              
+           try PatternFun(Args) of
+               _ -> print
+           catch
+               error:badarg ->
+                   reject;
+               error:_ ->
+                   reject
+           end
+  end.
+
+
+            
 
 % @doc
 %% @private Filters the trace messages

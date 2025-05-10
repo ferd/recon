@@ -142,8 +142,12 @@ assert_trace_no_match(RegexString, TraceOutput) ->
 
 dummy_basic_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
-    recon_trace_use_dbg:calls({test_statem, light_state, fun(A) -> A end}, 10, 
-                        [{io_server, FH},{use_dbg, true},{scope,local}]),
+    
+    MatchSpec = dbg:fun2ms(fun(_) -> return_trace() end),
+    recon_trace_use_dbg:calls({test_statem, light_state, MatchSpec}, 10,
+        [{io_server, FH},{use_dbg, true}, {scope,local}]),
+  
+  
     test_statem:switch_state(),
     S = test_statem:get_state(),
     ct:log("State: ~p", [S]),
