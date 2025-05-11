@@ -5,14 +5,12 @@
 %%% Erlang nodes, currently for function calls only. Functionality includes:
 %%% @end
 -module(recon_trace_use_dbg).
+-compile(export_all).
 -include_lib("stdlib/include/ms_transform.hrl").
 %% API
 -export([clear/0, calls/2, calls/3]).
 
 -export([format/1]).
-
--record(trace, {pid, type, info}).
--record(trace_ts, {pid, type, info, timestamp}).
  
 %% Internal exports
 -export([count_tracer/4, formatter/5, format_trace_output/1, format_trace_output/2]).
@@ -91,33 +89,37 @@ calls(TSpecs, Max, Opts) ->
 %                 validate_formatter(Opts), validate_io_server(Opts)),
 %     trace_calls(TSpecs, Pid, Opts);
 
-         
 
 calls_dbg(TSpecs = [{M,F,A}|_], Max, Opts) ->
     case trace_function_type(A) of
-        trace_fun -> 
-            io:format(
-                "Warning: TSpecs contain erlang trace template function"++
-                "use_dbg flag ignored, falling back to default recon_trace behaviour~n"),
-        recon_trace:calls(TSpecs, Max, proplists:delete_value(use_dbg, Opts);
-    standard_fun ->  
+        trace_fun ->
+            io:format("Warning: TSpecs contain erlang trace template function"++
+                          "use_dbg flag ignored, falling back to default recon_trace behaviour~n"),
+            recon_trace:calls(TSpecs, Max, proplists:delete(use_dbg, Opts));
+        standard_fun ->
+            FunTSpecs = tspecs_normalization(TSpecs),
+            Formatter = validate_formatter(Opts),
+            IoServer = validate_io_server(Opts),
 
-            
-            
-    Formatter= validate_formatter(Opts),
-    IoServer = validate_io_server(Opts),
-    
-    PatternsFun = 
-        generate_pattern_filter(count_tracer, TSpecs, 
-            Max, IoServer, Formatter),
-    
-    dbg:tracer(process,{PatternsFun, 0}),
-    dbg:p(all,[c]),
-    dbg:tpl({M, F, '_'},[{'_', [], []}]),
-    dbg:tp({M, F, '_'},[{'_', [], []}])
-end.
+            PatternsFun =
+                generate_pattern_filter(count_tracer, FunTSpecs,
+                                        Max, IoServer, Formatter),
 
-    
+            dbg:tracer(process,{PatternsFun, 0}),
+            dbg:p(all,[c]),
+            dbg:tpl({M, F, '_'},[{'_', [], []}]),
+            dbg:tp({M, F, '_'},[{'_', [], []}])
+    end.
+
+ tspecs_normalization(TSpecs) ->
+    %% Normalizes the TSpecs to be a list of tuples
+    %% {Mod, Fun, Args} where Args is a function.
+ [case Args of
+    '_' -> {Mod, Fun, fun pass_all/1};
+    _ ->  TSpec 
+  end ||  {Mod, Fun, Args} = TSpec <- TSpecs].
+
+pass_all(V) -> V.       
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%% PRIVATE EXPORTS %%%
@@ -125,9 +127,9 @@ end.
 %% starts the tracer and formatter processes, and
 %% cleans them up before each call.
 generate_pattern_filter(count_tracer,
-        [{M,F,PatternFun}] = TSpecs, Max, IoServer, Formater) ->
+    [{M,F,PatternFun}] = TSpecs, Max, IoServer, Formater) ->
     clear(),
-    Ref = make_ref(),
+    %%Ref = make_ref(),
     count_tracer(Max, {M,F,PatternFun},IoServer, Formater).
 
 %% @private Stops when N trace messages have been received
@@ -143,52 +145,49 @@ fun
             reject -> N;
             print ->
                 Output = Formatter(Trace),
+                io:format(Output, []),
+                io:format("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa", []),
                 io:format(IoServer, Output, []),
                 N+1;
             _ -> N
-        end;
-    
-    (Trace, N) when N =< Max ->
-               io:format("aaaaaaaaaaaaaaaaaaa ~p", [Trace]), N+1
+        end
+    %%(Trace, N) when N =< Max ->
+    %% io:format("Unexpexted trace~p", [Trace]), N
 end.
-trace_function_type(PatternFun) ->
-    try dbg:fun2ms(PatternFun) of
-        Patterns -> trace_function_type(Patterns, not_decided)       
+
+trace_function_type(Patterns) when is_list(Patterns) ->
+    trace_function_type(Patterns, trace_fun);
+trace_function_type(PatternFun) when is_function(PatternFun, 1) ->
+    try fun_to_ms(PatternFun) of
+        Patterns -> trace_function_type(Patterns, not_decided)
     catch
-        _:_ -> standard_fun;
-    end.  
+        _:_ -> standard_fun
+    end.
 
 %% all function clauses are '_'
 trace_function_type([], trace_fun) -> trace_fun;
 trace_function_type([], standard_fun) -> standard_fun;
 
-trace_function_type([ClauseType | Rest], Type) ->
-    ClauseType = clause_type(Rest) ->
+trace_function_type([Clause | Rest], Type) ->
+    ClauseType = clause_type(Clause),
     case Type of
-        not_decided -> 
+        not_decided ->
             trace_function_type(Rest, ClauseType);
         _ ->
             if ClauseType =/= Type -> exit(mixed_clauses_types);
-                true -> trace_function_type(Rest, Type)
+               true -> trace_function_type(Rest, Type)
             end
     end.
-   
-clause_type([_head,_guard, []]) -> standard_fun;
-clause_type([_head,_guard, Return]) ->
-    if {return_trace} == lists:last(Return) -> true;
-        _ -> false
+%% actually, it should not be possible since the thirdlist has at least return value
+clause_type({_head,_guard, []}) -> standard_fun;
+clause_type({_head,_guard, Return}) ->
+    case lists:last(Return) of
+       %% can return_trace, current_stacktrace, exception_trace
+      {_return_trace} -> trace_fun;
+      _ -> standard_fun
     end.    
-    
+
 test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
-case trace_function_type(PatternFun) of
-    standard_fun -> test_match(standard_fun, M, F, TraceM, TraceF, Args, PatternFun);
-    trace_fun -> 
-   Patterns = dbg:ms2fun(PatternFun), 
-              test_match(trace_fun, M, F, TraceM, TraceF, Args, Patterns)
-end.
-
-
-test_match(standard_fun, M, F, TraceM, TraceF, Args, PatternFun) ->
     Match = 
         case {M==TraceM, ((F=='_') or (F==TraceF)), PatternFun} of
             {true, true, '_'} -> true;
@@ -208,31 +207,7 @@ test_match(standard_fun, M, F, TraceM, TraceF, Args, PatternFun) ->
                error:_ ->
                    reject
            end
-  end;
-test_match(trace_fun, M, F, TraceM, TraceF, Args, Patterns) ->
-    Match = erlang:match_spec_test(Args, Patterns, trace), 
-        case {M==TraceM, ((F=='_') or (F==TraceF)), PatternFun} of
-            {true, true, '_'} -> true;
-            {true, true, _} -> check;
-            _ -> false
-    end,
-   
-    case Match of
-       true -> print; 
-       false -> reject;
-       check ->              
-           try PatternFun(Args) of
-               _ -> print
-           catch
-               error:badarg ->
-                   reject;
-               error:_ ->
-                   reject
-           end
   end.
-
-
-            
 
 % @doc
 %% @private Filters the trace messages
@@ -580,7 +555,6 @@ fun_to_ms(ShellFun) when is_function(ShellFun) ->
         false ->
             exit(shell_funs_only)
     end.
-
 
 -ifdef(OTP_RELEASE).
 -spec join(term(), [term()]) -> [term()].

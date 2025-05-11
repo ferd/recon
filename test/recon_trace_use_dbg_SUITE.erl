@@ -27,20 +27,21 @@
 
 %% Test cases
 -export([
-	 dummy_basic_test/1, 
-	 trace_full_module_test/1,
-	 trace_one_function_test/1,
-	 trace_rate_limit_test/1,
-	 trace_even_arg_test/1,
-	 trace_iolist_to_binary_with_binary_test/1,
-	 trace_specific_pid_test/1,
-	 trace_arity_test/1,
-	 trace_spec_list_new_procs_only_test/1,
-	 trace_handle_call_new_and_custom_registry_test/1,
-	 trace_return_shellfun_test/1,
-	 trace_return_matchspec_test/1,
-	 trace_return_shorthand_test/1
-	]).
+         dummy_basic_test/1,
+         dummy_basic_trace_test/1,
+         trace_full_module_test/1,
+         trace_one_function_test/1,
+         trace_rate_limit_test/1,
+         trace_even_arg_test/1,
+         trace_iolist_to_binary_with_binary_test/1,
+         trace_specific_pid_test/1,
+         trace_arity_test/1,
+         trace_spec_list_new_procs_only_test/1,
+         trace_handle_call_new_and_custom_registry_test/1,
+         trace_return_shellfun_test/1,
+         trace_return_matchspec_test/1,
+         trace_return_shorthand_test/1
+        ]).
 
 %%--------------------------------------------------------------------
 %% Suite Configuration
@@ -144,9 +145,8 @@ dummy_basic_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
     
     MatchSpec = dbg:fun2ms(fun(_) -> return_trace() end),
-    recon_trace_use_dbg:calls({test_statem, light_state, MatchSpec}, 10,
+    recon_trace_use_dbg:calls({test_statem, light_state, fun(V) -> V end}, 10,
         [{io_server, FH},{use_dbg, true}, {scope,local}]),
-  
   
     test_statem:switch_state(),
     S = test_statem:get_state(),
@@ -155,6 +155,24 @@ dummy_basic_test(Config) ->
     {ok, TraceOutput} = file:read_file(FileName),
     assert_trace_match("test_statem:light_state\\(cast, switch_state, #{iterator=>0", TraceOutput),
     ok.
+
+dummy_basic_trace_test(Config) ->
+    {FH, FileName} = proplists:get_value(file, Config),
+
+    MatchSpec = dbg:fun2ms(fun(_) -> return_trace() end),
+    recon_trace_use_dbg:calls({test_statem, light_state, MatchSpec}, 10,
+                              [{io_server, FH},{use_dbg, true}, {scope,local}]),
+
+
+    test_statem:switch_state(),
+    S = test_statem:get_state(),
+    ct:log("State: ~p", [S]),
+    timer:sleep(100),
+    {ok, TraceOutput} = file:read_file(FileName),
+    assert_trace_match("test_statem:light_state\\(cast, switch_state, #{iterator=>0", TraceOutput),
+    ok.
+
+
 
 %%======================================================================
 %% ---------------------------------------------------------------------------
