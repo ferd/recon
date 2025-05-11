@@ -145,8 +145,6 @@ fun
             reject -> N;
             print ->
                 Output = Formatter(Trace),
-                io:format(Output, []),
-                io:format("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa", []),
                 io:format(IoServer, Output, []),
                 N+1;
             _ -> N
@@ -187,27 +185,7 @@ clause_type({_head,_guard, Return}) ->
       _ -> standard_fun
     end.    
 
-test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
-    Match = 
-        case {M==TraceM, ((F=='_') or (F==TraceF)), PatternFun} of
-            {true, true, '_'} -> true;
-            {true, true, _} -> check;
-            _ -> false
-    end,
-   
-    case Match of
-       true -> print; 
-       false -> reject;
-       check ->              
-           try PatternFun(Args) of
-               _ -> print
-           catch
-               error:badarg ->
-                   reject;
-               error:_ ->
-                   reject
-           end
-  end.
+
 
 % @doc
 %% @private Filters the trace messages
@@ -223,6 +201,27 @@ filter_call(TraceMsg, M, F, PatternFun) ->
         _ -> print
     end.
 
+test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
+    Match = 
+        case {M==TraceM, ((F=='_') or (F==TraceF)), PatternFun} of
+            {true, true, '_'} -> true;
+            {true, true, _} -> check;
+            _ -> false
+    end,
+   
+    case Match of
+       true -> print; 
+       false -> reject;
+       check ->
+           try erlang:apply(PatternFun, [Args]) of
+               _ -> print
+           catch
+               error:function_clause ->
+                   reject;
+               error:E ->
+                   reject
+           end
+  end.
 
 %% @private Formats traces to be output
 formatter(Tracer, Parent, Ref, FormatterFun, IOServer) ->
