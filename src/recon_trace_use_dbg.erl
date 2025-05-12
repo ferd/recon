@@ -90,39 +90,43 @@ calls(TSpecs, Max, Opts) ->
 %     trace_calls(TSpecs, Pid, Opts);
 
 
-calls_dbg(TSpecs = [{M,F,A}|_], Max, Opts) ->
+calls_dbg(TSpecs = [{M,F,A}|_], Boundaries, Opts) ->
     case trace_function_type(A) of
         trace_fun ->
             io:format("Warning: TSpecs contain erlang trace template function"++
                           "use_dbg flag ignored, falling back to default recon_trace behaviour~n"),
-            recon_trace:calls(TSpecs, Max, proplists:delete(use_dbg, Opts));
+            recon_trace:calls(TSpecs, Boundaries, proplists:delete(use_dbg, Opts));
         standard_fun ->
             FunTSpecs = tspecs_normalization(TSpecs),
             Formatter = validate_formatter(Opts),
             IoServer = validate_io_server(Opts),
 
             PatternsFun =
-                generate_pattern_filter(count_tracer, FunTSpecs,
-                                        Max, IoServer, Formatter),
+                generate_pattern_filter(FunTSpecs, Boundaries, IoServer, Formatter),
 
-            dbg:tracer(process,{PatternsFun, 0}),
+            dbg:tracer(process,{PatternsFun, startValue(Boundaries)}),
             dbg:p(all,[c]),
             dbg:tpl({M, F, '_'},[{'_', [], []}]),
             dbg:tp({M, F, '_'},[{'_', [], []}])
     end.
 
- tspecs_normalization(TSpecs) ->
+startValue({_, _}) ->
+    {0, os:timestamp()};
+startValue(_Max) ->
+    0.
+
+tspecs_normalization(TSpecs) ->
     %% Normalizes the TSpecs to be a list of tuples
     %% {Mod, Fun, Args} where Args is a function.
- [case Args of
-    '_' -> {Mod, Fun, fun pass_all/1};
-    N when is_integer(N) -> 
-        ArgsNoFun = args_no_fun(N),
-        {Mod, Fun, ArgsNoFun};
-    _ ->  TSpec 
-  end ||  {Mod, Fun, Args} = TSpec <- TSpecs].
+    [case Args of
+         '_' -> {Mod, Fun, fun pass_all/1};
+         N when is_integer(N) ->
+             ArgsNoFun = args_no_fun(N),
+             {Mod, Fun, ArgsNoFun};
+         _ ->  TSpec
+     end ||  {Mod, Fun, Args} = TSpec <- TSpecs].
 
-pass_all(V) -> V.       
+pass_all(V) -> V.
 
 args_no_fun(N) ->
     fun(V) ->
@@ -137,11 +141,14 @@ args_no_fun(N) ->
 %%%%%%%%%%%%%%%%%%%%%%%
 %% starts the tracer and formatter processes, and
 %% cleans them up before each call.
-generate_pattern_filter(count_tracer,
-    [{M,F,PatternFun}] = TSpecs, Max, IoServer, Formater) ->
+
+generate_pattern_filter([{M,F,PatternFun}] = TSpecs, {Max, Time}, IoServer, Formater) ->
     clear(),
-    %%Ref = make_ref(),
+    rate_tracer({Max, Time}, {M,F,PatternFun}, IoServer, Formater);
+generate_pattern_filter([{M,F,PatternFun}] = TSpecs, Max, IoServer, Formater) ->
+    clear(),
     count_tracer(Max, {M,F,PatternFun},IoServer, Formater).
+    
 
 %% @private Stops when N trace messages have been received
 count_tracer(Max, {M, F, PatternFun}, IoServer, Formatter) ->
@@ -151,25 +158,45 @@ count_tracer(Max, {M, F, PatternFun}, IoServer, Formatter) ->
             dbg:stop();
         (Trace, N) when (N =< Max) and is_tuple(Trace) ->
             %%  Type = element(1, Trace),
-            Print = filter_call(Trace, M, F, PatternFun),
-            case Print of
-                reject -> N;
-                print ->
-                    case Formatter(Trace) of
-                        "" -> ok;
-                        Formatted ->
-                            case is_process_alive(IoServer) of
-                                true -> io:format(IoServer, Formatted, []);
-                                false -> io:format("Recon tracer formater stopped.~n"),
-                                         dbg:stop()
-                            end
-                    end,
-                    N+1;
-                _ -> N
+            handle_trace(Trace, N, M, F, PatternFun, IoServer, Formatter)
+    end.
+
+rate_tracer({Max, Time}, {M, F, PatternFun}, IoServer, Formatter) ->
+    fun(Trace, {N, Timestamp}) ->
+            Now = os:timestamp(),
+            Delay = timer:now_diff(Now, Timestamp) div 1000,
+
+            if Delay > Time ->
+                    NewN = handle_trace(Trace, 0, M, F, PatternFun, IoServer, Formatter),
+                    {NewN, Now};
+               Max >= N ->
+                    NewN = handle_trace(Trace, N, M, F, PatternFun, IoServer, Formatter),
+                    {NewN, Timestamp};
+               true ->
+                    io:format("Recon tracer rate limit tripped.~n"),
+                    dbg:stop()
             end
+    end.
+
+handle_trace(Trace, N, M, F, PatternFun, IoServer, Formatter) ->
+    Print = filter_call(Trace, M, F, PatternFun),
+    case Print of
+        reject -> N;
+        print ->
+            case Formatter(Trace) of
+                "" -> ok;
+                Formatted ->
+                    case is_process_alive(IoServer) of
+                        true -> io:format(IoServer, Formatted, []);
+                        false -> io:format("Recon tracer formater stopped.~n"),
+                                 dbg:stop()
+                    end
+            end,
+            N+1;
+        _ -> N
+    end.
             %%(Trace, N) when N =< Max ->
             %% io:format("Unexpexted trace~p", [Trace]), N
-    end.
 
 trace_function_type('_') -> standard_fun;
 trace_function_type(N) when is_integer(N) -> standard_fun;
