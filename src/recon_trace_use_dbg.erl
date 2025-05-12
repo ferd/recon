@@ -116,10 +116,21 @@ calls_dbg(TSpecs = [{M,F,A}|_], Max, Opts) ->
     %% {Mod, Fun, Args} where Args is a function.
  [case Args of
     '_' -> {Mod, Fun, fun pass_all/1};
+    N when is_integer(N) -> 
+        ArgsNoFun = args_no_fun(N),
+        {Mod, Fun, ArgsNoFun};
     _ ->  TSpec 
   end ||  {Mod, Fun, Args} = TSpec <- TSpecs].
 
 pass_all(V) -> V.       
+
+args_no_fun(N) ->
+    fun(V) ->
+            case erlang:length(V) of
+                N -> V;
+                _ -> throw(arity_no_match)
+            end
+    end.
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%% PRIVATE EXPORTS %%%
@@ -134,25 +145,34 @@ generate_pattern_filter(count_tracer,
 
 %% @private Stops when N trace messages have been received
 count_tracer(Max, {M, F, PatternFun}, IoServer, Formatter) ->
-fun
-    (_Trace, N) when N > Max -> 
-        io:format("Recon tracer rate limit tripped.~n"),
-        dbg:stop();
-    (Trace, N) when (N =< Max) and is_tuple(Trace) ->
-    %%  Type = element(1, Trace),
-        Print = filter_call(Trace, M, F, PatternFun),                  
-        case Print of
-            reject -> N;
-            print ->
-                Output = Formatter(Trace),
-                io:format(IoServer, Output, []),
-                N+1;
-            _ -> N
-        end
-    %%(Trace, N) when N =< Max ->
-    %% io:format("Unexpexted trace~p", [Trace]), N
-end.
+    fun
+        (_Trace, N) when N > Max ->
+            io:format("Recon tracer rate limit tripped.~n"),
+            dbg:stop();
+        (Trace, N) when (N =< Max) and is_tuple(Trace) ->
+            %%  Type = element(1, Trace),
+            Print = filter_call(Trace, M, F, PatternFun),
+            case Print of
+                reject -> N;
+                print ->
+                    case Formatter(Trace) of
+                        "" -> ok;
+                        Formatted ->
+                            case is_process_alive(IoServer) of
+                                true -> io:format(IoServer, Formatted, []);
+                                false -> io:format("Recon tracer formater stopped.~n"),
+                                         dbg:stop()
+                            end
+                    end,
+                    N+1;
+                _ -> N
+            end
+            %%(Trace, N) when N =< Max ->
+            %% io:format("Unexpexted trace~p", [Trace]), N
+    end.
 
+trace_function_type('_') -> standard_fun;
+trace_function_type(N) when is_integer(N) -> standard_fun;
 trace_function_type(Patterns) when is_list(Patterns) ->
     trace_function_type(Patterns, trace_fun);
 trace_function_type(PatternFun) when is_function(PatternFun, 1) ->
@@ -217,6 +237,8 @@ test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
                _ -> print
            catch
                error:function_clause ->
+                   reject;
+               error:arity_no_match ->
                    reject;
                error:E ->
                    reject
@@ -343,7 +365,12 @@ validate_io_server(Opts) ->
 %%%%%%%%%%%%%%%%%%%%%%%%
 %% Thanks Geoff Cant for the foundations for this.
 format(TraceMsg) ->
+    io:format("ffffffffffffffffff ~n~p ~n",
+              [TraceMsg]),
     {Type, Pid, {Hour,Min,Sec}, TraceInfo} = extract_info(TraceMsg),
+    
+    io:format("aaaffffffffffffffffff ~n~p ~n",
+              [{Type, Pid, {Hour,Min,Sec}, TraceInfo}]),
     {FormatStr, FormatArgs} = case {Type, TraceInfo} of
         %% {trace, Pid, 'receive', Msg}
         {'receive', [Msg]} ->
