@@ -97,17 +97,22 @@ calls_dbg(TSpecs = [{M,F,A}|_], Boundaries, Opts) ->
                           "use_dbg flag ignored, falling back to default recon_trace behaviour~n"),
             recon_trace:calls(TSpecs, Boundaries, proplists:delete(use_dbg, Opts));
         standard_fun ->
+            clear(),
             FunTSpecs = tspecs_normalization(TSpecs),
             Formatter = validate_formatter(Opts),
             IoServer = validate_io_server(Opts),
 
+            {PidSpecs, TraceOpts, MatchOpts} = validate_opts(Opts),
             PatternsFun =
                 generate_pattern_filter(FunTSpecs, Boundaries, IoServer, Formatter),
 
             dbg:tracer(process,{PatternsFun, startValue(Boundaries)}),
-            dbg:p(all,[c]),
-            dbg:tpl({M, F, '_'},[{'_', [], []}]),
-            dbg:tp({M, F, '_'},[{'_', [], []}])
+            dbg:p(hd(PidSpecs), [c]),
+            dbg:tp({M, F, '_'},[{'_', [], []}]),
+            case MatchOpts of
+                [global] -> ok;
+                [local] ->  dbg:tpl({M, F, '_'},[{'_', [], []}])
+            end
     end.
 
 startValue({_, _}) ->
