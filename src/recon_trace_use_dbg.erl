@@ -93,7 +93,7 @@ calls(TSpecs, Max, Opts) ->
 calls_dbg(TSpecs = [{M,F,A}|_], Boundaries, Opts) ->
     case trace_function_type(A) of
         trace_fun ->
-            io:format("Warning: TSpecs contain erlang trace template function"++
+            io:format("Warning: TSpecs contain erlang trace template function "++
                           "use_dbg flag ignored, falling back to default recon_trace behaviour~n"),
             recon_trace:calls(TSpecs, Boundaries, proplists:delete(use_dbg, Opts));
         standard_fun ->
@@ -120,6 +120,12 @@ startValue({_, _}) ->
 startValue(_Max) ->
     0.
 
+
+preprocess_traces(Trace, TraceOpts) ->
+    case proplists:get_bool(arity, TraceOpts) of
+        true -> {return_to, Trace};
+        _ -> Trace
+    end.
 tspecs_normalization(TSpecs) ->
     %% Normalizes the TSpecs to be a list of tuples
     %% {Mod, Fun, Args} where Args is a function.
@@ -147,18 +153,18 @@ args_no_fun(N) ->
 %% starts the tracer and formatter processes, and
 %% cleans them up before each call.
 
-generate_pattern_filter([{M,F,PatternFun}] = TSpecs, {Max, Time}, IoServer, Formater) ->
+generate_pattern_filter([{M,F,PatternFun}] = TSpecs, {Max, Time}, IoServer, Formatter) ->
     clear(),
-    rate_tracer({Max, Time}, {M,F,PatternFun}, IoServer, Formater);
-generate_pattern_filter([{M,F,PatternFun}] = TSpecs, Max, IoServer, Formater) ->
+    rate_tracer({Max, Time}, {M,F,PatternFun}, IoServer, Formatter);
+generate_pattern_filter([{M,F,PatternFun}] = TSpecs, Max, IoServer, Formatter) ->
     clear(),
-    count_tracer(Max, {M,F,PatternFun},IoServer, Formater).
+    count_tracer(Max, {M,F,PatternFun}, IoServer, Formatter).
     
 
 %% @private Stops when N trace messages have been received
 count_tracer(Max, {M, F, PatternFun}, IoServer, Formatter) ->
     fun
-        (_Trace, N) when N > Max ->
+        (_Trace, {N, _}) when N > Max ->
             io:format("Recon tracer rate limit tripped.~n"),
             dbg:stop();
         (Trace, N) when (N =< Max) and is_tuple(Trace) ->
@@ -202,6 +208,7 @@ handle_trace(Trace, N, M, F, PatternFun, IoServer, Formatter) ->
     end.
             %%(Trace, N) when N =< Max ->
             %% io:format("Unexpexted trace~p", [Trace]), N
+
 
 trace_function_type('_') -> standard_fun;
 trace_function_type(N) when is_integer(N) -> standard_fun;
@@ -369,7 +376,7 @@ validate_tspec(Mod, Fun, Args) when is_function(Args) ->
 validate_tspec(Mod, Fun, return_trace) ->
     validate_tspec(Mod, Fun, [{'_', [], [{return_trace}]}]);
 validate_tspec(Mod, Fun, Args) ->
-    BannedMods = ['_', ?MODULE, io, lists],
+    BannedMods = ['_', ?MODULE, io, lists, dbg, recon_trace],
     %% The banned mod check can be bypassed by using
     %% match specs if you really feel like being dumb.
     case {lists:member(Mod, BannedMods), Args} of
@@ -384,8 +391,14 @@ validate_tspec(Mod, Fun, Args) ->
     end.
 
 validate_formatter(Opts) ->
-    case proplists:get_value(formatter, Opts) of
-        F when is_function(F, 1) -> F;
+    Formatter = proplists:get_value(formatter, Opts),
+    ArgsOrArity = proplists:get_value(args, Opts),
+    case {ArgsOrArity, Formatter} of
+        {arity, Formatter} when is_function(Formatter, 1) ->
+             io:format("Custom formater, arity option ignored ~n"),
+             Formatter;
+        {_args, Formatter} when is_function(Formatter, 1) -> Formatter;
+        {arity, Formatter} -> generate_formatter(Formatter, arity);
         _ -> fun format/1
     end.
 
@@ -395,94 +408,113 @@ validate_io_server(Opts) ->
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%% TRACE FORMATTING %%%
 %%%%%%%%%%%%%%%%%%%%%%%%
+generate_formatter(Formatter, arity) ->
+    fun(TraceMsg) ->
+            {Type, Pid, {Hour,Min,Sec}, TraceInfo} = extract_info(TraceMsg),
+            {_, UpdTrace} = trace_calls_to_arity({Type, TraceInfo}),
+            {FormatStr, FormatArgs} =
+                trace_to_io(Type, UpdTrace),
+            io_lib:format("~n~p:~p:~9.6.0f ~p " ++ FormatStr ++ "~n",
+                          [Hour, Min, Sec, Pid] ++ FormatArgs)
+    end;
+generate_formatter(_Formatter, _) ->
+    fun format/1.
+
+trace_calls_to_arity(TypeTraceInfo) ->
+    case TypeTraceInfo of
+        {call, [{M,F,Args}]} ->
+            {call, [{M,F,length(Args)}]};
+        {call, [{M,F,Args}, Msg]} ->
+            {call, [{M,F,length(Args)}, Msg]};
+        Trace -> Trace
+    end.
+
+trace_to_io(Type, TraceInfo) ->
+        case {Type, TraceInfo} of
+            %% {trace, Pid, 'receive', Msg}
+            {'receive', [Msg]} ->
+                {"< ~p", [Msg]};
+            %% {trace, Pid, send, Msg, To}
+            {send, [Msg, To]} ->
+                {" > ~p: ~p", [To, Msg]};
+            %% {trace, Pid, send_to_non_existing_process, Msg, To}
+            {send_to_non_existing_process, [Msg, To]} ->
+                {" > (non_existent) ~p: ~p", [To, Msg]};
+            %% {trace, Pid, call, {M, F, Args}}
+            {call, [{M,F,Args}]} ->
+                {"~p:~p~s", [M,F,format_args(Args)]};
+            %% {trace, Pid, call, {M, F, Args}, Msg}
+            {call, [{M,F,Args}, Msg]} ->
+                {"~p:~p~s ~s", [M,F,format_args(Args), format_trace_output(Msg)]};
+            %% {trace, Pid, return_to, {M, F, Arity}}
+            {return_to, [{M,F,Arity}]} ->
+                {" '--> ~p:~p/~p", [M,F,Arity]};
+            %% {trace, Pid, return_from, {M, F, Arity}, ReturnValue}
+            {return_from, [{M,F,Arity}, Return]} ->
+                {"~p:~p/~p --> ~s", [M,F,Arity, format_trace_output(Return)]};
+            %% {trace, Pid, exception_from, {M, F, Arity}, {Class, Value}}
+            {exception_from, [{M,F,Arity}, {Class,Val}]} ->
+                {"~p:~p/~p ~p ~p", [M,F,Arity, Class, Val]};
+            %% {trace, Pid, spawn, Spawned, {M, F, Args}}
+            {spawn, [Spawned, {M,F,Args}]}  ->
+                {"spawned ~p as ~p:~p~s", [Spawned, M, F, format_args(Args)]};
+            %% {trace, Pid, exit, Reason}
+            {exit, [Reason]} ->
+                {"EXIT ~p", [Reason]};
+            %% {trace, Pid, link, Pid2}
+            {link, [Linked]} ->
+                {"link(~p)", [Linked]};
+            %% {trace, Pid, unlink, Pid2}
+            {unlink, [Linked]} ->
+                {"unlink(~p)", [Linked]};
+            %% {trace, Pid, getting_linked, Pid2}
+            {getting_linked, [Linker]} ->
+                {"getting linked by ~p", [Linker]};
+            %% {trace, Pid, getting_unlinked, Pid2}
+            {getting_unlinked, [Unlinker]} ->
+                {"getting unlinked by ~p", [Unlinker]};
+            %% {trace, Pid, register, RegName}
+            {register, [Name]} ->
+                {"registered as ~p", [Name]};
+            %% {trace, Pid, unregister, RegName}
+            {unregister, [Name]} ->
+                {"no longer registered as ~p", [Name]};
+            %% {trace, Pid, in, {M, F, Arity} | 0}
+            {in, [{M,F,Arity}]} ->
+                {"scheduled in for ~p:~p/~p", [M,F,Arity]};
+            {in, [0]} ->
+                {"scheduled in", []};
+            %% {trace, Pid, out, {M, F, Arity} | 0}
+            {out, [{M,F,Arity}]} ->
+                {"scheduled out from ~p:~p/~p", [M, F, Arity]};
+            {out, [0]} ->
+                {"scheduled out", []};
+            %% {trace, Pid, gc_start, Info}
+            {gc_start, [Info]} ->
+                HeapSize = proplists:get_value(heap_size, Info),
+                OldHeapSize = proplists:get_value(old_heap_size, Info),
+                MbufSize = proplists:get_value(mbuf_size, Info),
+                {"gc beginning -- heap ~p bytes",
+                 [HeapSize + OldHeapSize + MbufSize]};
+            %% {trace, Pid, gc_end, Info}
+            {gc_end, [Info]} ->
+                HeapSize = proplists:get_value(heap_size, Info),
+                OldHeapSize = proplists:get_value(old_heap_size, Info),
+                MbufSize = proplists:get_value(mbuf_size, Info),
+                {"gc finished -- heap ~p bytes",
+                 [HeapSize + OldHeapSize + MbufSize]};
+            _ ->
+                {"unknown trace type ~p -- ~p", [Type, TraceInfo]}
+        end.
+   
+
 %% Thanks Geoff Cant for the foundations for this.
 format(TraceMsg) ->
-    io:format("ffffffffffffffffff ~n~p ~n",
-              [TraceMsg]),
     {Type, Pid, {Hour,Min,Sec}, TraceInfo} = extract_info(TraceMsg),
-    
-    io:format("aaaffffffffffffffffff ~n~p ~n",
-              [{Type, Pid, {Hour,Min,Sec}, TraceInfo}]),
-    {FormatStr, FormatArgs} = case {Type, TraceInfo} of
-        %% {trace, Pid, 'receive', Msg}
-        {'receive', [Msg]} ->
-            {"< ~p", [Msg]};
-        %% {trace, Pid, send, Msg, To}
-        {send, [Msg, To]} ->
-            {" > ~p: ~p", [To, Msg]};
-        %% {trace, Pid, send_to_non_existing_process, Msg, To}
-        {send_to_non_existing_process, [Msg, To]} ->
-            {" > (non_existent) ~p: ~p", [To, Msg]};
-        %% {trace, Pid, call, {M, F, Args}}
-        {call, [{M,F,Args}]} ->
-            {"~p:~p~s", [M,F,format_args(Args)]};
-        %% {trace, Pid, call, {M, F, Args}, Msg}
-        {call, [{M,F,Args}, Msg]} ->
-            {"~p:~p~s ~s", [M,F,format_args(Args), format_trace_output(Msg)]};
-        %% {trace, Pid, return_to, {M, F, Arity}}
-        {return_to, [{M,F,Arity}]} ->
-            {" '--> ~p:~p/~p", [M,F,Arity]};
-        %% {trace, Pid, return_from, {M, F, Arity}, ReturnValue}
-        {return_from, [{M,F,Arity}, Return]} ->
-            {"~p:~p/~p --> ~s", [M,F,Arity, format_trace_output(Return)]};
-        %% {trace, Pid, exception_from, {M, F, Arity}, {Class, Value}}
-        {exception_from, [{M,F,Arity}, {Class,Val}]} ->
-            {"~p:~p/~p ~p ~p", [M,F,Arity, Class, Val]};
-        %% {trace, Pid, spawn, Spawned, {M, F, Args}}
-        {spawn, [Spawned, {M,F,Args}]}  ->
-            {"spawned ~p as ~p:~p~s", [Spawned, M, F, format_args(Args)]};
-        %% {trace, Pid, exit, Reason}
-        {exit, [Reason]} ->
-            {"EXIT ~p", [Reason]};
-        %% {trace, Pid, link, Pid2}
-        {link, [Linked]} ->
-            {"link(~p)", [Linked]};
-        %% {trace, Pid, unlink, Pid2}
-        {unlink, [Linked]} ->
-            {"unlink(~p)", [Linked]};
-        %% {trace, Pid, getting_linked, Pid2}
-        {getting_linked, [Linker]} ->
-            {"getting linked by ~p", [Linker]};
-        %% {trace, Pid, getting_unlinked, Pid2}
-        {getting_unlinked, [Unlinker]} ->
-            {"getting unlinked by ~p", [Unlinker]};
-        %% {trace, Pid, register, RegName}
-        {register, [Name]} ->
-            {"registered as ~p", [Name]};
-        %% {trace, Pid, unregister, RegName}
-        {unregister, [Name]} ->
-            {"no longer registered as ~p", [Name]};
-        %% {trace, Pid, in, {M, F, Arity} | 0}
-        {in, [{M,F,Arity}]} ->
-            {"scheduled in for ~p:~p/~p", [M,F,Arity]};
-        {in, [0]} ->
-            {"scheduled in", []};
-        %% {trace, Pid, out, {M, F, Arity} | 0}
-        {out, [{M,F,Arity}]} ->
-            {"scheduled out from ~p:~p/~p", [M, F, Arity]};
-        {out, [0]} ->
-            {"scheduled out", []};
-        %% {trace, Pid, gc_start, Info}
-        {gc_start, [Info]} ->
-            HeapSize = proplists:get_value(heap_size, Info),
-            OldHeapSize = proplists:get_value(old_heap_size, Info),
-            MbufSize = proplists:get_value(mbuf_size, Info),
-            {"gc beginning -- heap ~p bytes",
-             [HeapSize + OldHeapSize + MbufSize]};
-        %% {trace, Pid, gc_end, Info}
-        {gc_end, [Info]} ->
-            HeapSize = proplists:get_value(heap_size, Info),
-            OldHeapSize = proplists:get_value(old_heap_size, Info),
-            MbufSize = proplists:get_value(mbuf_size, Info),
-            {"gc finished -- heap ~p bytes",
-             [HeapSize + OldHeapSize + MbufSize]};
-        _ ->
-            {"unknown trace type ~p -- ~p", [Type, TraceInfo]}
-    end,
+    {FormatStr, FormatArgs} =
+        trace_to_io(Type, TraceInfo),
     io_lib:format("~n~p:~p:~9.6.0f ~p " ++ FormatStr ++ "~n",
                   [Hour, Min, Sec, Pid] ++ FormatArgs).
-
-
 
 extract_info(TraceMsg) ->
     case tuple_to_list(TraceMsg) of
