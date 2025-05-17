@@ -90,9 +90,9 @@ calls(TSpecs, Max, Opts) ->
 %     trace_calls(TSpecs, Pid, Opts);
 
 
-calls_dbg(TSpecs = [{M,F,A}|_], Boundaries, Opts) ->
-    case trace_function_type(A) of
-        trace_fun ->
+calls_dbg(TSpecs, Boundaries, Opts) ->
+    case trace_function_types(TSpecs) of
+        shell_fun ->
             io:format("Warning: TSpecs contain erlang trace template function "++
                           "use_dbg flag ignored, falling back to default recon_trace behaviour~n"),
             recon_trace:calls(TSpecs, Boundaries, proplists:delete(use_dbg, Opts));
@@ -105,14 +105,9 @@ calls_dbg(TSpecs = [{M,F,A}|_], Boundaries, Opts) ->
             {PidSpecs, TraceOpts, MatchOpts} = validate_opts(Opts),
             PatternsFun =
                 generate_pattern_filter(FunTSpecs, Boundaries, IoServer, Formatter),
-
             dbg:tracer(process,{PatternsFun, startValue(Boundaries)}),
             dbg:p(hd(PidSpecs), [c]),
-            dbg:tp({M, F, '_'},[{'_', [], []}]),
-            case MatchOpts of
-                [global] -> ok;
-                [local] ->  dbg:tpl({M, F, '_'},[{'_', [], []}])
-            end
+            dbg_tp(TSpecs, MatchOpts)
     end.
 
 startValue({_, _}) ->
@@ -120,7 +115,14 @@ startValue({_, _}) ->
 startValue(_Max) ->
     0.
 
-
+dbg_tp(MFAList, MatchOpts) ->
+    Res = [dbg:tp({M, F, '_'}, [{'_', [], []}]) || {M, F, _A} <- MFAList],
+    case MatchOpts of
+        [local] -> 
+            [dbg:tpl({M, F, '_'}, [{'_', [], []}]) || {M, F, _A} <- MFAList];
+        [global] -> Res
+    end.
+    
 preprocess_traces(Trace, TraceOpts) ->
     case proplists:get_bool(arity, TraceOpts) of
         true -> {return_to, Trace};
@@ -153,35 +155,34 @@ args_no_fun(N) ->
 %% starts the tracer and formatter processes, and
 %% cleans them up before each call.
 
-generate_pattern_filter([{M,F,PatternFun}] = TSpecs, {Max, Time}, IoServer, Formatter) ->
+generate_pattern_filter(TSpecs, {Max, Time}, IoServer, Formatter) ->
     clear(),
-    rate_tracer({Max, Time}, {M,F,PatternFun}, IoServer, Formatter);
-generate_pattern_filter([{M,F,PatternFun}] = TSpecs, Max, IoServer, Formatter) ->
+    rate_tracer({Max, Time}, TSpecs, IoServer, Formatter);
+generate_pattern_filter(TSpecs, Max, IoServer, Formatter) ->
     clear(),
-    count_tracer(Max, {M,F,PatternFun}, IoServer, Formatter).
-    
+    count_tracer(Max, TSpecs, IoServer, Formatter).
 
 %% @private Stops when N trace messages have been received
-count_tracer(Max, {M, F, PatternFun}, IoServer, Formatter) ->
+count_tracer(Max, TSpecs, IoServer, Formatter) ->
     fun
         (_Trace, {N, _}) when N > Max ->
             io:format("Recon tracer rate limit tripped.~n"),
             dbg:stop();
         (Trace, N) when (N =< Max) and is_tuple(Trace) ->
             %%  Type = element(1, Trace),
-            handle_trace(Trace, N, M, F, PatternFun, IoServer, Formatter)
+            handle_trace(Trace, N, TSpecs, IoServer, Formatter)
     end.
 
-rate_tracer({Max, Time}, {M, F, PatternFun}, IoServer, Formatter) ->
+rate_tracer({Max, Time}, TSpecs, IoServer, Formatter) ->
     fun(Trace, {N, Timestamp}) ->
             Now = os:timestamp(),
             Delay = timer:now_diff(Now, Timestamp) div 1000,
 
             if Delay > Time ->
-                    NewN = handle_trace(Trace, 0, M, F, PatternFun, IoServer, Formatter),
+                    NewN = handle_trace(Trace, 0, TSpecs, IoServer, Formatter),
                     {NewN, Now};
                Max >= N ->
-                    NewN = handle_trace(Trace, N, M, F, PatternFun, IoServer, Formatter),
+                    NewN = handle_trace(Trace, N, TSpecs, IoServer, Formatter),
                     {NewN, Timestamp};
                true ->
                     io:format("Recon tracer rate limit tripped.~n"),
@@ -189,8 +190,8 @@ rate_tracer({Max, Time}, {M, F, PatternFun}, IoServer, Formatter) ->
             end
     end.
 
-handle_trace(Trace, N, M, F, PatternFun, IoServer, Formatter) ->
-    Print = filter_call(Trace, M, F, PatternFun),
+handle_trace(Trace, N, TSpecs, IoServer, Formatter) ->
+    Print = filter_call(Trace, TSpecs),
     case Print of
         reject -> N;
         print ->
@@ -208,39 +209,73 @@ handle_trace(Trace, N, M, F, PatternFun, IoServer, Formatter) ->
     end.
             %%(Trace, N) when N =< Max ->
             %% io:format("Unexpexted trace~p", [Trace]), N
+%%-----------------------------------------------------------------------
+%% In the list of TSpecs, the third element of the tuple
+%% is responsible for matching arguments.
+%% In standard recon_trace, the third element is a template function
+%% transformed to a matchspec.
+%% If use_dbg is set to true, the third element is used as actual functor and interpreted
+%% in a totally different way.
+%% The function is used to determine the type of the functions to be traced.
+%% They should be possible to interpret all functions in the same way.
+%% For example '_' can be interpreted as a dbg trace function or a functor.
+%% Since use_dbg is set to true, the function is considered by default a functor.
+%% The function is considered a trace function if its every clause
+%% ends with a functions like return_trace(),
+%% that are translated into a {return_trace} in the matchspecs list.
+%% ----------------------------------------------------
+trace_function_types(TSpecs) ->
+FunTypes= [trace_function_type(Args) || {_, _, Args} <- TSpecs],
+    
+    HasShell = lists:any(fun(T) -> T == shell_fun end, FunTypes),
+    HasStandard = lists:all(fun(T) -> T == standard_fun end, FunTypes),
+    case {HasShell, HasStandard} of
+        {true, true} -> exit(mixed_function_types);
+        {true, false} -> shell_fun;
+        {false, _true_or_false} -> standard_fun
+    end.
 
+%% in case of fun_to_ms, the function is transformed to '_'
+%% for this implementation it is transformed to fun(A) -> A end
+trace_function_type('_') -> undecided_fun;
+trace_function_type(N) when is_integer(N) -> undecided_fun;
 
-trace_function_type('_') -> standard_fun;
-trace_function_type(N) when is_integer(N) -> standard_fun;
+%% shorthand used by shell functions 
+trace_function_type(return_trace) -> shell_fun;
+%% if the function is a matchspec, we check if every clause has *_trace()
 trace_function_type(Patterns) when is_list(Patterns) ->
-    trace_function_type(Patterns, trace_fun);
+    trace_function_type(Patterns, shell_fun);
+
+%% if function transforms it still can be proper functor, 
+%% check if the is *_trace() is absent
+%% if every clause has *_trace() it is a shell function
 trace_function_type(PatternFun) when is_function(PatternFun, 1) ->
     try fun_to_ms(PatternFun) of
-        Patterns -> trace_function_type(Patterns, not_decided)
+        Patterns -> trace_function_type(Patterns, undecided)
     catch
         _:_ -> standard_fun
     end.
 
 %% all function clauses are '_'
-trace_function_type([], trace_fun) -> trace_fun;
+trace_function_type([], shell_fun) -> shell_fun;
 trace_function_type([], standard_fun) -> standard_fun;
+trace_function_type([], undecided_fun) -> undecided_fun;
 
 trace_function_type([Clause | Rest], Type) ->
     ClauseType = clause_type(Clause),
     case Type of
-        not_decided ->
+        undecided ->
             trace_function_type(Rest, ClauseType);
         _ ->
             if ClauseType =/= Type -> exit(mixed_clauses_types);
                true -> trace_function_type(Rest, Type)
             end
     end.
-%% actually, it should not be possible since the thirdlist has at least return value
-clause_type({_head,_guard, []}) -> standard_fun;
+
 clause_type({_head,_guard, Return}) ->
     case lists:last(Return) of
        %% can return_trace, current_stacktrace, exception_trace
-      {_return_trace} -> trace_fun;
+      {_return_trace} -> shell_fun;
       _ -> standard_fun
     end.    
 
@@ -251,14 +286,20 @@ clause_type({_head,_guard, Return}) ->
 %% and calls the pattern function
 %% @end
 
-filter_call(TraceMsg, M, F, PatternFun) ->
-    case extract_info(TraceMsg) of
-        {call, _, _, [{TraceM,TraceF, Args}]} ->
-            test_match(M, F, TraceM, TraceF, Args, PatternFun);
-        {call, _, _, [{TraceM, TraceF, Args}, _Msg]} ->
-            test_match(M, F, TraceM, TraceF, Args, PatternFun);
-        _ -> print
-    end.
+filter_call(TraceMsg, TSpecs) ->
+    filter_call(TraceMsg, TSpecs, reject).
+
+filter_call(TraceMsg, _, print) -> print;
+filter_call(TraceMsg, [], Answer) -> Answer;
+filter_call(TraceMsg, [{M, F, PatternFun} | TSpecs], reject) ->
+    NewAnswer = case extract_info(TraceMsg) of
+                    {call, _, _, [{TraceM,TraceF, Args}]} ->
+                        test_match(M, F, TraceM, TraceF, Args, PatternFun);
+                    {call, _, _, [{TraceM, TraceF, Args}, _Msg]} ->
+                        test_match(M, F, TraceM, TraceF, Args, PatternFun);
+                    _ -> print
+                end,
+    filter_call(TraceMsg, TSpecs, NewAnswer).
 
 test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
     Match = 
