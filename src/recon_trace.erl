@@ -187,6 +187,9 @@
 %% Internal exports
 -export([count_tracer/1, rate_tracer/2, formatter/5, format_trace_output/1, format_trace_output/2]).
 
+%% For use_dbg feature
+-export([trace_to_io/2, extract_info/1, validate_opts/1, fun_to_ms/1]).
+
 -type matchspec()    :: [{[term()] | '_', [term()], [term()]}].
 -type shellfun()     :: fun((_) -> term()).
 -type formatterfun() :: fun((_) -> iodata()).
@@ -486,7 +489,7 @@ validate_tspec(Mod, Fun, Args) when is_function(Args) ->
 validate_tspec(Mod, Fun, return_trace) ->
     validate_tspec(Mod, Fun, [{'_', [], [{return_trace}]}]);
 validate_tspec(Mod, Fun, Args) ->
-    BannedMods = ['_', ?MODULE, io, lists],
+    BannedMods = ['_', ?MODULE, io, lists, recon_trace_use_dbg],
     %% The banned mod check can be bypassed by using
     %% match specs if you really feel like being dumb.
     case {lists:member(Mod, BannedMods), Args} of
@@ -515,7 +518,12 @@ validate_io_server(Opts) ->
 %% Thanks Geoff Cant for the foundations for this.
 format(TraceMsg) ->
     {Type, Pid, {Hour,Min,Sec}, TraceInfo} = extract_info(TraceMsg),
-    {FormatStr, FormatArgs} = case {Type, TraceInfo} of
+    {FormatStr, FormatArgs} = trace_to_io(Type, TraceInfo),
+    io_lib:format("~n~p:~p:~9.6.0f ~p " ++ FormatStr ++ "~n",
+                  [Hour, Min, Sec, Pid] ++ FormatArgs).
+
+trace_to_io(Type, TraceInfo) ->
+    case {Type, TraceInfo} of
         %% {trace, Pid, 'receive', Msg}
         {'receive', [Msg]} ->
             {"< ~p", [Msg]};
@@ -590,9 +598,7 @@ format(TraceMsg) ->
              [HeapSize + OldHeapSize + MbufSize]};
         _ ->
             {"unknown trace type ~p -- ~p", [Type, TraceInfo]}
-    end,
-    io_lib:format("~n~p:~p:~9.6.0f ~p " ++ FormatStr ++ "~n",
-                  [Hour, Min, Sec, Pid] ++ FormatArgs).
+    end.
 
 extract_info(TraceMsg) ->
     case tuple_to_list(TraceMsg) of
