@@ -11,7 +11,7 @@
                       format/1, extract_info/1, fun_to_ms/1]).
 
 %% API
--export([clear/0, calls/2, calls/3]).
+-export([clear/0, calls_dbg/3]).
  
 %% Internal exports
 -export([count_tracer/4, rate_tracer/4]).
@@ -58,28 +58,11 @@ clear() ->
     dbg:stop(),
     ok.
 
-%% @equiv calls({Mod, Fun, Args}, Max, [])
--spec calls(tspec() | [tspec(),...], max()) -> num_matches().
-calls({Mod, Fun, Args}, Max) ->
-    calls([{Mod,Fun,Args}], Max, []);
-calls(TSpecs = [_|_], Max) ->
-    calls(TSpecs, Max, []).
-
-
 %% @doc Allows to set trace patterns and pid specifications to trace
 %% function calls.
 %%
 %% @end
--spec calls(tspec() | [tspec(),...], max(), options()) -> num_matches().
-
-calls({Mod, Fun, Args}, Max, Opts) ->
-            calls([{Mod,Fun,Args}], Max, Opts);
-calls(TSpecs, Max, Opts) ->
-    case proplists:get_bool(use_dbg, Opts) of
-            true -> calls_dbg(TSpecs, Max, Opts);
-            _ -> recon_trace:calls(TSpecs, Max, Opts)
-    end.
-
+-spec calls_dbg(tspec() | [tspec(),...], max(), options()) -> num_matches().
 calls_dbg(TSpecs, Boundaries, Opts) ->
     case trace_function_types(TSpecs) of
         shell_fun ->

@@ -339,11 +339,18 @@ calls(TSpecs = [_|_], Max) ->
 
 calls({Mod, Fun, Args}, Max, Opts) ->
     calls([{Mod,Fun,Args}], Max, Opts);
-calls(TSpecs = [_|_], {Max, Time}, Opts) ->
+
+calls(TSpecs = [_|_], Boundaries, Opts) ->
+    case proplists:get_bool(use_dbg, Opts) of
+        true -> recon_trace_use_dbg:calls_dbg(TSpecs, Boundaries, Opts);
+        false -> spec_calls(TSpecs, Boundaries, Opts)
+    end.
+
+spec_calls(TSpecs = [_|_], {Max, Time}, Opts) ->
     Pid = setup(rate_tracer, [Max, Time],
                 validate_formatter(Opts), validate_io_server(Opts)),
     trace_calls(TSpecs, Pid, Opts);
-calls(TSpecs = [_|_], Max, Opts) ->
+spec_calls(TSpecs = [_|_], Max, Opts) ->
     Pid = setup(count_tracer, [Max],
                 validate_formatter(Opts), validate_io_server(Opts)),
     trace_calls(TSpecs, Pid, Opts).

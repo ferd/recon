@@ -144,7 +144,7 @@ assert_trace_no_match(RegexString, TraceOutput) ->
 dummy_basic_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
 
-    recon_trace_use_dbg:calls({test_statem, light_state, fun([cast, switch_state, _]) -> anything end}, 10,
+    recon_trace:calls({test_statem, light_state, fun([cast, switch_state, _]) -> anything end}, 10,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
 
     test_statem:switch_state(),
@@ -159,7 +159,7 @@ dummy_basic_trace_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
 
     MatchSpec = dbg:fun2ms(fun(_) -> return_trace() end),
-    recon_trace_use_dbg:calls({test_statem, light_state, MatchSpec}, 10,
+    recon_trace:calls({test_statem, light_state, MatchSpec}, 10,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
 
     test_statem:switch_state(),
@@ -180,15 +180,15 @@ dummy_basic_trace_test(Config) ->
 
 %%======================================================================
 %% Documentation: All calls from the queue module, with 10 calls printed at most:
-%% recon_trace_use_dbg:calls({queue, '_', '_'}, 10)
+%% recon_trace:calls({queue, '_', '_'}, 10)
 %%---
 %% Test: All calls from the test_statem module, with 10 calls printed at most.
 %%---
-%% Function: recon_trace_use_dbg:calls({test_statem, '_', '_'}, 10)
+%% Function: recon_trace:calls({test_statem, '_', '_'}, 10)
 %%======================================================================
 trace_full_module_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
-    recon_trace_use_dbg:calls({test_statem, '_', '_'}, 100,
+    recon_trace:calls({test_statem, '_', '_'}, 100,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
 
     timer:sleep(100),
@@ -206,15 +206,15 @@ trace_full_module_test(Config) ->
     count_trace_match("test_statem:heavy_state\\(cast, switch_state, #{iterator=>", TraceOutput,1),
     ok.
 %%======================================================================
-%% Documentation: All calls to lists:seq(A,B), with 100 calls printed at most: recon_trace_use_dbg:calls({lists, seq, 2}, 100)
+%% Documentation: All calls to lists:seq(A,B), with 100 calls printed at most: recon_trace:calls({lists, seq, 2}, 100)
 %%---
 %% Test: All calls from the test_statem:get_state module, with 10 calls printed at most.
 %%---
-%% Function: recon_trace_use_dbg:calls({test_statem, get_state, '_'}, 10)
+%% Function: recon_trace:calls({test_statem, get_state, '_'}, 10)
 %%======================================================================
 trace_one_function_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
-    recon_trace_use_dbg:calls({test_statem, get_state, 0}, 100,
+    recon_trace:calls({test_statem, get_state, 0}, 100,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
 
     timer:sleep(100),
@@ -231,11 +231,11 @@ trace_one_function_test(Config) ->
     ok.
 
 %%======================================================================
-%% Documentation: All calls to lists:seq(A,B), with 100 calls per second at most: recon_trace_use_dbg:calls({lists, seq, 2}, {100, 1000})
+%% Documentation: All calls to lists:seq(A,B), with 100 calls per second at most: recon_trace:calls({lists, seq, 2}, {100, 1000})
 %%---
 %% Test: All calls to test_statem:heavy_state(A,B), with 1 call per second printed at most:
 %%---
-%% Function: recon_trace_use_dbg:calls({test_statem, heavy_state, 2}, 10)
+%% Function: recon_trace:calls({test_statem, heavy_state, 2}, 10)
 %%======================================================================
 
 trace_rate_limit_test(Config) ->
@@ -246,7 +246,7 @@ trace_rate_limit_test(Config) ->
         {ok,heavy_state,_} -> ok
     end,
 
-    recon_trace_use_dbg:calls({test_statem, heavy_state, 3}, {1, 1000},
+    recon_trace:calls({test_statem, heavy_state, 3}, {1, 1000},
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
 
     timer:sleep(2200), % Allow more time for potential rate limiting delays
@@ -259,11 +259,11 @@ trace_rate_limit_test(Config) ->
 
 %%======================================================================
 %% Documentation: All calls to lists:seq(A,B,2) (all sequences increasing by two) with 100 calls at most:
-%%                recon_trace_use_dbg:calls({lists, seq, fun([_,_,2]) -> ok end}, 100)
+%%                recon_trace:calls({lists, seq, fun([_,_,2]) -> ok end}, 100)
 %%---
 %% Test: All calls to test_statem:heavy_state(A,B) where B is even, with 10 calls at most:
 %%---
-%% Function:  recon_trace_use_dbg:calls({test_statem, heavy_state, fun([_, B]) when is_integer(B), B rem 2 == 0 -> ok end}, 10)
+%% Function:  recon_trace:calls({test_statem, heavy_state, fun([_, B]) when is_integer(B), B rem 2 == 0 -> ok end}, 10)
 %%======================================================================
 
 trace_even_arg_test(Config) ->
@@ -275,7 +275,7 @@ trace_even_arg_test(Config) ->
     end,
     MatchSpec = dbg:fun2ms(fun([_,_,#{iterator:=N}]) when N rem 2 == 0 -> return_trace() end),
 
-    recon_trace_use_dbg:calls({test_statem, heavy_state, MatchSpec}, 10,
+    recon_trace:calls({test_statem, heavy_state, MatchSpec}, 10,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
     timer:sleep(1900),
     recon_trace:clear(),
@@ -285,11 +285,11 @@ trace_even_arg_test(Config) ->
     ok.
 %%======================================================================
 %% Documentation: All calls to iolist_to_binary/1 made with a binary as an argument already (kind of useless conversion!):
-%%                recon_trace_use_dbg:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
+%%                recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
 %%---
 %% Test: All calls to iolist_to_binary/1 made with a binary argument.
 %%---
-%% Function: recon_trace_use_dbg:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
+%% Function: recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
 %%---
 %% NOTE: Maybe there is a way to transform fun_shell directly in recon as in erlang shell
 %%======================================================================
@@ -298,7 +298,7 @@ trace_iolist_to_binary_with_binary_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
 
     MatchSpec = dbg:fun2ms(fun([X]) when is_binary(X) -> return_trace() end),
-    recon_trace_use_dbg:calls({erlang, iolist_to_binary, MatchSpec}, 10,
+    recon_trace:calls({erlang, iolist_to_binary, MatchSpec}, 10,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
 
     _ = erlang:iolist_to_binary(<<"already binary">>), % Should trace
@@ -319,11 +319,11 @@ trace_iolist_to_binary_with_binary_test(Config) ->
 
 %%======================================================================
 %% Documentation: Calls to the queue module only in a given process Pid,
-%%                at a rate of 50 per second at most: recon_trace_use_dbg:calls({queue, '_', '_'}, {50,1000}, [{pid, Pid}])
+%%                at a rate of 50 per second at most: recon_trace:calls({queue, '_', '_'}, {50,1000}, [{pid, Pid}])
 %%---
 %% Test: Calls to the test_statem module only in the test_statem process Pid, at a rate of 10 per second at most.
 %%---
-%% Function: recon_trace_use_dbg:calls({test_statem, '_', '_'}, {10,1000}, [{pid, Pid}])
+%% Function: recon_trace:calls({test_statem, '_', '_'}, {10,1000}, [{pid, Pid}])
 %%======================================================================
 trace_specific_pid_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
@@ -336,7 +336,7 @@ trace_specific_pid_test(Config) ->
     %% new statem in light state
     {ok, Pid} = gen_statem:start(test_statem, [], []),
 
-    recon_trace_use_dbg:calls({test_statem, '_', '_'}, {10,1000},
+    recon_trace:calls({test_statem, '_', '_'}, {10,1000},
                               [{pid, Pid},  {io_server, FH}, {use_dbg, true}, {scope,local}]),
 
     gen_statem:call(Pid, get_value),
@@ -358,16 +358,16 @@ trace_specific_pid_test(Config) ->
 
 %%======================================================================
 %% Documentation: Print the traces with the function arity instead of literal arguments:
-%%                recon_trace_use_dbg:calls(TSpec, Max, [{args, arity}])
+%%                recon_trace:calls(TSpec, Max, [{args, arity}])
 %%---
 %% Test: Print traces for test_statem calls with arity instead of arguments.
 %%---
-%% Function: recon_trace_use_dbg:calls({test_statem, '_', '_'}, 10, [{args, arity}])
+%% Function: recon_trace:calls({test_statem, '_', '_'}, 10, [{args, arity}])
 %%======================================================================
 trace_arity_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
 
-    recon_trace_use_dbg:calls({test_statem, '_', '_'}, 10,
+    recon_trace:calls({test_statem, '_', '_'}, 10,
                               [{args, arity}, {io_server, FH}, {use_dbg, true}, {scope,local}]),
 
     test_statem:get_state(),
@@ -386,11 +386,11 @@ trace_arity_test(Config) ->
 
 %%======================================================================
 %% Documentation: Matching the filter/2 functions of both dict and lists modules, across new processes only:
-%%                recon_trace_use_dbg:calls([{dict,filter,2},{lists,filter,2}], 10, [{pid, new}])
+%%                recon_trace:calls([{dict,filter,2},{lists,filter,2}], 10, [{pid, new}])
 %%---
 %% Test: Matching light_state/2 and heavy_state/2 calls in test_statem across new processes only.
 %%---
-%% Function: recon_trace_use_dbg:calls([{test_statem, light_state, 2}, {test_statem, heavy_state, 2}], 10, [{pid, new}])
+%% Function: recon_trace:calls([{test_statem, light_state, 2}, {test_statem, heavy_state, 2}], 10, [{pid, new}])
 %%======================================================================
 trace_spec_list_new_procs_only_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
@@ -400,7 +400,7 @@ trace_spec_list_new_procs_only_test(Config) ->
         {ok,heavy_state,_} -> ok
     end,
 
-    recon_trace_use_dbg:calls([{test_statem, light_state, '_'}, {test_statem, heavy_state, '_'}], 10,
+    recon_trace:calls([{test_statem, light_state, '_'}, {test_statem, heavy_state, '_'}], 10,
                               [{pid, new},  {io_server, FH}, {use_dbg, true}, {scope,local}]),
 
     {ok, heavy_state,_} = test_statem:get_state(),
@@ -425,11 +425,11 @@ trace_spec_list_new_procs_only_test(Config) ->
     ok.
 %%======================================================================
 %% Documentation: Tracing the handle_call/3 functions of a given module for all new processes, and those of an existing one registered with gproc:
-%% recon_trace_use_dbg:calls({Mod,handle_call,3}, {10,100}, [{pid, [{via, gproc, Name}, new]}])
+%% recon_trace:calls({Mod,handle_call,3}, {10,100}, [{pid, [{via, gproc, Name}, new]}])
 %%---
 %% Test: Tracing test_statem for new processes and one via custom process register.
 %%---
-%% Function: recon_trace_use_dbg:calls({test_statem, handle_call, 3}, {10, 100}, [{pid, [{via, fake_reg, ts_test}, new]}])
+%% Function: recon_trace:calls({test_statem, handle_call, 3}, {10, 100}, [{pid, [{via, fake_reg, ts_test}, new]}])
 %%======================================================================
 trace_handle_call_new_and_custom_registry_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
@@ -441,7 +441,7 @@ trace_handle_call_new_and_custom_registry_test(Config) ->
         fake_reg:start(),
         {ok, NewPid} = gen_statem:start({via, fake_reg, ts_test}, test_statem, [], []),
 
-        recon_trace_use_dbg:calls([{test_statem, light_state, '_'}, {test_statem, heavy_state, '_'}], 10,
+        recon_trace:calls([{test_statem, light_state, '_'}, {test_statem, heavy_state, '_'}], 10,
                                   [{pid, [{via, fake_reg, ts_test}, new]}, {io_server, FH}, {use_dbg, true}, {scope,local}]),
 
         gen_statem:call({via, fake_reg, ts_test}, get_value),
@@ -463,11 +463,11 @@ trace_handle_call_new_and_custom_registry_test(Config) ->
         fake_reg:stop()
     end.
 %%======================================================================
-%% Documentation: Show the result of a given function call: recon_trace_use_dbg:calls({Mod,Fun,fun(_) -> return_trace() end}, Max, Opts)
+%% Documentation: Show the result of a given function call: recon_trace:calls({Mod,Fun,fun(_) -> return_trace() end}, Max, Opts)
 %%---
 %% Test: Show the result of test_statem:get_state/0 calls.
 %%---
-%% Function: recon_trace_use_dbg:calls({test_statem, get_state, fun(_) -> return_trace() end}, 10)
+%% Function: recon_trace:calls({test_statem, get_state, fun(_) -> return_trace() end}, 10)
 %%---
 %% NOTE: Maybe there is a way to transform fun_shell directly in recon as in erlang shell
 %%======================================================================
@@ -480,7 +480,7 @@ trace_return_shellfun_test(Config) ->
 
     MatchSpec = dbg:fun2ms(fun(_) -> return_trace() end),
 
-    recon_trace_use_dbg:calls({test_statem, get_state, MatchSpec}, 10,
+    recon_trace:calls({test_statem, get_state, MatchSpec}, 10,
                               [{io_server, FH}, use_dbg, {scope,local}]),
 
     {ok,light_state, N} = test_statem:get_state(),
@@ -494,11 +494,11 @@ trace_return_shellfun_test(Config) ->
     ok.
 %%======================================================================
 %% Documentation: Show the result of a given function call:
-%%                recon_trace_use_dbg:calls({Mod,Fun,[{'_', [], [{return_trace}]}]}, Max, Opts),
+%%                recon_trace:calls({Mod,Fun,[{'_', [], [{return_trace}]}]}, Max, Opts),
 %%---
 %% Test: Show the result of test_statem:get_state/0 calls (using match spec).
 %%---
-%% Function: recon_trace_use_dbg:calls({test_statem, get_state, [{'_', [], [{return_trace}]}]}, 10)
+%% Function: recon_trace:calls({test_statem, get_state, [{'_', [], [{return_trace}]}]}, 10)
 %%======================================================================
 trace_return_matchspec_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
@@ -508,7 +508,7 @@ trace_return_matchspec_test(Config) ->
         {ok,light_state,_} -> test_statem:switch_state()
     end,
     %% Trace the API function test_statem:get_state/1 using match spec
-    recon_trace_use_dbg:calls({test_statem, get_state,
+    recon_trace:calls({test_statem, get_state,
                                [{'_', [], [{return_trace}]}]}, 10, [ {io_server, FH}, {use_dbg, true}, {scope,local}]),
 
     {ok,heavy_state, N} = test_statem:get_state(),
@@ -521,11 +521,11 @@ trace_return_matchspec_test(Config) ->
     ok.
 %%======================================================================
 %% Documentation: A short-hand version for this pattern of 'match anything, trace everything'
-%%                for a function is recon_trace_use_dbg:calls({Mod, Fun, return_trace}).
+%%                for a function is recon_trace:calls({Mod, Fun, return_trace}).
 %%---
 %% Test: Show the result of test_statem:get_state/0 calls (shorthand).
 %%---
-%% Function: recon_trace_use_dbg:calls({test_statem, get_state, return_trace}, 10).
+%% Function: recon_trace:calls({test_statem, get_state, return_trace}, 10).
 %%======================================================================
 trace_return_shorthand_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
@@ -534,7 +534,7 @@ trace_return_shorthand_test(Config) ->
         {ok,heavy_state,_} -> test_statem:switch_state()
     end,
     %% Trace the API function test_statem:get_state/1 using shorthand
-    recon_trace_use_dbg:calls({test_statem, get_state, return_trace}, 10,
+    recon_trace:calls({test_statem, get_state, return_trace}, 10,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
     {ok,light_state, N} = test_statem:get_state(),
     timer:sleep(100),
