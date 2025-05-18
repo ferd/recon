@@ -46,7 +46,8 @@
          trace_return_shorthand_test/1,
          trace_timestamp_test/1,
          trace_return_to_test/1,
-         trace_no_return_to_test/1
+         trace_no_return_to_test/1,
+         trace_suppress_print_test/1
         ]).
 
 
@@ -86,7 +87,8 @@ groups() ->
                                  trace_map_match_test,
                                  trace_timestamp_test,
                                  trace_return_to_test,
-                                 trace_no_return_to_test    
+                                 trace_no_return_to_test,
+                                 trace_suppress_print_test
                                 ]
      }
     ].
@@ -760,4 +762,34 @@ trace_no_return_to_test(Config) ->
     assert_trace_no_match("test_statem:get_state\\(", TraceOutput),
     assert_trace_no_match("--> "++atom_to_list(?MODULE)++":trace_return_to_test/1", TraceOutput),
     ok.
+%%======================================================================
+%% Documentation: The return_to option adds a traces for calls, ensure it do not send
+%% return to traces for not matching calls.
+%%                recon_trace:calls({Mod, Fun, return_trace}, 10, [{return_to, true}]).
+%%---
+%% Test: Show no result of test_statem:get_state/0 calls and the return to trace.
+%%---
+%% Function: recon_trace:calls({test_statem, get_state, '_'}, 10).
+%%======================================================================
+trace_suppress_print_test(Config) ->
+    {FH, FileName} = proplists:get_value(file, Config),
 
+    MatchSpec = fun([enter_heavy_state,_]) -> suppress;
+                   ([enter_light_state,_]) -> return_some  end,
+    recon_trace:calls({test_statem, traced_function, MatchSpec}, 100,
+                              [{io_server, FH}, {use_dbg, true}, {scope,local}]),
+
+    timer:sleep(100),
+    ok = test_statem:switch_state(),
+    _ = test_statem:get_state(),
+    timer:sleep(100),
+    ok = test_statem:switch_state(),
+    timer:sleep(100),
+
+    {ok, TraceOutput} = file:read_file(FileName),
+    %% there are race conditions when test ends, so 
+    assert_trace_no_match("test_statem:traced_function\\(enter_heavy_state", TraceOutput),
+    assert_trace_match("test_statem:traced_function\\(enter_light_state", TraceOutput),
+    ok.
+
+    

@@ -272,13 +272,14 @@ test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
        false -> reject;
        check ->
            try erlang:apply(PatternFun, [Args]) of
-               _ -> print
+               suppress -> reject;
+               _        -> print
            catch
                error:function_clause ->
                    reject;
                error:arity_no_match ->
                    reject;
-               error:E ->
+               error:_E ->
                    reject
            end
   end.
