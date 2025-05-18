@@ -1,14 +1,11 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2019, Mathias Green
+%%% @author <flmathematic@gmail.com>
+%%%  [https://flmath.github.io]
 %%% @doc
 %%% Basic statem for testing purposes
 %%% @end
-%%% Created : 08 Jun 2019 by Mathias Green (flmath)
 %%%-------------------------------------------------------------------
 -module(test_statem).
-
 -behaviour(gen_statem).
-
 
 -include_lib("eunit/include/eunit.hrl").
 

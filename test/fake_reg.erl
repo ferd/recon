@@ -1,8 +1,12 @@
+%% @author <flmathematic@gmail.com>
+%%  [https://flmath.github.io]
+%% @doc
 %% Minimal fake registration module for testing
 %% purposes. This module simulates the behavior of the
 %% registration in Erlang, allowing us to
 %% test the functionality of our code without
 %% relying on the actual Erlang registry.
+%% @end
 -module(fake_reg).
 -behaviour(gen_server).
 

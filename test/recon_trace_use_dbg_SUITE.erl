@@ -1,8 +1,9 @@
 %%%-------------------------------------------------------------------
-%%% @author 2023, Mathias Green
+%%% @author <flmathematic@gmail.com>
+%%%  [https://flmath.github.io]
 %%% @doc
-%%%   Common Test Suite for recon_trace functionality.
-%%%   Tests various scenarios based on the recon_trace documentation.
+%%%   Common Test Suite for recon_trace_use_dbg functionality.
+%%%   Tests various scenarios related to use_dbg flag.
 %%% @end
 %%%-------------------------------------------------------------------
 
