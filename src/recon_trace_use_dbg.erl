@@ -153,9 +153,6 @@ rate_tracer({Max, Time}, TSpecs, IoServer, Formatter) ->
     end.
 
 handle_trace(Trace, N, TSpecs, IoServer, Formatter) ->
-    io:format("aaaaaaaaaaaaaaaaaaaaaaaRecon tracer: ~p~n", [Trace]),
-    io:format("aaaaaaaaaaaaaaaaaaaaaaaReconssss tracer: ~p~n", [TSpecs]),
-    
     Print = filter_call(Trace, TSpecs),
     case Print of
         reject -> N;
@@ -275,18 +272,13 @@ test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
        false -> reject;
        check ->
            try erlang:apply(PatternFun, [Args]) of
-
-               _ -> io:format("abRecon tracer: ~p~n", [Args]),
-                    print
+               _ -> print
            catch
                error:function_clause ->
-                   io:format("acRecon tracer: ~p~n", [Args]),
                    reject;
                error:arity_no_match ->
-                   io:format("adRecon tracer: ~p~n", [Args]),
                    reject;
                error:E ->
-                   io:format("aeRecon tracer: ~p~n", [E]),
                    reject
            end
   end.

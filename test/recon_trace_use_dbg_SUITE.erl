@@ -44,8 +44,12 @@
          trace_return_shellfun_test/1,
          trace_return_matchspec_test/1,
          trace_return_shorthand_test/1,
-         trace_timestamp_test/1
+         trace_timestamp_test/1,
+         trace_return_to_test/1,
+         trace_no_return_to_test/1
         ]).
+
+
 
 %%--------------------------------------------------------------------
 %% Suite Configuration
@@ -80,7 +84,9 @@ groups() ->
                                  trace_binary_all_pattern_test,
                                  dummy_basic_test,
                                  trace_map_match_test,
-                                 trace_timestamp_test
+                                 trace_timestamp_test,
+                                 trace_return_to_test,
+                                 trace_no_return_to_test    
                                 ]
      }
     ].
@@ -525,7 +531,7 @@ trace_spec_list_new_procs_only_test(Config) ->
         {ok,heavy_state,_} -> ok
     end,
 
-    recon_trace:calls([{test_statem, light_state, '_'}, {test_statem, heavy_state, '_'}], 10,
+    recon_trace:calls([{test_statem, light_state, fun(_) -> return_trace end}, {test_statem, heavy_state, '_'}], 10,
                               [{pid, new},  {io_server, FH}, {use_dbg, true}, {scope,local}]),
 
     {ok, heavy_state,_} = test_statem:get_state(),
@@ -594,7 +600,6 @@ trace_handle_call_new_and_custom_registry_test(Config) ->
 %%---
 %% Function: recon_trace:calls({test_statem, get_state, fun(_) -> return_trace() end}, 10)
 %%---
-%% NOTE: Maybe there is a way to transform fun_shell directly in recon as in erlang shell
 %%======================================================================
 trace_return_shellfun_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
@@ -688,7 +693,7 @@ trace_timestamp_test(Config) ->
     %% Trace the API function test_statem:get_state/1 using shorthand
     recon_trace:calls({test_statem, get_state, '_'}, 10, 
         [ {io_server, FH},{scope,local}, {timestamp, trace}, {use_dbg, true}]),
-    {ok,light_state, N} = test_statem:get_state(),
+    {ok,light_state, _} = test_statem:get_state(),
     timer:sleep(100),
     recon_trace:clear(),
 
@@ -696,5 +701,63 @@ trace_timestamp_test(Config) ->
 
     %% Check for the call and its return value
     assert_trace_match("test_statem:get_state\\(", TraceOutput),
+    ok.
+
+%%======================================================================
+%% Documentation: The return_to option adds a traces for calls pointing where 
+%% local functions return result to.
+%%                recon_trace:calls({Mod, Fun, return_trace}, 10, [{return_to, true}]).
+%%---
+%% Test: Show the result of test_statem:get_state/0 calls and the return to trace.
+%%---
+%% Function: recon_trace:calls({test_statem, get_state, '_'}, 10).
+%%======================================================================
+trace_return_to_test(Config) ->
+    {FH, FileName} = proplists:get_value(file, Config), 
+    case test_statem:get_state() of
+        {ok,light_state,_} -> ok;
+        {ok,heavy_state,_} -> test_statem:switch_state()
+    end,
+    %% Trace the API function test_statem:get_state/1 using shorthand
+    recon_trace:calls({test_statem, get_state, '_'}, 10, 
+        [{use_dbg, true}, {io_server, FH},{scope,local}, {return_to, true}]),
+    {ok,light_state, _} = test_statem:get_state(),
+    timer:sleep(100),
+    recon_trace:clear(),
+
+    {ok, TraceOutput} = file:read_file(FileName),
+
+    %% Check for the call and its return value
+    assert_trace_match("test_statem:get_state\\(", TraceOutput),
+    assert_trace_match("--> "++atom_to_list(?MODULE)++":trace_return_to_test/1", TraceOutput),
+    ok.
+
+%%======================================================================
+%% Documentation: The return_to option adds a traces for calls, ensure it do not send
+%% return to traces for not matching calls.
+%%                recon_trace:calls({Mod, Fun, return_trace}, 10, [{return_to, true}]).
+%%---
+%% Test: Show no result of test_statem:get_state/0 calls and the return to trace.
+%%---
+%% Function: recon_trace:calls({test_statem, get_state, '_'}, 10).
+%%======================================================================
+trace_no_return_to_test(Config) ->
+    {FH, FileName} = proplists:get_value(file, Config), 
+    case test_statem:get_state() of
+        {ok,light_state,_} -> ok;
+        {ok,heavy_state,_} -> test_statem:switch_state()
+    end,
+    %% Trace the API function test_statem:get_state/1 using shorthand
+    recon_trace:calls({test_statem, not_get_state, '_'}, 10, 
+        [{use_dbg, true}, {io_server, FH},{scope,local}, {return_to, true}]),
+    {ok,light_state, _} = test_statem:get_state(),
+    timer:sleep(100),
+    recon_trace:clear(),
+
+    {ok, TraceOutput} = file:read_file(FileName),
+
+    %% Check for the call and its return value
+    assert_trace_no_match("test_statem:get_state\\(", TraceOutput),
+    assert_trace_no_match("--> "++atom_to_list(?MODULE)++":trace_return_to_test/1", TraceOutput),
     ok.
 
