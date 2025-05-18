@@ -199,21 +199,12 @@ dummy_basic_trace_test(Config) ->
     assert_trace_match("test_statem:light_state\\(cast, switch_state, #{iterator=>0", TraceOutput),
     ok.
 
-
-
-%%======================================================================
-%% ---------------------------------------------------------------------------
-%% Test cases based on https://ferd.github.io/recon/recon_trace.html#calls/3
-%% ---------------------------------------------------------------------------
-%%======================================================================
-
 %%======================================================================
 %% Documentation: All calls from the queue module, with 10 calls printed at most:
 %% recon_trace:calls({queue, '_', '_'}, 10)
 %%---
 %% Test: All calls from the test_statem module, with 10 calls printed at most.
 %%---
-%% Function: recon_trace:calls({test_statem, '_', '_'}, 10)
 %%======================================================================
 trace_full_module_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
@@ -239,7 +230,6 @@ trace_full_module_test(Config) ->
 %%---
 %% Test: All calls from the test_statem:get_state module, with 10 calls printed at most.
 %%---
-%% Function: recon_trace:calls({test_statem, get_state, '_'}, 10)
 %%======================================================================
 trace_one_function_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
@@ -264,7 +254,6 @@ trace_one_function_test(Config) ->
 %%---
 %% Test: All calls to test_statem:heavy_state(A,B), with 1 call per second printed at most:
 %%---
-%% Function: recon_trace:calls({test_statem, heavy_state, 2}, 10)
 %%======================================================================
 
 trace_rate_limit_test(Config) ->
@@ -292,7 +281,6 @@ trace_rate_limit_test(Config) ->
 %%---
 %% Test: All calls to test_statem:heavy_state(A,B) where B is even, with 10 calls at most:
 %%---
-%% Function:  recon_trace:calls({test_statem, heavy_state, fun([_, B]) when is_integer(B), B rem 2 == 0 -> ok end}, 10)
 %%======================================================================
 
 trace_even_arg_test(Config) ->
@@ -313,14 +301,11 @@ trace_even_arg_test(Config) ->
     count_trace_match("test_statem:heavy_state\\(timeout", TraceOutput, 3),
     ok.
 %%%======================================================================
-%% Documentation: All calls to iolist_to_binary/1 made with a binary as an argument already (kind of useless conversion!):
-%%                recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
+%% Documentation: Test matching maps with a specific pattern.
 %%---
-%% Test: All calls to iolist_to_binary/1 made with a binary argument.
+%% Test: Use dbg flag to pattern match maps with a specific pattern.
 %%---
-%% Function: recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
-%%---
-%% NOTE: Maybe there is a way to transform fun_shell directly in recon as in erlang shell
+%% NOTE: Possible only with the use_dbg flag.
 %%======================================================================
 
 trace_map_match_test(Config) ->
@@ -347,14 +332,10 @@ trace_map_match_test(Config) ->
     ok.
 
 %======================================================================
-%% Documentation: All calls to iolist_to_binary/1 made with a binary as an argument already (kind of useless conversion!):
-%%                recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
+%% Documentation: Test matching binaries with binary guard.
 %%---
-%% Test: All calls to iolist_to_binary/1 made with a binary argument.
+%% Test: Use dbg flag to pattern match binaries with guard.
 %%---
-%% Function: recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
-%%---
-%% NOTE: Maybe there is a way to transform fun_shell directly in recon as in erlang shell
 %%======================================================================
 
 trace_iolist_to_binary_with_binary_test(Config) ->
@@ -381,14 +362,11 @@ trace_iolist_to_binary_with_binary_test(Config) ->
     ok.
 
 %%======================================================================
-%% Documentation: All calls to iolist_to_binary/1 made with a binary as an argument already (kind of useless conversion!):
-%%                recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
+%% Documentation: Test matching binaries.
 %%---
 %% Test: Use dbg flag to pattern match binaries.
 %%---
-%% Function: recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
-%%---
-%% 
+%% NOTE: Possible only with the use_dbg flag.
 %%===========================================
 
 trace_binary_all_pattern_test(Config) ->
@@ -416,14 +394,13 @@ trace_binary_all_pattern_test(Config) ->
 
 
 %%======================================================================
-%% Documentation: All calls to iolist_to_binary/1 made with a binary as an argument already (kind of useless conversion!):
-%%                recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
+%% Documentation: Test matching binaries with a specific pattern.
+%%                
+%% recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
 %%---
-%% Test: Use dbg flag to pattern match binaries.
+%% Test: Use dbg flag to pattern match parts of binaries.
 %%---
-%% Function: recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
-%%---
-%% 
+%% NOTE: Possible only with the use_dbg flag.
 %%===========================================
 
 trace_binary_patterns_test(Config) ->
@@ -456,7 +433,6 @@ trace_binary_patterns_test(Config) ->
 %%---
 %% Test: Calls to the test_statem module only in the test_statem process Pid, at a rate of 10 per second at most.
 %%---
-%% Function: recon_trace:calls({test_statem, '_', '_'}, {10,1000}, [{pid, Pid}])
 %%======================================================================
 trace_specific_pid_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
@@ -495,7 +471,6 @@ trace_specific_pid_test(Config) ->
 %%---
 %% Test: Print traces for test_statem calls with arity instead of arguments.
 %%---
-%% Function: recon_trace:calls({test_statem, '_', '_'}, 10, [{args, arity}])
 %%======================================================================
 trace_arity_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
@@ -523,7 +498,6 @@ trace_arity_test(Config) ->
 %%---
 %% Test: Matching light_state/2 and heavy_state/2 calls in test_statem across new processes only.
 %%---
-%% Function: recon_trace:calls([{test_statem, light_state, 2}, {test_statem, heavy_state, 2}], 10, [{pid, new}])
 %%======================================================================
 trace_spec_list_new_procs_only_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
@@ -562,7 +536,6 @@ trace_spec_list_new_procs_only_test(Config) ->
 %%---
 %% Test: Tracing test_statem for new processes and one via custom process register.
 %%---
-%% Function: recon_trace:calls({test_statem, handle_call, 3}, {10, 100}, [{pid, [{via, fake_reg, ts_test}, new]}])
 %%======================================================================
 trace_handle_call_new_and_custom_registry_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
@@ -599,8 +572,7 @@ trace_handle_call_new_and_custom_registry_test(Config) ->
 %% Documentation: Show the result of a given function call: recon_trace:calls({Mod,Fun,fun(_) -> return_trace() end}, Max, Opts)
 %%---
 %% Test: Show the result of test_statem:get_state/0 calls.
-%%---
-%% Function: recon_trace:calls({test_statem, get_state, fun(_) -> return_trace() end}, 10)
+%% The recon_trace:calls calls back default implementation.
 %%---
 %%======================================================================
 trace_return_shellfun_test(Config) ->
@@ -629,8 +601,8 @@ trace_return_shellfun_test(Config) ->
 %%                recon_trace:calls({Mod,Fun,[{'_', [], [{return_trace}]}]}, Max, Opts),
 %%---
 %% Test: Show the result of test_statem:get_state/0 calls (using match spec).
+%% The recon_trace:calls calls back default implementation.
 %%---
-%% Function: recon_trace:calls({test_statem, get_state, [{'_', [], [{return_trace}]}]}, 10)
 %%======================================================================
 trace_return_matchspec_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
@@ -657,7 +629,6 @@ trace_return_matchspec_test(Config) ->
 %%---
 %% Test: Show the result of test_statem:get_state/0 calls (shorthand).
 %%---
-%% Function: recon_trace:calls({test_statem, get_state, return_trace}, 10).
 %%======================================================================
 trace_return_shorthand_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
@@ -682,9 +653,9 @@ trace_return_shorthand_test(Config) ->
 %% Documentation: The timestamp option adds a timestamp to the trace output.
 %%                recon_trace:calls({Mod, Fun, return_trace}, 10, [{timestamp, true}]).
 %%---
-%% Test: Show the result of test_statem:get_state/0 calls.
+%% Test: Show the result of test_statem:get_state/0 calls, timestamp has different source
+%% but same format.
 %%---
-%% Function: recon_trace:calls({test_statem, get_state, '_'}, 10).
 %%======================================================================
 trace_timestamp_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config), 
@@ -741,7 +712,6 @@ trace_return_to_test(Config) ->
 %%---
 %% Test: Show no result of test_statem:get_state/0 calls and the return to trace.
 %%---
-%% Function: recon_trace:calls({test_statem, get_state, '_'}, 10).
 %%======================================================================
 trace_no_return_to_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config), 
@@ -763,13 +733,11 @@ trace_no_return_to_test(Config) ->
     assert_trace_no_match("--> "++atom_to_list(?MODULE)++":trace_return_to_test/1", TraceOutput),
     ok.
 %%======================================================================
-%% Documentation: The return_to option adds a traces for calls, ensure it do not send
-%% return to traces for not matching calls.
-%%                recon_trace:calls({Mod, Fun, return_trace}, 10, [{return_to, true}]).
+%% Documentation: The clauses of the match spec can be used to suppress the trace output.
 %%---
-%% Test: Show no result of test_statem:get_state/0 calls and the return to trace.
+%% Test: Show no result of calls that return suppress.
 %%---
-%% Function: recon_trace:calls({test_statem, get_state, '_'}, 10).
+%% Note: The suppress is right now the only special feature, but it is easy to add more.
 %%======================================================================
 trace_suppress_print_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),

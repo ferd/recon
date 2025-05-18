@@ -49,9 +49,9 @@
 %%%%%%%%%%%%%%
 %%% PUBLIC %%%
 %%%%%%%%%%%%%%
-%% @doc Allows to set trace patterns and pid specifications to trace
-%% function calls.
-%%
+%% @doc 
+%% Allows to set trace patterns and pid specifications to trace
+%% function calls using dbg module functions.
 %% @end
 -spec calls_dbg(tspec() | [tspec(),...], max(), options()) -> num_matches().
 calls_dbg(TSpecs, Boundaries, Opts) ->
@@ -76,20 +76,13 @@ calls_dbg(TSpecs, Boundaries, Opts) ->
             dbg_tp(TSpecs, MatchOpts)
     end.
 
-startValue({_, _}) ->
-    {0, os:timestamp()};
-startValue(_Max) ->
-    0.
+%%%%%%%%%%%%%%%%%%%%%%%
+%%% PRIVATE EXPORTS %%%
+%%%%%%%%%%%%%%%%%%%%%%%
 
-dbg_tp(MFAList, MatchOpts) ->
-    case MatchOpts of
-        [local] ->
-            Matches = [dbg:tpl({M, F, '_'}, [{'_', [], []}]) || {M, F, _A} <- MFAList],
-            lists:sum([Cnt || {ok,[{_,_,Cnt},_]}<- Matches]);
-        [global] ->
-            Matches = [dbg:tp({M, F, '_'}, [{'_', [], []}]) || {M, F, _A} <- MFAList],
-            lists:sum([Cnt || {ok,[{_,_,Cnt},_]}<- Matches])
-    end.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TSPECS NORMALIZATION %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 tspecs_normalization(TSpecs) ->
     %% Normalizes the TSpecs to be a list of tuples
@@ -112,12 +105,51 @@ args_no_fun(N) ->
             end
     end.
 
-%%%%%%%%%%%%%%%%%%%%%%%
-%%% PRIVATE EXPORTS %%%
-%%%%%%%%%%%%%%%%%%%%%%%
-%% starts the tracer and formatter processes, and
-%% cleans them up before each call.
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% VALIDATE FORMATTER %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+validate_formatter(Opts) ->
+    Formatter = proplists:get_value(formatter, Opts),
+    ArgsOrArity = proplists:get_value(args, Opts),
+    case {ArgsOrArity, Formatter} of
+        {arity, Formatter} when is_function(Formatter, 1) ->
+             io:format("Custom formater, arity option ignored ~n"),
+             Formatter;
+        {_args, Formatter} when is_function(Formatter, 1) -> Formatter;
+        {Args, _Formatter} -> default_formatter(Args)
+    end.
+
+default_formatter(arity) ->
+    fun(TraceMsg) ->
+            {Type, Pid, {Hour,Min,Sec}, TraceInfo} = extract_info(TraceMsg),
+            {_, UpdTrace} = trace_calls_to_arity({Type, TraceInfo}),
+            {FormatStr, FormatArgs} =
+                trace_to_io(Type, UpdTrace),
+            io_lib:format("~n~p:~p:~9.6.0f ~p " ++ FormatStr ++ "~n",
+                          [Hour, Min, Sec, Pid] ++ FormatArgs)
+    end;
+default_formatter(_) ->
+    fun recon_trace:format/1.
+
+trace_calls_to_arity(TypeTraceInfo) ->
+    case TypeTraceInfo of
+        {call, [{M,F,Args}]} ->
+            {call, [{M,F,length(Args)}]};
+        {call, [{M,F,Args}, Msg]} ->
+            {call, [{M,F,length(Args)}, Msg]};
+        Trace -> Trace
+    end.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% VALIDATE IO SERVER %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+validate_io_server(Opts) ->
+    proplists:get_value(io_server, Opts, group_leader()).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GENERATE PATTERN FILTER %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 generate_pattern_filter(TSpecs, {Max, Time}, IoServer, Formatter) ->
     clear(),
     rate_tracer({Max, Time}, TSpecs, IoServer, Formatter);
@@ -169,7 +201,78 @@ handle_trace(Trace, N, TSpecs, IoServer, Formatter) ->
             N+1;
         _ -> N
     end.
-%%-----------------------------------------------------------------------
+
+filter_call(TraceMsg, TSpecs) ->
+    filter_call(TraceMsg, TSpecs, reject).
+
+filter_call(_TraceMsg, _, print) -> print;
+filter_call(_TraceMsg, [], Answer) -> Answer;
+filter_call(TraceMsg, [{M, F, PatternFun} | TSpecs], reject) ->
+    NewAnswer = case extract_info(TraceMsg) of
+                    {call, _, _, [{TraceM,TraceF, Args}]} ->
+                        test_match(M, F, TraceM, TraceF, Args, PatternFun);
+                    {call, _, _, [{TraceM, TraceF, Args}, _Msg]} ->
+                        test_match(M, F, TraceM, TraceF, Args, PatternFun);
+                    _ -> print
+                end,
+    filter_call(TraceMsg, TSpecs, NewAnswer).
+
+test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
+    Match = 
+        case {M==TraceM, ((F=='_') or (F==TraceF)), PatternFun} of
+            {true, true, '_'} -> true;
+            {true, true, _} -> check;
+            _ -> false
+    end,
+   
+    case Match of
+       true -> print; 
+       false -> reject;
+       check ->
+           try erlang:apply(PatternFun, [Args]) of
+               suppress -> reject;
+               _        -> print
+           catch
+               error:function_clause ->
+                   reject;
+               error:arity_no_match ->
+                   reject;
+               error:_E ->
+                   reject
+           end
+  end.
+
+%%% Start value for the dbg tracer process state
+startValue({_, _}) ->
+    {0, os:timestamp()};
+startValue(_Max) ->
+    0.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% DEBUG TRACE PATTERN %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% @doc
+%%% The function is used to establish call trace patterns
+%%% If the matchspec {M,F,Args} is on the list all calls module M
+%%% and function F will be sending traces to the tracer process which will use
+%%% the function to print the matching traces.
+%%% @end
+
+-spec dbg_tp([{atom(),atom(),term()}], [local] | [global]) -> num_matches().
+dbg_tp(MFAList, MatchOpts) ->
+    case MatchOpts of
+        [local] ->
+            Matches = [dbg:tpl({M, F, '_'}, [{'_', [], []}]) || {M, F, _A} <- MFAList],
+            lists:sum([Cnt || {ok,[{_,_,Cnt},_]}<- Matches]);
+        [global] ->
+            Matches = [dbg:tp({M, F, '_'}, [{'_', [], []}]) || {M, F, _A} <- MFAList],
+            lists:sum([Cnt || {ok,[{_,_,Cnt},_]}<- Matches])
+    end.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHECK IF FUNCTION IS NOT STANDARD RECON %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% In the list of TSpecs, the third element of the tuple
 %% is responsible for matching arguments.
 %% In standard recon_trace, the third element is a template function
@@ -238,92 +341,5 @@ clause_type({_head,_guard, Return}) ->
       {_return_trace} -> shell_fun;
       _ -> standard_fun
     end.    
-
-% @doc
-%% @private Filters the trace messages
-%% and calls the pattern function
-%% @end
-
-filter_call(TraceMsg, TSpecs) ->
-    filter_call(TraceMsg, TSpecs, reject).
-
-filter_call(_TraceMsg, _, print) -> print;
-filter_call(_TraceMsg, [], Answer) -> Answer;
-filter_call(TraceMsg, [{M, F, PatternFun} | TSpecs], reject) ->
-    NewAnswer = case extract_info(TraceMsg) of
-                    {call, _, _, [{TraceM,TraceF, Args}]} ->
-                        test_match(M, F, TraceM, TraceF, Args, PatternFun);
-                    {call, _, _, [{TraceM, TraceF, Args}, _Msg]} ->
-                        test_match(M, F, TraceM, TraceF, Args, PatternFun);
-                    _ -> print
-                end,
-    filter_call(TraceMsg, TSpecs, NewAnswer).
-
-test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
-    Match = 
-        case {M==TraceM, ((F=='_') or (F==TraceF)), PatternFun} of
-            {true, true, '_'} -> true;
-            {true, true, _} -> check;
-            _ -> false
-    end,
-   
-    case Match of
-       true -> print; 
-       false -> reject;
-       check ->
-           try erlang:apply(PatternFun, [Args]) of
-               suppress -> reject;
-               _        -> print
-           catch
-               error:function_clause ->
-                   reject;
-               error:arity_no_match ->
-                   reject;
-               error:_E ->
-                   reject
-           end
-  end.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% VALIDATE FUNCTIONS %%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-validate_formatter(Opts) ->
-    Formatter = proplists:get_value(formatter, Opts),
-    ArgsOrArity = proplists:get_value(args, Opts),
-    case {ArgsOrArity, Formatter} of
-        {arity, Formatter} when is_function(Formatter, 1) ->
-             io:format("Custom formater, arity option ignored ~n"),
-             Formatter;
-        {_args, Formatter} when is_function(Formatter, 1) -> Formatter;
-        {Args, _Formatter} -> default_formatter(Args)
-    end.
-
-validate_io_server(Opts) ->
-    proplists:get_value(io_server, Opts, group_leader()).
-
-%%%%%%%%%%%%%%%%%%%%%%%%
-%%% TRACE FORMATTING %%%
-%%%%%%%%%%%%%%%%%%%%%%%%
-default_formatter(arity) ->
-    fun(TraceMsg) ->
-            {Type, Pid, {Hour,Min,Sec}, TraceInfo} = extract_info(TraceMsg),
-            {_, UpdTrace} = trace_calls_to_arity({Type, TraceInfo}),
-            {FormatStr, FormatArgs} =
-                trace_to_io(Type, UpdTrace),
-            io_lib:format("~n~p:~p:~9.6.0f ~p " ++ FormatStr ++ "~n",
-                          [Hour, Min, Sec, Pid] ++ FormatArgs)
-    end;
-default_formatter(_) ->
-    fun recon_trace:format/1.
-
-trace_calls_to_arity(TypeTraceInfo) ->
-    case TypeTraceInfo of
-        {call, [{M,F,Args}]} ->
-            {call, [{M,F,length(Args)}]};
-        {call, [{M,F,Args}, Msg]} ->
-            {call, [{M,F,length(Args)}, Msg]};
-        Trace -> Trace
-    end.
 
 
