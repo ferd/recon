@@ -31,7 +31,10 @@
          dummy_basic_trace_test/1,
          trace_full_module_test/1,
          trace_one_function_test/1,
-         trace_rate_limit_test/1,
+         trace_map_match_test/1,
+         trace_binary_all_pattern_test/1,
+         trace_binary_patterns_test/1,
+         trace_rate_limit_test/1,         
          trace_even_arg_test/1,
          trace_iolist_to_binary_with_binary_test/1,
          trace_specific_pid_test/1,
@@ -40,7 +43,8 @@
          trace_handle_call_new_and_custom_registry_test/1,
          trace_return_shellfun_test/1,
          trace_return_matchspec_test/1,
-         trace_return_shorthand_test/1
+         trace_return_shorthand_test/1,
+         trace_timestamp_test/1
         ]).
 
 %%--------------------------------------------------------------------
@@ -49,14 +53,11 @@
 
 %% @doc Returns list of test cases and/or groups to be executed.
 all() ->
-    [{group, basic_test}, {group, doc_based_test}].
+    [{group, use_dbg_test}, {group, doc_based_test}].
 
 %% @doc Defines the test groups.
 groups() ->
     [
-     {basic_test, [sequence], [
-                               dummy_basic_test
-                              ]},
      {doc_based_test, [sequence], [
                                    trace_full_module_test,
                                    trace_one_function_test,
@@ -71,6 +72,16 @@ groups() ->
                                    trace_return_matchspec_test,
                                    trace_return_shorthand_test
                                   ]
+     },
+     {use_dbg_test, [sequence], [
+                                 dummy_basic_trace_test,
+                                 trace_map_match_test,
+                                 trace_binary_patterns_test,                                 
+                                 trace_binary_all_pattern_test,
+                                 dummy_basic_test,
+                                 trace_map_match_test,
+                                 trace_timestamp_test
+                                ]
      }
     ].
 
@@ -143,20 +154,30 @@ assert_trace_no_match(RegexString, TraceOutput) ->
 
 dummy_basic_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
+    case test_statem:get_state() of
+        {ok,light_state,_} -> ok;
+        {ok,heavy_state,_} -> test_statem:switch_state()
+    end,
 
-    recon_trace:calls({test_statem, light_state, fun([cast, switch_state, _]) -> anything end}, 10,
+    Num = recon_trace:calls({test_statem, light_state, fun([cast, switch_state, _]) -> true end}, 10,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
+    
+    ct:log("Number of traces: ~p", [Num]),
 
     test_statem:switch_state(),
     S = test_statem:get_state(),
     ct:log("State: ~p", [S]),
     timer:sleep(100),
     {ok, TraceOutput} = file:read_file(FileName),
-    assert_trace_match("test_statem:light_state\\(cast, switch_state, #{iterator=>0", TraceOutput),
+    assert_trace_match("test_statem:light_state\\(cast, switch_state, #{iterator=>", TraceOutput),
     ok.
 
 dummy_basic_trace_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
+    case test_statem:get_state() of
+        {ok,light_state,_} -> ok;
+        {ok,heavy_state,_} -> test_statem:switch_state()
+    end,
 
     MatchSpec = dbg:fun2ms(fun(_) -> return_trace() end),
     recon_trace:calls({test_statem, light_state, MatchSpec}, 10,
@@ -273,7 +294,7 @@ trace_even_arg_test(Config) ->
         {ok,heavy_state,_} -> ok
 
     end,
-    MatchSpec = dbg:fun2ms(fun([_,_,#{iterator:=N}]) when N rem 2 == 0 -> return_trace() end),
+    MatchSpec = fun([_,_,#{iterator:=N}]) when N rem 2 == 0 -> return_trace end,
 
     recon_trace:calls({test_statem, heavy_state, MatchSpec}, 10,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
@@ -283,7 +304,41 @@ trace_even_arg_test(Config) ->
 
     count_trace_match("test_statem:heavy_state\\(timeout", TraceOutput, 3),
     ok.
+%%%======================================================================
+%% Documentation: All calls to iolist_to_binary/1 made with a binary as an argument already (kind of useless conversion!):
+%%                recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
+%%---
+%% Test: All calls to iolist_to_binary/1 made with a binary argument.
+%%---
+%% Function: recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
+%%---
+%% NOTE: Maybe there is a way to transform fun_shell directly in recon as in erlang shell
 %%======================================================================
+
+trace_map_match_test(Config) ->
+    {FH, FileName} = proplists:get_value(file, Config),
+
+    MatchSpec = fun([#{a:=b}]) -> return_trace end,
+    recon_trace:calls({maps, to_list, MatchSpec}, 10,
+                              [{io_server, FH}, {use_dbg, true}, {scope,local}]),
+
+    _ = maps:to_list(#{}),      % Should NOT trace
+    _ = maps:to_list(#{a=>b}),      % Should trace
+    _ = maps:to_list(#{a=>c}),      % Should NOT trace
+    _ = maps:to_list(#{a=>b, c=>d}),      % Should trace
+
+    timer:sleep(100),
+    {ok, TraceOutput} = file:read_file(FileName),
+
+    recon_trace:clear(),
+
+    assert_trace_match("maps:to_list\\(#{a=>b}\\)", TraceOutput),
+    assert_trace_match("maps:to_list\\(#{c=>d", TraceOutput),
+    assert_trace_no_match("maps:to_list\\(#{a=>c}\\)", TraceOutput),
+    assert_trace_no_match("maps:to_list\\(#{}\\)", TraceOutput),
+    ok.
+
+%======================================================================
 %% Documentation: All calls to iolist_to_binary/1 made with a binary as an argument already (kind of useless conversion!):
 %%                recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
 %%---
@@ -297,7 +352,7 @@ trace_even_arg_test(Config) ->
 trace_iolist_to_binary_with_binary_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
 
-    MatchSpec = dbg:fun2ms(fun([X]) when is_binary(X) -> return_trace() end),
+    MatchSpec = fun([X]) when is_binary(X) -> return_trace end,
     recon_trace:calls({erlang, iolist_to_binary, MatchSpec}, 10,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
 
@@ -316,6 +371,76 @@ trace_iolist_to_binary_with_binary_test(Config) ->
     assert_trace_no_match("erlang:iolist_to_binary\\(\\[\"not binary\"\\]\\)", TraceOutput),
     assert_trace_no_match("erlang:iolist_to_binary\\(\\[<<\"mix\">>,\"ed\"\\]\\)", TraceOutput),
     ok.
+
+%%======================================================================
+%% Documentation: All calls to iolist_to_binary/1 made with a binary as an argument already (kind of useless conversion!):
+%%                recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
+%%---
+%% Test: Use dbg flag to pattern match binaries.
+%%---
+%% Function: recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
+%%---
+%% 
+%%===========================================
+
+trace_binary_all_pattern_test(Config) ->
+    {FH, FileName} = proplists:get_value(file, Config),
+
+    MatchSpec = fun([<<X/binary>>]) -> X end,
+    recon_trace:calls({erlang, iolist_to_binary, MatchSpec}, 10,
+                              [{io_server, FH}, {use_dbg, true}, {scope,local}]),
+
+    _ = erlang:iolist_to_binary(<<"already binary">>), % Should trace
+    _ = erlang:iolist_to_binary(["not binary"]),      % Should NOT trace
+    _ = erlang:iolist_to_binary([<<"mix">>, "ed"]),   % Should NOT trace
+    _ = erlang:iolist_to_binary(<<"another binary">>), % Should trace
+
+    timer:sleep(100),
+    {ok, TraceOutput} = file:read_file(FileName),
+
+    recon_trace:clear(),
+
+    assert_trace_match("erlang:iolist_to_binary\\(<<\"already binary\">>\\)", TraceOutput),
+    assert_trace_match("erlang:iolist_to_binary\\(<<\"another binary\">>\\)", TraceOutput),
+    assert_trace_no_match("erlang:iolist_to_binary\\(\\[\"not binary\"\\]\\)", TraceOutput),
+    assert_trace_no_match("erlang:iolist_to_binary\\(\\[<<\"mix\">>,\"ed\"\\]\\)", TraceOutput),
+    ok.
+
+
+%%======================================================================
+%% Documentation: All calls to iolist_to_binary/1 made with a binary as an argument already (kind of useless conversion!):
+%%                recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
+%%---
+%% Test: Use dbg flag to pattern match binaries.
+%%---
+%% Function: recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
+%%---
+%% 
+%%===========================================
+
+trace_binary_patterns_test(Config) ->
+    {FH, FileName} = proplists:get_value(file, Config),
+
+    MatchSpec = fun([<<"already",_/binary>>]) -> return_trace end,
+    recon_trace:calls({erlang, iolist_to_binary, MatchSpec}, 10,
+                              [{io_server, FH}, {use_dbg, true}, {scope,local}]),
+
+    _ = erlang:iolist_to_binary(<<"already binary">>), % Should trace
+    _ = erlang:iolist_to_binary(["not binary"]),      % Should NOT trace
+    _ = erlang:iolist_to_binary([<<"mix">>, "ed"]),   % Should NOT trace
+    _ = erlang:iolist_to_binary(<<"another binary">>), % Should NOT trace
+
+    timer:sleep(100),
+    {ok, TraceOutput} = file:read_file(FileName),
+
+    recon_trace:clear(),
+
+    assert_trace_match("erlang:iolist_to_binary\\(<<\"already binary\">>\\)", TraceOutput),
+    assert_trace_no_match("erlang:iolist_to_binary\\(<<\"another binary\">>\\)", TraceOutput),
+    assert_trace_no_match("erlang:iolist_to_binary\\(\\[\"not binary\"\\]\\)", TraceOutput),
+    assert_trace_no_match("erlang:iolist_to_binary\\(\\[<<\"mix\">>,\"ed\"\\]\\)", TraceOutput),
+    ok.
+
 
 %%======================================================================
 %% Documentation: Calls to the queue module only in a given process Pid,
@@ -545,4 +670,31 @@ trace_return_shorthand_test(Config) ->
     %% Check for the call and its return value
     assert_trace_match("test_statem:get_state/0 --> {ok,light_state,"++integer_to_list(N)++"}", TraceOutput),
     ok.
+
 %%======================================================================
+%% Documentation: The timestamp option adds a timestamp to the trace output.
+%%                recon_trace:calls({Mod, Fun, return_trace}, 10, [{timestamp, true}]).
+%%---
+%% Test: Show the result of test_statem:get_state/0 calls.
+%%---
+%% Function: recon_trace:calls({test_statem, get_state, '_'}, 10).
+%%======================================================================
+trace_timestamp_test(Config) ->
+    {FH, FileName} = proplists:get_value(file, Config), 
+    case test_statem:get_state() of
+        {ok,light_state,_} -> ok;
+        {ok,heavy_state,_} -> test_statem:switch_state()
+    end,
+    %% Trace the API function test_statem:get_state/1 using shorthand
+    recon_trace:calls({test_statem, get_state, '_'}, 10, 
+        [ {io_server, FH},{scope,local}, {timestamp, trace}, {use_dbg, true}]),
+    {ok,light_state, N} = test_statem:get_state(),
+    timer:sleep(100),
+    recon_trace:clear(),
+
+    {ok, TraceOutput} = file:read_file(FileName),
+
+    %% Check for the call and its return value
+    assert_trace_match("test_statem:get_state\\(", TraceOutput),
+    ok.
+

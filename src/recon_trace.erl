@@ -231,6 +231,10 @@ clear() ->
     erlang:trace_pattern({'_','_','_'}, false, []), % unsets global
     maybe_kill(recon_trace_tracer),
     maybe_kill(recon_trace_formatter),
+    %% for recon_trace_use_dbg
+    dbg:p(all,clear),
+    dbg:ctp('_'),
+    dbg:stop(),
     ok.
 
 %% @equiv calls({Mod, Fun, Args}, Max, [])

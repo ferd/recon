@@ -1,17 +1,18 @@
-%%% @author Fred Hebert <mononcqc@ferd.ca>
-%%%  [http://ferd.ca/]
+%%% @author <flmathematic@gmail.com>
+%%%  [https://flmath.github.io]
 %%% @doc
-%%% `recon_trace' is a module that handles tracing in a safe manner for single
-%%% Erlang nodes, currently for function calls only. Functionality includes:
+%%% `recon_trace_use_dbg' is a module that allows API of recon use dbg module
+%%% The added value of this solution is more flexibility in the pattern matching
+%%% you can pattern match any structure you BEAM can put into function guard.
 %%% @end
 -module(recon_trace_use_dbg).
 -include_lib("stdlib/include/ms_transform.hrl").
 
 -import(recon_trace, [formatter/5, validate_opts/1, trace_to_io/2,
-                      format/1, extract_info/1, fun_to_ms/1]).
+                      format/1, extract_info/1, fun_to_ms/1, clear/0]).
 
 %% API
--export([clear/0, calls_dbg/3]).
+-export([calls_dbg/3]).
  
 %% Internal exports
 -export([count_tracer/4, rate_tracer/4]).
@@ -48,16 +49,6 @@
 %%%%%%%%%%%%%%
 %%% PUBLIC %%%
 %%%%%%%%%%%%%%
-
-%% @doc Stops all tracing at once.
--spec clear() -> ok.
-clear() ->
-    recon_trace:clear(),
-    dbg:p(all,clear),
-    dbg:ctp('_'),
-    dbg:stop(),
-    ok.
-
 %% @doc Allows to set trace patterns and pid specifications to trace
 %% function calls.
 %%
@@ -75,11 +66,13 @@ calls_dbg(TSpecs, Boundaries, Opts) ->
             Formatter = validate_formatter(Opts),
             IoServer = validate_io_server(Opts),
 
-            {PidSpecs, _TraceOpts, MatchOpts} = validate_opts(Opts),
+            {PidSpecs, TraceOpts, MatchOpts} = validate_opts(Opts),
             PatternsFun =
                 generate_pattern_filter(FunTSpecs, Boundaries, IoServer, Formatter),
             dbg:tracer(process,{PatternsFun, startValue(Boundaries)}),
-            dbg:p(hd(PidSpecs), [c]),
+            %% we want to receive full traces to match them then we can calculate arity
+            ProcessOpts = [c]++proplists:delete(arity, TraceOpts),
+            dbg:p(hd(PidSpecs), ProcessOpts),
             dbg_tp(TSpecs, MatchOpts)
     end.
 
@@ -160,6 +153,9 @@ rate_tracer({Max, Time}, TSpecs, IoServer, Formatter) ->
     end.
 
 handle_trace(Trace, N, TSpecs, IoServer, Formatter) ->
+    io:format("aaaaaaaaaaaaaaaaaaaaaaaRecon tracer: ~p~n", [Trace]),
+    io:format("aaaaaaaaaaaaaaaaaaaaaaaReconssss tracer: ~p~n", [TSpecs]),
+    
     Print = filter_call(Trace, TSpecs),
     case Print of
         reject -> N;
@@ -195,7 +191,7 @@ trace_function_types(TSpecs) ->
 FunTypes= [trace_function_type(Args) || {_, _, Args} <- TSpecs],
     
     HasShell = lists:any(fun(T) -> T == shell_fun end, FunTypes),
-    HasStandard = lists:all(fun(T) -> T == standard_fun end, FunTypes),
+    HasStandard = lists:any(fun(T) -> T == standard_fun end, FunTypes),
     case {HasShell, HasStandard} of
         {true, true} -> exit(mixed_function_types);
         {true, false} -> shell_fun;
@@ -246,8 +242,6 @@ clause_type({_head,_guard, Return}) ->
       _ -> standard_fun
     end.    
 
-
-
 % @doc
 %% @private Filters the trace messages
 %% and calls the pattern function
@@ -281,13 +275,18 @@ test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
        false -> reject;
        check ->
            try erlang:apply(PatternFun, [Args]) of
-               _ -> print
+
+               _ -> io:format("abRecon tracer: ~p~n", [Args]),
+                    print
            catch
                error:function_clause ->
+                   io:format("acRecon tracer: ~p~n", [Args]),
                    reject;
                error:arity_no_match ->
+                   io:format("adRecon tracer: ~p~n", [Args]),
                    reject;
                error:E ->
+                   io:format("aeRecon tracer: ~p~n", [E]),
                    reject
            end
   end.
@@ -304,8 +303,7 @@ validate_formatter(Opts) ->
              io:format("Custom formater, arity option ignored ~n"),
              Formatter;
         {_args, Formatter} when is_function(Formatter, 1) -> Formatter;
-        {arity, Formatter} -> generate_formatter(Formatter, arity);
-        _ -> fun recon_trace:format/1
+        {Args, _Formatter} -> default_formatter(Args)
     end.
 
 validate_io_server(Opts) ->
@@ -314,7 +312,7 @@ validate_io_server(Opts) ->
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%% TRACE FORMATTING %%%
 %%%%%%%%%%%%%%%%%%%%%%%%
-generate_formatter(Formatter, arity) ->
+default_formatter(arity) ->
     fun(TraceMsg) ->
             {Type, Pid, {Hour,Min,Sec}, TraceInfo} = extract_info(TraceMsg),
             {_, UpdTrace} = trace_calls_to_arity({Type, TraceInfo}),
@@ -323,7 +321,7 @@ generate_formatter(Formatter, arity) ->
             io_lib:format("~n~p:~p:~9.6.0f ~p " ++ FormatStr ++ "~n",
                           [Hour, Min, Sec, Pid] ++ FormatArgs)
     end;
-generate_formatter(_Formatter, _) ->
+default_formatter(_) ->
     fun recon_trace:format/1.
 
 trace_calls_to_arity(TypeTraceInfo) ->
