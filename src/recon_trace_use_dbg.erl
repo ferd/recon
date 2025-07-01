@@ -15,7 +15,7 @@
 -export([calls_dbg/3]).
  
 %% Internal exports
--export([count_tracer/4, rate_tracer/4]).
+-export([count_tracer/4, rate_tracer/4, print_accutator/2]).
 
 -type matchspec()    :: [{[term()] | '_', [term()], [term()]}].
 -type shellfun()     :: fun((_) -> term()).
@@ -144,8 +144,29 @@ trace_calls_to_arity(TypeTraceInfo) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% VALIDATE IO SERVER %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
+
 validate_io_server(Opts) ->
-    proplists:get_value(io_server, Opts, group_leader()).
+    IoServer = proplists:get_value(io_server, Opts, group_leader()),
+    IoDelay = proplists:get_value(io_delay, Opts, 1),
+    proc_lib:spawn_link(?MODULE, print_accutator, [IoServer, IoDelay]).
+
+print_accutator(IoServer, IoDelay) ->
+    receive
+        {msg, Msg} -> 
+            try io:format(IoServer, Msg, [])
+             catch
+                error:_ ->
+                    io:format("Recon output process stopped.~n"),
+                    clear()
+            end;
+        rate_limit_tripped ->
+            io:format("Recon tracer rate limit tripped.~n"),
+            clear(), exit(normal)
+    end,
+    receive 
+        after IoDelay -> print_accutator(IoServer, IoDelay)
+    end.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% GENERATE PATTERN FILTER %%%
@@ -159,14 +180,13 @@ generate_pattern_filter(TSpecs, Max, IoServer, Formatter) ->
 
 count_tracer(Max, TSpecs, IoServer, Formatter) ->
     fun
-        (_Trace, {N, _}) when N > Max ->
-            io:format("Recon tracer rate limit tripped.~n"),
-            clear();
+        (_Trace, N) when N > Max ->
+            IoServer ! rate_limit_tripped, clear();
         (Trace, N) when (N =< Max) and is_tuple(Trace) ->
             %%  Type = element(1, Trace),
             handle_trace(Trace, N, TSpecs, IoServer, Formatter)
     end.
-
+%% recon_trace:calls({queue,in, fun(A) -> print end}, 3, [use_dbg]).
 rate_tracer({Max, Time}, TSpecs, IoServer, Formatter) ->
     fun(Trace, {N, Timestamp}) ->
             Now = os:timestamp(),
@@ -179,8 +199,7 @@ rate_tracer({Max, Time}, TSpecs, IoServer, Formatter) ->
                     NewN = handle_trace(Trace, N, TSpecs, IoServer, Formatter),
                     {NewN, Timestamp};
                true ->
-                   io:format("Recon tracer rate limit tripped.~n"),
-                   clear()
+                IoServer ! rate_limit_tripped, clear()
             end
     end.
 
@@ -191,12 +210,7 @@ handle_trace(Trace, N, TSpecs, IoServer, Formatter) ->
         print ->
             case Formatter(Trace) of
                 "" -> ok;
-                Formatted ->
-                    case is_process_alive(IoServer) of
-                        true -> io:format(IoServer, Formatted, []);
-                        false -> io:format("Recon tracer formater stopped.~n"),
-                                 clear()
-                    end
+                Formatted -> IoServer ! {msg, Formatted}                 
             end,
             N+1;
         _ -> N
@@ -231,7 +245,8 @@ test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
        check ->
            try erlang:apply(PatternFun, [Args]) of
                suppress -> reject;
-               _        -> print
+               print    -> print;
+               _   -> print 
            catch
                error:function_clause ->
                    reject;
