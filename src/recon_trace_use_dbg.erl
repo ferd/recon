@@ -95,7 +95,7 @@ tspecs_normalization(TSpecs) ->
          _ ->  TSpec
      end ||  {Mod, Fun, Args} = TSpec <- TSpecs].
 
-pass_all(V) -> print.
+pass_all(_) -> print.
 
 args_no_fun(N) ->
     fun(V) ->
@@ -187,9 +187,9 @@ generate_pattern_filter(TSpecs, Max, IoServer, Formatter) ->
 
 count_tracer(Max, TSpecs, IoServer, Formatter) ->
     fun
-        (_Trace, N) when N > Max ->
+        (_Trace, N) when N >= Max ->
             IoServer ! rate_limit_tripped, clear();
-        (Trace, N) when (N =< Max) and is_tuple(Trace) ->
+        (Trace, N) when (N < Max) and is_tuple(Trace) ->
             %%  Type = element(1, Trace),
             handle_trace(Trace, N, TSpecs, IoServer, Formatter)
     end.
