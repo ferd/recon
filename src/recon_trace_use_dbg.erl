@@ -95,12 +95,12 @@ tspecs_normalization(TSpecs) ->
          _ ->  TSpec
      end ||  {Mod, Fun, Args} = TSpec <- TSpecs].
 
-pass_all(V) -> V.
+pass_all(V) -> print.
 
 args_no_fun(N) ->
     fun(V) ->
             case erlang:length(V) of
-                N -> V;
+                N -> print;
                 _ -> throw(arity_no_match)
             end
     end.
@@ -156,8 +156,15 @@ print_accutator(IoServer, IoDelay) ->
             try io:format(IoServer, Msg, [])
              catch
                 error:_ ->
-                    io:format("Recon output process stopped.~n"),
-                    clear()
+                    io:format("Recon output process stopped when trace was sent.~n"),
+                    clear(), exit(normal)
+            end;
+        {print_value, Value} ->
+            try io:format(IoServer, "Print value: ~p~n", [Value])
+             catch
+                error:_ ->
+                    io:format("Recon output process stopped when value was sent.~n"),
+                    clear(), exit(normal)
             end;
         rate_limit_tripped ->
             io:format("Recon tracer rate limit tripped.~n"),
@@ -186,7 +193,7 @@ count_tracer(Max, TSpecs, IoServer, Formatter) ->
             %%  Type = element(1, Trace),
             handle_trace(Trace, N, TSpecs, IoServer, Formatter)
     end.
-%% recon_trace:calls({queue,in, fun(A) -> print end}, 3, [use_dbg]).
+
 rate_tracer({Max, Time}, TSpecs, IoServer, Formatter) ->
     fun(Trace, {N, Timestamp}) ->
             Now = os:timestamp(),
@@ -207,6 +214,9 @@ handle_trace(Trace, N, TSpecs, IoServer, Formatter) ->
     Print = filter_call(Trace, TSpecs),
     case Print of
         reject -> N;
+        {print, Value} ->
+            IoServer ! {print_value, Value},
+            N+1;
         print ->
             case Formatter(Trace) of
                 "" -> ok;
@@ -219,6 +229,7 @@ handle_trace(Trace, N, TSpecs, IoServer, Formatter) ->
 filter_call(TraceMsg, TSpecs) ->
     filter_call(TraceMsg, TSpecs, reject).
 
+filter_call(_TraceMsg, _, {print, Value}) -> {print, Value};
 filter_call(_TraceMsg, _, print) -> print;
 filter_call(_TraceMsg, [], Answer) -> Answer;
 filter_call(TraceMsg, [{M, F, PatternFun} | TSpecs], reject) ->
@@ -227,6 +238,7 @@ filter_call(TraceMsg, [{M, F, PatternFun} | TSpecs], reject) ->
                         test_match(M, F, TraceM, TraceF, Args, PatternFun);
                     {call, _, _, [{TraceM, TraceF, Args}, _Msg]} ->
                         test_match(M, F, TraceM, TraceF, Args, PatternFun);
+                    %% if the trace is not a call, we just print it
                     _ -> print
                 end,
     filter_call(TraceMsg, TSpecs, NewAnswer).
@@ -246,7 +258,8 @@ test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
            try erlang:apply(PatternFun, [Args]) of
                suppress -> reject;
                print    -> print;
-               _   -> print 
+               {print, Value} -> {print, Value};
+               _   -> reject
            catch
                error:function_clause ->
                    reject;

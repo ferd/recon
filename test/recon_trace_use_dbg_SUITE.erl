@@ -48,7 +48,8 @@
          trace_timestamp_test/1,
          trace_return_to_test/1,
          trace_no_return_to_test/1,
-         trace_suppress_print_test/1
+         trace_suppress_print_test/1,
+         trace_custom_value_print_test/1
         ]).
 
 
@@ -89,7 +90,9 @@ groups() ->
                                  trace_timestamp_test,
                                  trace_return_to_test,
                                  trace_no_return_to_test,
-                                 trace_suppress_print_test
+                                 trace_suppress_print_test,
+                                 trace_custom_value_print_test
+                                 
                                 ]
      }
     ].
@@ -168,7 +171,7 @@ dummy_basic_test(Config) ->
         {ok,heavy_state,_} -> test_statem:switch_state()
     end,
 
-    Num = recon_trace:calls({test_statem, light_state, fun([cast, switch_state, _]) -> true end}, 10,
+    Num = recon_trace:calls({test_statem, light_state, fun([cast, switch_state, _]) -> print end}, 10,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
     
     ct:log("Number of traces: ~p", [Num]),
@@ -291,7 +294,7 @@ trace_even_arg_test(Config) ->
         {ok,heavy_state,_} -> ok
 
     end,
-    MatchSpec = fun([_,_,#{iterator:=N}]) when N rem 2 == 0 -> return_trace end,
+    MatchSpec = fun([_,_,#{iterator:=N}]) when N rem 2 == 0 -> print end,
 
     recon_trace:calls({test_statem, heavy_state, MatchSpec}, 10,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
@@ -312,7 +315,7 @@ trace_even_arg_test(Config) ->
 trace_map_match_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
 
-    MatchSpec = fun([#{a:=b}]) -> return_trace end,
+    MatchSpec = fun([#{a:=b}]) -> print end,
     recon_trace:calls({maps, to_list, MatchSpec}, 10,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
 
@@ -342,7 +345,7 @@ trace_map_match_test(Config) ->
 trace_iolist_to_binary_with_binary_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
 
-    MatchSpec = fun([X]) when is_binary(X) -> return_trace end,
+    MatchSpec = fun([X]) when is_binary(X) -> print end,
     recon_trace:calls({erlang, iolist_to_binary, MatchSpec}, 10,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
 
@@ -373,7 +376,7 @@ trace_iolist_to_binary_with_binary_test(Config) ->
 trace_binary_all_pattern_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
 
-    MatchSpec = fun([<<X/binary>>]) -> X end,
+    MatchSpec = fun([<<_X/binary>>]) -> print end,
     recon_trace:calls({erlang, iolist_to_binary, MatchSpec}, 10,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
 
@@ -407,7 +410,7 @@ trace_binary_all_pattern_test(Config) ->
 trace_binary_patterns_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
 
-    MatchSpec = fun([<<"already",_/binary>>]) -> return_trace end,
+    MatchSpec = fun([<<"already",_/binary>>]) -> print end,
     recon_trace:calls({erlang, iolist_to_binary, MatchSpec}, 10,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
 
@@ -508,7 +511,7 @@ trace_spec_list_new_procs_only_test(Config) ->
         {ok,heavy_state,_} -> ok
     end,
 
-    recon_trace:calls([{test_statem, light_state, fun(_) -> return_trace end}, {test_statem, heavy_state, '_'}], 10,
+    recon_trace:calls([{test_statem, light_state, fun(_) -> print end}, {test_statem, heavy_state, '_'}], 10,
                               [{pid, new},  {io_server, FH}, {use_dbg, true}, {scope,local}]),
 
     {ok, heavy_state,_} = test_statem:get_state(),
@@ -738,13 +741,12 @@ trace_no_return_to_test(Config) ->
 %%---
 %% Test: Show no result of calls that return suppress.
 %%---
-%% Note: The suppress is right now the only special feature, but it is easy to add more.
 %%======================================================================
 trace_suppress_print_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
 
     MatchSpec = fun([enter_heavy_state,_]) -> suppress;
-                   ([enter_light_state,_]) -> return_some  end,
+                   ([enter_light_state,_]) -> print end,
     recon_trace:calls({test_statem, traced_function, MatchSpec}, 100,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
 
@@ -761,4 +763,31 @@ trace_suppress_print_test(Config) ->
     assert_trace_match("test_statem:traced_function\\(enter_light_state", TraceOutput),
     ok.
 
-    
+%%======================================================================
+%% Documentation: The clauses of the match spec can be used to write custom value
+%% the trace output.
+%%---
+%% Test: Show custom value result of calls that return {print, custom_value}.
+%%---
+%%======================================================================
+trace_custom_value_print_test(Config) ->
+    {FH, FileName} = proplists:get_value(file, Config),
+
+    MatchSpec = fun([enter_heavy_state,_]) -> suppress;
+                   ([enter_light_state,_]) -> {print, [custom_value]} end,
+    recon_trace:calls({test_statem, traced_function, MatchSpec}, 100,
+                              [{io_server, FH}, {use_dbg, true}, {scope,local}]),
+
+    timer:sleep(100),
+    ok = test_statem:switch_state(),
+    _ = test_statem:get_state(),
+    timer:sleep(100),
+    ok = test_statem:switch_state(),
+    timer:sleep(100),
+
+    {ok, TraceOutput} = file:read_file(FileName),
+    %% there are race conditions when test ends, so 
+    assert_trace_no_match("test_statem:traced_function\\(enter_heavy_state", TraceOutput),
+    assert_trace_no_match("test_statem:traced_function\\(enter_light_state", TraceOutput),
+    assert_trace_match("Print value: \\[custom_value\\]", TraceOutput),
+    ok.
