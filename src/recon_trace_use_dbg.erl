@@ -9,7 +9,7 @@
 -include_lib("stdlib/include/ms_transform.hrl").
 
 -import(recon_trace, [formatter/5, validate_opts/1, trace_to_io/2,
-                      format/1, extract_info/1, fun_to_ms/1, clear/0]).
+                      format/1, extract_info/1, clear/0]).
 
 %% API
 -export([calls_dbg/3]).
@@ -341,11 +341,27 @@ trace_function_type(Patterns) when is_list(Patterns) ->
 %% check if the is *_trace() is absent
 %% if every clause has *_trace() it is a shell function
 trace_function_type(PatternFun) when is_function(PatternFun, 1) ->
-    try fun_to_ms(PatternFun) of
+    try silent_fun_to_ms(PatternFun) of
+        {error,transform_error} -> standard_fun;
         Patterns -> trace_function_type(Patterns, undecided)
     catch
         _:_ -> standard_fun
     end.
+
+silent_fun_to_ms(ShellFun) when is_function(ShellFun) ->
+    case erl_eval:fun_data(ShellFun) of
+        {fun_data,ImportList,Clauses} ->
+            case ms_transform:transform_from_shell(
+                   dbg,Clauses,ImportList) of
+                {error,[{_,[{_,_,Code}|_]}|_],_} ->
+                    {error,transform_error};
+                Else ->
+                    Else
+            end;
+        false ->
+            exit(shell_funs_only)
+    end.
+
 
 %% all function clauses are '_'
 trace_function_type([], shell_fun) -> shell_fun;
