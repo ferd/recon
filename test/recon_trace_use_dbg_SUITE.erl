@@ -814,7 +814,8 @@ trace_custom_value_print_test(Config) ->
     {FH, FileName} = proplists:get_value(file, Config),
 
     MatchSpec = fun([enter_heavy_state,_]) -> suppress;
-                   ([enter_light_state,_]) -> {print, [custom_value]} end,
+                   ([enter_light_state,_]) -> 
+                        {print, {"printed", [custom_value]}} end,
     recon_trace:calls({test_statem, traced_function, MatchSpec}, 100,
                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
 
@@ -829,5 +830,5 @@ trace_custom_value_print_test(Config) ->
     %% there are race conditions when test ends, so 
     assert_trace_no_match("test_statem:traced_function\\(enter_heavy_state", TraceOutput),
     assert_trace_no_match("test_statem:traced_function\\(enter_light_state", TraceOutput),
-    assert_trace_match("Print value: \\[custom_value\\]", TraceOutput),
+    assert_trace_match("{\"printed\",\\[custom_value\\]}", TraceOutput),
     ok.

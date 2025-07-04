@@ -160,7 +160,7 @@ print_accutator(IoServer, IoDelay) ->
                     clear(), exit(normal)
             end;
         {print_value, Value} ->
-            try io:format(IoServer, "Print value: ~p~n", [Value])
+            try io:format(IoServer, " ~p~n", [Value])
              catch
                 error:_ ->
                     io:format("Recon output process stopped when value was sent.~n"),
