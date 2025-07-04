@@ -148,7 +148,9 @@ trace_calls_to_arity(TypeTraceInfo) ->
 validate_io_server(Opts) ->
     IoServer = proplists:get_value(io_server, Opts, group_leader()),
     IoDelay = proplists:get_value(io_delay, Opts, 1),
-    proc_lib:spawn_link(?MODULE, print_accutator, [IoServer, IoDelay]).
+    Pid = proc_lib:spawn_link(?MODULE, print_accutator, [IoServer, IoDelay]),
+    register(recon_trace_printer, Pid),
+    Pid.
 
 print_accutator(IoServer, IoDelay) ->
     receive

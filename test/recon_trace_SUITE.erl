@@ -253,7 +253,7 @@ trace_even_arg_test(Config) ->
         {ok,heavy_state,_} -> ok
 
     end,
-    MatchSpec = dbg:fun2ms(fun([_,_,#{iterator:=N}]) when N rem 2 == 0 -> return_trace() end),
+    MatchSpec = dbg:fun2ms(fun([_,_,#{iterator=>N}]) when N rem 2 == 0 -> return_trace() end),
 
     recon_trace:calls({test_statem, heavy_state, MatchSpec}, 10, [{io_server, FH},{scope,local}]),
     timer:sleep(1900),
