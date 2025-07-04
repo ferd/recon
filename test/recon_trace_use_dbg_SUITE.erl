@@ -39,6 +39,7 @@
          trace_even_arg_test/1,
          trace_iolist_to_binary_with_binary_test/1,
          trace_specific_pid_test/1,
+         trace_multi_pid_test/1,
          trace_arity_test/1,
          trace_spec_list_new_procs_only_test/1,
          trace_handle_call_new_and_custom_registry_test/1,
@@ -72,6 +73,7 @@ groups() ->
                                    trace_even_arg_test,
                                    trace_iolist_to_binary_with_binary_test,
                                    trace_specific_pid_test,
+                                   trace_multi_pid_test,
                                    trace_arity_test,
                                    trace_spec_list_new_procs_only_test,
                                    trace_handle_call_new_and_custom_registry_test,
@@ -91,7 +93,7 @@ groups() ->
                                  trace_return_to_test,
                                  trace_no_return_to_test,
                                  trace_suppress_print_test,
-                                 trace_custom_value_print_test
+                                 trace_custom_value_print_test                             
                                  
                                 ]
      }
@@ -468,6 +470,44 @@ trace_specific_pid_test(Config) ->
     assert_trace_no_match(".*test_statem:heavy_state", TraceOutput),
     is_process_alive(Pid) andalso exit(Pid, kill), % Cleanup spawned proc
     ok.
+
+%%======================================================================
+%% Documentation: Calls to the queue module only in given 2 processes Pid,
+%%                at a rate of 50 per second at most: recon_trace:calls({queue, '_', '_'}, {50,1000}, [{pid, Pid}])
+%%---
+%% Test: Calls to the test_statem module only in the test_statem 2 processes Pids, at a rate of 10 per second at most.
+%%---
+%%======================================================================
+trace_multi_pid_test(Config) ->
+    {FH, FileName} = proplists:get_value(file, Config),
+
+    %% new statem in light state
+    {ok, Pid} = gen_statem:start(test_statem, [], []),
+    {ok, Pid2} = gen_statem:start(test_statem, [], []),
+
+    %% the second statem state is heavy_state
+    gen_statem:cast(Pid2, switch_state),
+
+    recon_trace:calls({test_statem, '_', '_'}, {10,1000},
+                              [{pid, [Pid, Pid2]},  {io_server, FH}, {use_dbg, true}, {scope,local}]),
+
+    gen_statem:call(Pid, get_value),
+    gen_statem:call(Pid, get_value),
+    gen_statem:call(Pid2, get_value),
+    gen_statem:call(Pid2, get_value),
+    gen_statem:call(Pid2, get_value),
+    timer:sleep(100),
+    recon_trace:clear(),
+
+    {ok, TraceOutput} = file:read_file(FileName),
+    %% Check calls originating from  are traced (e.g., handle_event)
+    count_trace_match(".*test_statem:light_state", TraceOutput,2),
+    %% Check calls from the other process are NOT traced
+    count_trace_match(".*test_statem:heavy_state", TraceOutput,3),
+    is_process_alive(Pid) andalso exit(Pid, kill), % Cleanup spawned proc
+    is_process_alive(Pid2) andalso exit(Pid2, kill), % Cleanup spawned proc
+    ok.
+
 
 %%======================================================================
 %% Documentation: Print the traces with the function arity instead of literal arguments:

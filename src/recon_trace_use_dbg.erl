@@ -72,7 +72,7 @@ calls_dbg(TSpecs, Boundaries, Opts) ->
             dbg:tracer(process,{PatternsFun, startValue(Boundaries)}),
             %% we want to receive full traces to match them then we can calculate arity
             ProcessOpts = [c]++proplists:delete(arity, TraceOpts),
-            dbg:p(hd(PidSpecs), ProcessOpts),
+            lists:foreach(fun(Pid) -> dbg:p(Pid, ProcessOpts) end, PidSpecs),
             dbg_tp(TSpecs, MatchOpts)
     end.
 
@@ -353,7 +353,7 @@ silent_fun_to_ms(ShellFun) when is_function(ShellFun) ->
         {fun_data,ImportList,Clauses} ->
             case ms_transform:transform_from_shell(
                    dbg,Clauses,ImportList) of
-                {error,[{_,[{_,_,Code}|_]}|_],_} ->
+                {error,[{_,[{_,_,_Code}|_]}|_],_} ->
                     {error,transform_error};
                 Else ->
                     Else
