@@ -15,7 +15,7 @@
 -export([calls_dbg/3]).
  
 %% Internal exports
--export([count_tracer/4, rate_tracer/4, print_accutator/2]).
+-export([count_tracer/4, rate_tracer/4, print_actuator/2]).
 
 -type matchspec()    :: [{[term()] | '_', [term()], [term()]}].
 -type shellfun()     :: fun((_) -> term()).
@@ -148,11 +148,11 @@ trace_calls_to_arity(TypeTraceInfo) ->
 validate_io_server(Opts) ->
     IoServer = proplists:get_value(io_server, Opts, group_leader()),
     IoDelay = proplists:get_value(io_delay, Opts, 1),
-    Pid = proc_lib:spawn_link(?MODULE, print_accutator, [IoServer, IoDelay]),
-    register(recon_trace_printer, Pid),
+    Pid = proc_lib:spawn_link(?MODULE, print_actuator, [IoServer, IoDelay]),
+    reregister(recon_trace_printer, Pid),
     Pid.
 
-print_accutator(IoServer, IoDelay) ->
+print_actuator(IoServer, IoDelay) ->
     receive
         {msg, Msg} -> 
             try io:format(IoServer, Msg, [])
@@ -173,7 +173,7 @@ print_accutator(IoServer, IoDelay) ->
             clear(), exit(normal)
     end,
     receive 
-        after IoDelay -> print_accutator(IoServer, IoDelay)
+        after IoDelay -> print_actuator(IoServer, IoDelay)
     end.
 
 
@@ -388,4 +388,12 @@ clause_type({_head,_guard, Return}) ->
       _ -> standard_fun
     end.    
 
-
+reregister(Name, Pid) ->
+    case whereis(Name) of
+        undefined -> ok;
+        OldPid ->
+            unlink(OldPid),
+            exit(OldPid, kill),
+            unregister(Name)
+    end,
+    register(Name, Pid).

@@ -234,6 +234,7 @@ clear() ->
      
     %% for recon_trace_use_dbg
     maybe_kill(recon_trace_tracer),
+    catch unregister(recon_trace_tracer),
     dbg:p(all,clear),
     dbg:ctp('_'),
     dbg:stop(),
