@@ -13,7 +13,8 @@
          term_to_port/1,
          time_map/5, time_fold/6,
          scheduler_usage_diff/2,
-         sublist_top_n_attrs/2]).
+         sublist_top_n_attrs/2,
+         fold_processes/2]).
 %% private exports
 -export([binary_memory/1]).
 
@@ -73,15 +74,45 @@ port_list(Attr, Val) ->
     [Port || Port <- erlang:ports(),
              {Attr, Val} =:= erlang:port_info(Port, Attr)].
 
+%% @doc Fold over all processes, using efficient iterator when available (OTP 28+).
+-spec fold_processes(Fun, Acc0) -> Acc when
+    Fun :: fun((pid(), Acc) -> Acc),
+    Acc0 :: Acc,
+    Acc :: term().
+fold_processes(Fun, Acc0) ->
+    try
+        Iter = erlang:processes_iterator(),
+        fold_processes_iter(Fun, Acc0, Iter)
+    catch
+        error:undef ->
+            lists:foldl(Fun, Acc0, processes())
+    end.
+
+fold_processes_iter(Fun, Acc, Iter) ->
+    case erlang:processes_next(Iter) of
+        {Pid, NewIter} ->
+            NewAcc = Fun(Pid, Acc),
+            fold_processes_iter(Fun, NewAcc, NewIter);
+        none ->
+            Acc
+    end.
+
 %% @doc Returns the attributes ({@link recon:proc_attrs()}) of
 %% all processes of the node, except the caller.
 -spec proc_attrs(term()) -> [recon:proc_attrs()].
 proc_attrs(AttrName) ->
     Self = self(),
-    [Attrs || Pid <- processes(),
-	      Pid =/= Self,
-              {ok, Attrs} <- [proc_attrs(AttrName, Pid)]
-	].
+    fold_processes(
+        fun(Pid, Acc) when Pid =/= Self ->
+                case proc_attrs(AttrName, Pid) of
+                    {ok, Attrs} -> [Attrs | Acc];
+                    {error, _} -> Acc
+                end;
+           (_, Acc) ->
+                Acc
+        end,
+        []
+    ).
 
 %% @doc Returns the attributes of a given process. This form of attributes
 %% is standard for most comparison functions for processes in recon.
@@ -288,5 +319,3 @@ merge(H1, [E2|H2]) -> [E2, H1|H2].
 merge_pairs([]) -> [];
 merge_pairs([H]) -> H;
 merge_pairs([A, B|T]) -> merge(merge(A, B), merge_pairs(T)).
-
-
