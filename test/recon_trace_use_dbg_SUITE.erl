@@ -50,7 +50,8 @@
          trace_return_to_test/1,
          trace_no_return_to_test/1,
          trace_suppress_print_test/1,
-         trace_custom_value_print_test/1
+         trace_custom_value_print_test/1,
+         trace_plugin_tracker_test/1
         ]).
 
 
@@ -92,7 +93,8 @@ groups() ->
                                  trace_return_to_test,
                                  trace_no_return_to_test,
                                  trace_suppress_print_test,
-                                 trace_custom_value_print_test                             
+                                 trace_custom_value_print_test,
+                                 trace_plugin_tracker_test                             
                                  
                                 ]
      }
@@ -831,3 +833,62 @@ trace_custom_value_print_test(Config) ->
     assert_trace_no_match("test_statem:traced_function\\(enter_light_state", TraceOutput),
     assert_trace_match("{\"printed\",\\[custom_value\\]}", TraceOutput),
     ok.
+
+%%======================================================================
+%% Documentation: Test matching binaries with a specific pattern.
+%%                
+%% recon_trace:calls({erlang, iolist_to_binary, fun([X]) when is_binary(X) -> ok end}, 10)
+%%---
+%% Test: Use dbg flag to pattern match parts of binaries.
+%%---
+%% NOTE: Possible only with the use_dbg flag.
+%%===========================================
+
+trace_plugin_tracker_test(Config) ->
+    {FH, FileName} = proplists:get_value(file, Config),
+
+    MatchSpec = {erlang, iolist_to_binary, 
+        fun([ <<"request",A/binary>>], #{}) ->  {print_session, #{session => A}} end},
+    MatchSpec2 = {maps, to_list,
+        fun([#{response := A, value := V }], #{session := A}) -> {print_session, V, #{}} end},
+    recon_trace:calls([MatchSpec, MatchSpec2], 10,
+                              [{io_server, FH}, {use_dbg, true}, {scope,local}, {plugin, plugin_tracker}]),
+
+    _ = erlang:iolist_to_binary(<<"request right">>), % Should trace
+    _ = erlang:iolist_to_binary(<<"already wrong">>), % Should NOT trace
+    _ = maps:to_list(#{ response => <<" wrong">>, value => bad }), % Should NOT trace
+    _ = maps:to_list(#{ response => <<" right">>, value => good }), % Should trace
+    timer:sleep(100),
+    {ok, TraceOutput} = file:read_file(FileName),
+
+    recon_trace:clear(),
+
+    assert_trace_match("erlang:iolist_to_binary\\(<<\"request right\">>\\)", TraceOutput),
+    assert_trace_no_match("wrong", TraceOutput),
+    assert_trace_match("good", TraceOutput),
+    ok.
+
+
+% trace_binary_patterns_test(Config) ->
+%     {FH, FileName} = proplists:get_value(file, Config),
+
+%     MatchSpec = fun([<<"already",_/binary>>]) -> print end,
+%     recon_trace:calls({erlang, iolist_to_binary, MatchSpec}, 10,
+%                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
+
+%     _ = erlang:iolist_to_binary(<<"already binary">>), % Should trace
+%     _ = erlang:iolist_to_binary(["not binary"]),      % Should NOT trace
+%     _ = erlang:iolist_to_binary([<<"mix">>, "ed"]),   % Should NOT trace
+%     _ = erlang:iolist_to_binary(<<"another binary">>), % Should NOT trace
+
+%     timer:sleep(100),
+%     {ok, TraceOutput} = file:read_file(FileName),
+
+%     recon_trace:clear(),
+
+%     assert_trace_match("erlang:iolist_to_binary\\(<<\"already binary\">>\\)", TraceOutput),
+%     assert_trace_no_match("erlang:iolist_to_binary\\(<<\"another binary\">>\\)", TraceOutput),
+%     assert_trace_no_match("erlang:iolist_to_binary\\(\\[\"not binary\"\\]\\)", TraceOutput),
+%     assert_trace_no_match("erlang:iolist_to_binary\\(\\[<<\"mix\">>,\"ed\"\\]\\)", TraceOutput),
+%     ok.
+

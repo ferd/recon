@@ -55,21 +55,26 @@
 %% @end
 -spec calls_dbg(tspec() | [tspec(),...], max(), options()) -> num_matches().
 calls_dbg(TSpecs, Boundaries, Opts) ->
-    case trace_function_types(TSpecs) of
-        shell_fun ->
+    case trace_function_types(TSpecs, Opts) of
+        {shell_fun, _} ->
             io:format("Warning: TSpecs contain erlang trace template function "++
                           "use_dbg flag ignored, falling back to default recon_trace behaviour~n"),
             recon_trace:calls(TSpecs, Boundaries, proplists:delete(use_dbg, Opts));
-        standard_fun ->
+        {standard_fun, Plugin} ->
             clear(),
             FunTSpecs = tspecs_normalization(TSpecs),
             Formatter = validate_formatter(Opts),
             IoServer = validate_io_server(Opts),
 
             {PidSpecs, TraceOpts, MatchOpts} = validate_opts(Opts),
-            PatternsFun =
-                generate_pattern_filter(FunTSpecs, Boundaries, IoServer, Formatter),
-            dbg:tracer(process,{PatternsFun, startValue(Boundaries)}),
+            {PatternsFun, StartValue} =  
+            if Plugin == default ->
+                {generate_pattern_filter(FunTSpecs, Boundaries, IoServer, Formatter),
+                        start_value(FunTSpecs, Boundaries)};
+                true -> {Plugin:filter_fun(FunTSpecs, Boundaries, IoServer, Formatter, Opts),
+                        Plugin:start_value(FunTSpecs, Boundaries)}
+            end,
+            dbg:tracer(process,{PatternsFun, StartValue}),
             %% we want to receive full traces to match them then we can calculate arity
             ProcessOpts = [c]++proplists:delete(arity, TraceOpts),
             lists:foreach(fun(Pid) -> dbg:p(Pid, ProcessOpts) end, PidSpecs),
@@ -273,9 +278,9 @@ test_match(M, F, TraceM, TraceF, Args, PatternFun) ->
   end.
 
 %%% Start value for the dbg tracer process state
-startValue({_, _}) ->
+start_value(_, {_, _}) ->
     {0, os:timestamp()};
-startValue(_Max) ->
+start_value(_, _Max) ->
     0.
 
 
@@ -307,16 +312,30 @@ dbg_tp(MFAList, MatchOpts) ->
 %% is responsible for matching arguments.
 %% In standard recon_trace, the third element is a template function
 %% transformed to a matchspec.
-%% If use_dbg is set to true, the third element is used as actual functor and interpreted
+%% If use_dbg is set to true, the third element is used as actual function and interpreted
 %% in a totally different way.
 %% The function is used to determine the type of the functions to be traced.
 %% They should be possible to interpret all functions in the same way.
-%% For example '_' can be interpreted as a dbg trace function or a functor.
-%% Since use_dbg is set to true, the function is considered by default a functor.
+%% For example '_' can be interpreted as a dbg trace function or a function.
+%% Since use_dbg is set to true, the function is considered by default a function.
 %% The function is considered a trace function if its every clause
 %% ends with a functions like return_trace(),
 %% that are translated into a {return_trace} in the matchspecs list.
 %% ----------------------------------------------------
+trace_function_types(TSpecs, Opts) ->
+    case proplists:get_value(plugin, Opts, default) of
+        default -> {trace_function_types(TSpecs), default};
+        Plugin -> 
+            try Plugin:is_plugin() of
+                true ->  {standard_fun, Plugin}
+            catch
+                _:_ -> 
+                io:format("Warning: Plugin ~p does not implement is_plugin/0 function,~n", [Plugin]),
+                recon_trace:clear(),
+               fail
+            end
+    end.
+
 trace_function_types(TSpecs) ->
 FunTypes= [trace_function_type(Args) || {_, _, Args} <- TSpecs],
     
