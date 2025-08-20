@@ -1,4 +1,5 @@
 -module(plugin_tracker).
+-behaviour(recon_plugins).
 
 -export([filter_fun/5, start_value/2, is_plugin/0]).
 -import(recon_trace, [formatter/5, validate_opts/1, trace_to_io/2,
