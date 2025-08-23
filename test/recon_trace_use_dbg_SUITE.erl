@@ -852,7 +852,7 @@ trace_plugin_tracker_test(Config) ->
     MatchSpec2 = {maps, to_list,
         fun([#{response := A, value := V }], #{session := A}) -> {print_session, V, #{}} end},
     recon_trace:calls([MatchSpec, MatchSpec2], 10,
-                              [{io_server, FH}, {use_dbg, true}, {scope,local}, {plugin, plugin_tracker}]),
+                              [{io_server, FH}, {use_dbg, true}, {scope, local}, {plugin, plugin_tracker}]),
 
     _ = erlang:iolist_to_binary(<<"request right">>), % Should trace
     _ = erlang:iolist_to_binary(<<"already wrong">>), % Should NOT trace

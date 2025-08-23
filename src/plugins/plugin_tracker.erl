@@ -33,7 +33,8 @@ count_tracer(Max, _TSpecs, IoServer, Formatter) ->
 rate_tracer({_Max, _Time}, _TSpecs, _IoServer, _Formatter) ->
     io:format("Rate tracer is not supported for module: ~p~n", [?MODULE]).
 
-
+handle_trace(_, _, [], IoServer, _, _) ->
+     IoServer ! rate_limit_tripped, clear();
 handle_trace(Trace, N, [TSpec | TSpecRest] = TSpecs, IoServer, Formatter, Session) ->
     Print = filter_call(Trace, TSpec, Session),
     case Print of
