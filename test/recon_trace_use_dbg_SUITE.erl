@@ -868,27 +868,3 @@ trace_plugin_tracker_test(Config) ->
     assert_trace_match("good", TraceOutput),
     ok.
 
-
-% trace_binary_patterns_test(Config) ->
-%     {FH, FileName} = proplists:get_value(file, Config),
-
-%     MatchSpec = fun([<<"already",_/binary>>]) -> print end,
-%     recon_trace:calls({erlang, iolist_to_binary, MatchSpec}, 10,
-%                               [{io_server, FH}, {use_dbg, true}, {scope,local}]),
-
-%     _ = erlang:iolist_to_binary(<<"already binary">>), % Should trace
-%     _ = erlang:iolist_to_binary(["not binary"]),      % Should NOT trace
-%     _ = erlang:iolist_to_binary([<<"mix">>, "ed"]),   % Should NOT trace
-%     _ = erlang:iolist_to_binary(<<"another binary">>), % Should NOT trace
-
-%     timer:sleep(100),
-%     {ok, TraceOutput} = file:read_file(FileName),
-
-%     recon_trace:clear(),
-
-%     assert_trace_match("erlang:iolist_to_binary\\(<<\"already binary\">>\\)", TraceOutput),
-%     assert_trace_no_match("erlang:iolist_to_binary\\(<<\"another binary\">>\\)", TraceOutput),
-%     assert_trace_no_match("erlang:iolist_to_binary\\(\\[\"not binary\"\\]\\)", TraceOutput),
-%     assert_trace_no_match("erlang:iolist_to_binary\\(\\[<<\"mix\">>,\"ed\"\\]\\)", TraceOutput),
-%     ok.
-
